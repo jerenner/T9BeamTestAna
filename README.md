@@ -15,3 +15,12 @@ USAGE: ./bin/waveform_analysis.app -i input_list_file -o output_root_file -c ana
   **-o output_root_file**     --> output root file
   
   **-c analysis_config.json** --> json configuration file (an example is located in config/config.json
+
+## Making plots
+Navigate to scripts/ directory. 
+
+root -q -b 'MakeDataPlots.C("output_file_from_step1", momentum)'
+
+The script will use int momentum to recognize which cuts it needs to use. The script output is a root file with the same name as the input and "_plots" appended to the end. It contains:
+  - reference histograms (they have "ref" in the name and don't change when you apply cuts) 
+  - TOF histograms that are used to estimate the fraction of particles.  
