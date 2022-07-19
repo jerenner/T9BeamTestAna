@@ -1,0 +1,32 @@
+{
+	"WaveAnalysis" :
+	{
+        "NumberOfChannels"   : 16,
+        "VoltageScale"       : 0.000610351,
+
+        "comment"            : "Enable/disable channels",
+        "comment"            : "0-ACT00, 1-ACT01, 2-ACT10, 3-ACT11, 4-ACT20, 5-ACT21, 6-LGC, 7-TOF03, 8-TOF00, 9-TOF01, 10-TOF02, 11-TOF03, 12-TOF10, 13-TOF11, 14-TOF12, 15-TOF13",
+        "ActiveChannels"     : [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+
+        "comment"            : "Measure charge (integral of signal-pedestal in the analysis window)",
+        "ChargeMeasurements" : [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+
+        "comment"            : "Threshold w.r.t pedestal in V",
+        "Thresholds"         : [0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+
+        "comment"            : "Measure time of the signal (only needed for TOF detectors)",
+        "TimeMeasurements"   : [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+
+        "comment"            : "Signal polarity: 0 - negative, 1 - positive.",
+        "Polarity"           : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+
+        "comment"            : "Pedestal is estimated inside the pedestal bin window.",
+        "PedestalWindowLow"  : [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        "PedestalWindowHigh" : [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
+
+        "comment" : "Analysis is done on the data in the analysis bin window.",
+        "AnalysisWindowLow"  : [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
+        "AnalysisWindowHigh" : [315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315],
+	}
+}
+

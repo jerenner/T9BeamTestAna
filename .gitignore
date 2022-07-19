@@ -30,3 +30,16 @@
 *.exe
 *.out
 *.app
+
+
+# ROOT files
+*.root
+
+# Backup files
+*.cc~
+*.cpp~
+*.h~
+
+#Plots
+*.pdf
+*.png
