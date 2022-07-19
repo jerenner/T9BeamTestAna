@@ -192,6 +192,7 @@ void WaveformAnalysis::CalculateSignalTime(){
 
 void WaveformAnalysis::IntegrateCharge(){
     fIntegratedCharge.clear();
+    double impedance = 50;
     for(int i = 0; i < fPeakBins.size(); i++){
         if(fMeasureCharge){
            
@@ -203,7 +204,7 @@ void WaveformAnalysis::IntegrateCharge(){
             double period = anaHist->GetXaxis()->GetBinWidth(1);
             double integratedCharge = 0;
             while(voltage > 3*fPedestalSigma && counter > 1){
-                integratedCharge += voltage*period;
+                integratedCharge += voltage*period/impedance;
                 counter--; 
                 voltage = anaHist->GetBinContent(counter)*fVoltScale-fPedestal;  
             }
@@ -211,7 +212,7 @@ void WaveformAnalysis::IntegrateCharge(){
             voltage = anaHist->GetBinContent(fPeakBins.at(i)+1)*fVoltScale-fPedestal;
             counter = fPeakBins.at(i)+1;
             while(voltage > 3*fPedestalSigma && counter < anaHist->GetNbinsX()){
-                integratedCharge += voltage*period;
+                integratedCharge += voltage*period/impedance;
                 counter++; 
                 voltage = anaHist->GetBinContent(counter)*fVoltScale-fPedestal;  
             }  

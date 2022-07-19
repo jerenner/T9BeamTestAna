@@ -5,7 +5,7 @@ double GetBeta(double mass, double mom){
 }
 
 
-void MakeDataPlots(string fileName){
+void MakeDataPlots(string fileName, int mom){
     vector<vector<double>> *peakVoltage = NULL;
     vector<vector<double>> *peakTime = NULL;
     vector<vector<double>> *signalTime = NULL;
@@ -27,7 +27,7 @@ void MakeDataPlots(string fileName){
     
     int ent = tree->GetEntries();
     
-    
+    TH1D hTOF("hRef_TOFAll", "", 250, -100, 150);
     TH1D hTOFAll("hTOFAll", "", 100, 37.5, 42.5);
     TH1D hTOFEl("hTOFEl", "", 100, 37.5, 42.5);
     TH1D hTOFOther("hTOFOther", "", 100, 37.5, 42.5);
@@ -35,44 +35,43 @@ void MakeDataPlots(string fileName){
     vector<TH1D> hCharge;
     vector<TH1D> hVoltage;
     vector<TH1D> hHit;
+    vector<TH1D> hPedestalSigma;
     
-    TH2D hTOFACT1V("hTOFACT1V", "", 200, 37.5, 42.5, 200, 0., 1.6);
-    TH2D hTOFACT2V("hTOFACT2V", "", 200, 37.5, 42.5, 200, 0., 0.1);
-    TH2D hTOFACT3V("hTOFACT3V", "", 200, 37.5, 42.5, 200, 0., 0.1);
+    TH2D hTOFACT1V("hRef_TOFACT1V", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, 37.5, 42.5, 200, 0., 1.6);
+    TH2D hTOFACT2V("hRef_TOFACT2V", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
+    TH2D hTOFACT3V("hRef_TOFACT3V", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
     
-    TH2D hTOFACT1C("hTOFACT1C", "", 200, 37.5, 42.5, 200, 0., 1.6);
-    TH2D hTOFACT2C("hTOFACT2C", "", 200, 37.5, 42.5, 200, 0., 0.1);
-    TH2D hTOFACT3C("hTOFACT3C", "", 200, 37.5, 42.5, 200, 0., 0.1);
+    TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 42.5, 200, 0., 0.016);
+    TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 42.5, 200, 0., 0.002);
+    TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 42.5, 200, 0., 0.002);
     
     
     
     for(int i = 0; i < 16; i++){
-        string name1 = "hCharge" + to_string(i);
-        string name2 = "hVoltage" + to_string(i);
-        string name3 = "hHits" + to_string(i);
-        TH1D temp1(name1.c_str(), "", 200, 0., 0.8);
-        TH1D temp2(name2.c_str(), "", 200, 0., 0.8);
-        TH1D temp3(name3.c_str(), "", 5, -0.5, 4.5);
+        string name1 = "hRef_Charge" + to_string(i);
+        string name2 = "hRef_Voltage" + to_string(i);
+        string name3 = "hRef_Hits" + to_string(i);
+        string name4 = "hRef_PedestalSigma" + to_string(i);
+        
+        string title1 = "Channel " + to_string(i) + "; Charge [nC]; Triggers";
+        string title2 = "Channel " + to_string(i) + "; Total Amplitude [V]; Triggers";
+        string title3 = "Channel " + to_string(i) + "; Hits per trigger; Triggers";
+        string title4 = "Channel " + to_string(i) + "; #sigma_{ped} [V]; Triggers";
+        TH1D temp1(name1.c_str(), title1.c_str(), 200, 0., 0.08);
+        TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 0.8);
+        TH1D temp3(name3.c_str(), title3.c_str(), 5, -0.5, 4.5);
+        TH1D temp4(name4.c_str(), title4.c_str(), 200, 0., 0.01);
         
         hCharge.push_back(temp1);
         hVoltage.push_back(temp2);
         hHit.push_back(temp3);
+        hPedestalSigma.push_back(temp4);
     }
     
     for(int i = 0; i < ent; i++){
         tree->GetEntry(i);
         
-        bool pedestalOK = true;
-        for(int j = 8; j < 16; j++){
-            if(pedestalSigma[j] > 0.007){
-                pedestalOK = false;
-                break;
-            }
-        }
-        
-        if(!pedestalOK) continue;
 
-        
         vector<int> indices;
         
 
@@ -83,12 +82,11 @@ void MakeDataPlots(string fileName){
             hCharge.at(j).Fill(intCharge->at(j).at(ind));
             hVoltage.at(j).Fill(peakVoltage->at(j).at(ind));
             hHit.at(j).Fill(peakVoltage->at(j).size());
-            
-            
+            hPedestalSigma.at(j).Fill(pedestalSigma[j]);
 
         }
-
-
+  
+  
         double t0 = (signalTime->at(8).at(indices.at(8)) + signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)) + signalTime->at(11).at(indices.at(11)))/4.;
         double t1 = (signalTime->at(12).at(indices.at(12)) + signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)) + signalTime->at(15).at(indices.at(15)))/4.;
 
@@ -100,24 +98,70 @@ void MakeDataPlots(string fileName){
         hTOFACT2C.Fill(t1-t0, intCharge->at(2).at(indices.at(2)) + intCharge->at(3).at(indices.at(3)));
         hTOFACT3C.Fill(t1-t0, intCharge->at(4).at(indices.at(4)) + intCharge->at(5).at(indices.at(5)));
         
+        hTOF.Fill(t1-t0);
+                      
+        bool pass = true;
+        bool isEl = false;
+        switch(mom){
+            case 220: {
+
+                double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.0014, 0.0014, 0.0016, 0.0014};
+                for(int j = 0; j < 16; j++){
+                
+                    if(pedestalSigma[j] > pedestalSigmaCut[j]){
+                        pass = false;
+                        break;
+                    }
+                }
+
+                if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.12)
+                    isEl = true;
+                if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.018)
+                    isEl = true; 
+                if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.035)
+                    isEl = true;
+                                    
+                break;
+            }
+            
+            case -220: {
+                double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.005, 0.009, 0.006, 0.006};
+                for(int j = 0; j < 16; j++){
+                
+                    if(pedestalSigma[j] > pedestalSigmaCut[j]){
+                        pass = false;
+                        break;
+                    }
+                }
+                   
+                if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.18)
+                    isEl = true;
+                if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.025)
+                    isEl = true; 
+                if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.022)
+                    isEl = true;
+                
+                
+                break;
+            }
+            default: {
+                cout << "Settings not implemented for " << mom << " MeV/c beam" << endl;
+                break;
+            }
+        }
         
-       /* if(intCharge->at(8).at(indices.at(8)) < 0.06) continue;
-        if(intCharge->at(9).at(indices.at(9)) < 0.05) continue;
-        if(intCharge->at(10).at(indices.at(10)) < 0.07) continue;
-        if(intCharge->at(11).at(indices.at(11)) < 0.06) continue;
-        if(intCharge->at(12).at(indices.at(12)) < 0.05) continue;
-        if(intCharge->at(13).at(indices.at(13)) < 0.06) continue;
-        if(intCharge->at(14).at(indices.at(14)) < 0.035) continue;
-        if(intCharge->at(15).at(indices.at(15)) < 0.045) continue;*/
 
+
+
+
+
+        
+
+        if(!pass) continue;
         hTOFAll.Fill(t1-t0);
-        /*if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.1 || 
-            peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.012 || 
-            peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.04){*/
+  
 
-        if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.1 || 
-            peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.025 || 
-            peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.05){
+        if(isEl){
             hTOFEl.Fill(t1-t0);
         }
         else{
@@ -131,21 +175,23 @@ void MakeDataPlots(string fileName){
     TFile outFile(outFileName.c_str(), "RECREATE");
     outFile.cd();
     
-    hTOFAll.Write();
-    hTOFEl.Write();
-    hTOFOther.Write();
+
     hTOFACT1V.Write();
     hTOFACT2V.Write();
     hTOFACT3V.Write();
     hTOFACT1C.Write();
     hTOFACT2C.Write();
     hTOFACT3C.Write();
-    
-    for(int j = 0; j < 16; j++){
-        hVoltage.at(j).Write();
-        hCharge.at(j).Write();
-        hHit.at(j).Write();
-    }
+    hTOF.Write();
+    for (auto hist: hVoltage) hist.Write();
+    for (auto hist: hCharge) hist.Write();
+    for (auto hist: hHit) hist.Write();
+    for (auto hist: hPedestalSigma) hist.Write();
+
+
+    hTOFAll.Write();
+    hTOFEl.Write();
+    hTOFOther.Write();
 
 }
 

@@ -22,11 +22,10 @@ void FitTOF(string fileName, double p){
     TF1* func = new TF1("func", "[0]*TMath::Gaus(x, [2], [3], 1) + [1]*TMath::Gaus(x, [5], [3], 1) + [4]*TMath::Gaus(x, [6], [3], 1)", 38, 42.5);
     
     func->SetParName(0, "norm1");
-    //func->FixParameter(0, hTOFOther.GetEntries()*(6./200.));
+
     
     func->SetParName(1, "norm2");
-    //func->SetParameter(1, 0.5);
-    //func->SetParLimits(1, 0.35, 0.75);
+
     
     
     func->SetParName(2, "mean_e");
@@ -34,9 +33,9 @@ void FitTOF(string fileName, double p){
     func->SetParLimits(2, 0.99*h2->GetMean(), 1.01*h2->GetMean());
     
     func->SetParName(3, "sigma_e");
-    func->FixParameter(2, 0.215);
-    //func->SetParameter(3, h2->GetStdDev());
-    //func->SetParLimits(3, 0.6*h2->GetStdDev(), 1.1*h2->GetStdDev()); 
+    //func->FixParameter(2, 0.215);
+    func->SetParameter(3, h2->GetStdDev());
+    func->SetParLimits(3, 0.8*h2->GetStdDev(), 1.1*h2->GetStdDev()); 
     
     func->SetParName(4, "norm3");
     //func->SetParameter(4, 0.85);
@@ -44,8 +43,8 @@ void FitTOF(string fileName, double p){
 
     double val1 = h2->GetMean()+l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
     func->SetParName(5, "mean_mu");
-    func->FixParameter(5, val1);
-    //func->SetParLimits(5, 0.99*val1, 1.01*val1);       
+    //func->FixParameter(5, val1);
+    func->SetParLimits(5, 0.99*val1, 1.01*val1);       
     
     /*func->SetParName(6, "sigma_mu");
     func->SetParameter(6, h2->GetStdDev());
@@ -53,8 +52,8 @@ void FitTOF(string fileName, double p){
     
     double val2 = h2->GetMean()+l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
     func->SetParName(6, "mean_pi");
-    func->FixParameter(6, val2);
-    //func->SetParLimits(6, val2-0.3, val2+0.3);       
+    //func->FixParameter(6, val2);
+    func->SetParLimits(6, val2-0.4, val2+0.4);       
     
     /*func->SetParName(8, "sigma_pi");
     func->SetParameter(8, h2->GetStdDev());
