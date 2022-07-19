@@ -4,7 +4,7 @@ Analysis package for the T9 beam test
 
 To compile the code type make in the main directory.
 
-##Processing data
+## Processing data
 
 The first analysis stage includes processing data files. The output is a root file with anaTree TTRee. It includes, trigger timestamps, pedestals, pedestals standard deviations, signal amplitudes and times.
 
