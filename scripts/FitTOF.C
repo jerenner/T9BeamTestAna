@@ -14,7 +14,7 @@ double GetBeta(double mass, double mom){
     return beta;
 }
 
-void FitTOF(string fileName, double p){
+void FitTOF(string fileName, int p){
     double m[4]={0.511, 105.66, 139.57, 938.470};
     double c = 0.299792458;
     double l = 2.9;
@@ -24,6 +24,8 @@ void FitTOF(string fileName, double p){
     TH1D* h2 = (TH1D*) inFile->Get("hTOFEl");
     TH1D* h3 = (TH1D*) inFile->Get("hTOFOther");
     
+    string title = "p = " + to_string(p) + " MeV/c";
+    h3->SetTitle(title.c_str());
     h3->GetXaxis()->SetTitle("t_{1}-t_{0} [ns]");
     h3->GetYaxis()->SetTitle("Events");
     h3->SetStats(kFALSE);
@@ -122,7 +124,7 @@ void FitTOF(string fileName, double p){
     
     leg1->AddEntry(h3,"Data", "PE");
     leg1->AddEntry(func, "Fit", "L");
-    string title = "Fit - e^{+}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
+    title = "Fit - e^{+}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
     leg1->AddEntry(func1, title.c_str(), "L");
     title = "Fit - #mu^{+}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
     leg1->AddEntry(func2, title.c_str(), "L");
