@@ -2,8 +2,8 @@
 
 import os, sys
 
-#RunAll = False
-RunAll = True
+RunAll = False
+#RunAll = True
 
 # make a link to you data directory
 datadir = 'data/'
@@ -27,9 +27,9 @@ for p in Runs:
                   ip = -ip
          cmds = []
          
-         #cmds.append('ls {}*clean*.root | egrep "{}" > {}list_{}.txt'.format(datadir,runs,listdir,p))
-         #cmds.append('./bin/waveform_analysis.app -i {}list_{}.txt -o output_{}.root -c config/config.json'.format(listdir,p,p))
-         #cmds.append('root -l -q "scripts/MakeDataPlots.C(\\"output_{}.root\\", {})"'.format(p,ip))
+         cmds.append('ls {}*clean*.root | egrep "{}" > {}list_{}.txt'.format(datadir,runs,listdir,p))
+         cmds.append('./bin/waveform_analysis.app -i {}list_{}.txt -o output_{}.root -c config/config.json'.format(listdir,p,p))
+         cmds.append('root -l -q "scripts/MakeDataPlots.C(\\"output_{}.root\\", {})"'.format(p,ip))
          cmds.append('root -l -b -q "scripts/FitTOF.C(\\"output_{}_plots.root\\",{})"'.format(p, ip))
          
          for cmd in cmds:
