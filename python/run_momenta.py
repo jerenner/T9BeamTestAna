@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+import data_runs
+
 import os, sys
 
 RunAll = False
@@ -15,19 +17,12 @@ if len(argv) > 1:
 datadir = 'data/'
 listdir = 'lists/'
 
-Runs = {
-
-         # jk
-         '320p' : '142|166|189',
-	 '340p' : '168',
-	 '300n' : '148|156',
-	 '320n' : '149|158|188',
-       }
 #################################################
 
-for p in Runs:
+for p in data_runs.Runs:
          print('*** {} ***'.format(p))
-         runs = Runs[p]
+         runspills = data_runs.Runs[p]
+         runs = runspills[0]
          ip = int(p.replace('n','').replace('p',''))
          if 'n' in p:
                   ip = -ip
@@ -44,4 +39,6 @@ for p in Runs:
                            os.system(cmd)
 
 
-
+print('DONE!')
+print('Consider:')
+print('python ./python/plotFromAscii.py')
