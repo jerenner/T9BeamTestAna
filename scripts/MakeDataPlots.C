@@ -29,6 +29,7 @@ void MakeDataPlots(string fileName, int mom){
     
     TH1D hTOF("hRef_TOFAll", "", 250, -100, 150);
     TH1D hTOFAll("hTOFAll", "", 120, 37.5, 43.5);
+    TH1D hTOFAllWide("hTOFAllWide", "", 720, 37.5, 73.5);
     TH1D hTOFEl("hTOFEl", "", 120, 37.5, 43.5);
     TH1D hTOFOther("hTOFOther", "", 120, 37.5, 43.5);
     
@@ -113,6 +114,17 @@ void MakeDataPlots(string fileName, int mom){
                                                 
                 break;
             }
+            
+            case -200: {
+                if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.10)
+                    isEl = true;
+                if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.010)
+                    isEl = true; 
+                if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.012)
+                    isEl = true;
+                                                
+                break;
+            }
             case 220: {
 
                 /*double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.0014, 0.0014, 0.0016, 0.0014};
@@ -154,8 +166,9 @@ void MakeDataPlots(string fileName, int mom){
                 
                 break;
             }
-
-	case -300: { //; jk
+            
+            
+	        case -300: { //; jk
                 /*double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.005, 0.009, 0.006, 0.006};
                 for(int j = 0; j < 16; j++){
                 
@@ -179,7 +192,19 @@ void MakeDataPlots(string fileName, int mom){
 
 
 
-	      
+	        case 400: {
+	        
+                double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
+                for(int j = 0; j < 16; j++){
+                
+                    if(peakVoltage->at(j).at(indices.at(j)) < voltageCut[j]){
+                        pass = false;
+                        break;
+                    }
+                }
+	            break;
+	            
+	        }
 
             default: {
                 cout << "Settings not implemented for " << mom << " MeV/c beam" << endl;
@@ -196,7 +221,7 @@ void MakeDataPlots(string fileName, int mom){
 
         if(!pass) continue;
         hTOFAll.Fill(t1-t0);
-  
+        hTOFAllWide.Fill(t1-t0);
 
         if(isEl){
             hTOFEl.Fill(t1-t0);
@@ -227,6 +252,7 @@ void MakeDataPlots(string fileName, int mom){
 
 
     hTOFAll.Write();
+    hTOFAllWide.Write();
     hTOFEl.Write();
     hTOFOther.Write();
 

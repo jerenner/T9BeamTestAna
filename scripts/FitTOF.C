@@ -66,12 +66,12 @@ void FitTOF(string fileName, int p){
     double val2 = h2->GetMean()+l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
     func->SetParName(6, "mean_pi");
     //func->FixParameter(6, val2);
-    func->SetParLimits(6, val2-0.2, val2+0.6);       
+    func->SetParLimits(6, val2-0.3, val2+0.6);       
     
     func->SetParName(7, "sigma_mupi");
     //func->FixParameter(2, 0.215);
     func->SetParameter(7, h2->GetStdDev());
-    func->SetParLimits(7, 0.6*h2->GetStdDev(), 1.2*h2->GetStdDev()); 
+    func->SetParLimits(7, 0.5*h2->GetStdDev(), 1.3*h2->GetStdDev()); 
     
     h3->Fit(func);
     
