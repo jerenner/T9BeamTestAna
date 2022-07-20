@@ -1,9 +1,12 @@
 #include <iostream>
+#include <fstream>
+
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TFile.h"
 #include "TH2D.h"
 #include "TF1.h"
+#include "TString.h"
 
 double GetBeta(double mass, double mom){
     double bg = mom/mass;
@@ -145,10 +148,16 @@ void FitTOF(string fileName, double p){
     cout << "N_mu = " <<  func->GetParameter(1)/h1->GetBinWidth(1) << endl;
     cout << "N_pi = " <<  func->GetParameter(4)/h1->GetBinWidth(1) << endl;
 
-    /*
-    aciiname = "ascii_" + TString(inFile.GetName()).Replace(".root",".txt")
-    m_asciifile = new ofstream(asciiname.Data());
-    if (m_asciifile) m_asciifile->close();
-    */
+    TString asciiname = "ascii_" + TString(inFile->GetName()).ReplaceAll(".root",".txt");
+    ofstream *asciifile = new ofstream(asciiname.Data());
+    (*asciifile) << "p " << p << endl;
+    (*asciifile) << "N_e " << func->GetParameter(0)/h1->GetBinWidth(1) << endl;
+    (*asciifile) << "N_mu " <<  func->GetParameter(1)/h1->GetBinWidth(1) << endl;
+    (*asciifile) << "N_pi " <<  func->GetParameter(4)/h1->GetBinWidth(1) << endl;
+    if (asciifile) asciifile->close();
+
+    cout << "DONE!" << endl;
+    cout << "See also " << asciiname.Data() << endl;
+      
     
 }
