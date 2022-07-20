@@ -143,7 +143,9 @@ void FitTOF(string fileName, int p){
     
     leg1->Draw("same");
     string name = fileName.substr(0, fileName.size()-5) + "_TOFfit.png";
-    cv1->Print(name.c_str());    
+    string namepdf = fileName.substr(0, fileName.size()-5) + "_TOFfit.pdf";
+    cv1->Print(name.c_str());
+    cv1->Print(namepdf.c_str());    
 
     cout << GetBeta(m[0], p) << " " << GetBeta(m[1], p) << " " << GetBeta(m[2], p) << " " << GetBeta(m[3], p) << endl;
     cout << l/c/GetBeta(m[0], p) << " " << l/c/GetBeta(m[1], p) << " " << l/c/GetBeta(m[2], p) << " " << l/c/GetBeta(m[3], p) << endl;
