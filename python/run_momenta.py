@@ -5,6 +5,12 @@ import os, sys
 RunAll = False
 #RunAll = True
 
+argv = os.sys.argv
+print(argv)
+if len(argv) > 1:
+         if argv[1] == '1' or argv[1] == '1' or argv[1] == 'y' or argv[1] == 'Y':
+                  RunAll = True
+
 # make a link to you data directory
 datadir = 'data/'
 listdir = 'lists/'

@@ -167,27 +167,47 @@ void MakeDataPlots(string fileName, int mom){
                 break;
             }
             
-            
-	        case -300: { //; jk
-                /*double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.005, 0.009, 0.006, 0.006};
-                for(int j = 0; j < 16; j++){
-                
-                    if(pedestalSigma[j] > pedestalSigmaCut[j]){
-                        pass = false;
-                        break;
-                    }
-                }*/
-                   
+                case 300: { //; jk
                 if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.18)
                     isEl = true;
                 if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.025)
                     isEl = true; 
                 if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.022)
                     isEl = true;
-                
-                
                 break;
-            }
+		} // 300
+
+	        case 320: { //; jk
+                if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.18)
+                    isEl = true;
+                if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.025)
+                    isEl = true; 
+                if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.022)
+                    isEl = true;
+                break;
+		} // 320
+
+
+
+	        case -300: { //; jk
+                if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.18)
+                    isEl = true;
+                if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.025)
+                    isEl = true; 
+                if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.022)
+                    isEl = true;
+                break;
+		} // -300
+
+	        case -320: { //; jk
+                if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.18)
+                    isEl = true;
+                if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.025)
+                    isEl = true; 
+                if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.022)
+                    isEl = true;
+                break;
+		} // -320
 
 
 

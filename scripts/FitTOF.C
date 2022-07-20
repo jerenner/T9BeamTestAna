@@ -23,8 +23,12 @@ void FitTOF(string fileName, int p){
     TH1D* h1 = (TH1D*) inFile->Get("hTOFAll");
     TH1D* h2 = (TH1D*) inFile->Get("hTOFEl");
     TH1D* h3 = (TH1D*) inFile->Get("hTOFOther");
+
+    string ptag = " (Pos)";
+    if (p < 0.)
+      ptag = " (Neg)";
     
-    string title = "p = " + to_string(p) + " MeV/c";
+    string title = "p = " + to_string(abs(p)) + " MeV/c" + ptag ;
     h3->SetTitle(title.c_str());
     h3->GetXaxis()->SetTitle("t_{1}-t_{0} [ns]");
     h3->GetYaxis()->SetTitle("Events");
@@ -80,6 +84,8 @@ void FitTOF(string fileName, int p){
     cv1->cd()->SetTicky(kTRUE);
     //cv1->cd()->SetLogy(kTRUE);
     h3->SetMarkerStyle(20);
+
+    h3->SetMaximum(1.5*h3->GetMaximum());
     h3->Draw("ep");
     
     func->SetLineWidth(2);
@@ -111,13 +117,10 @@ void FitTOF(string fileName, int p){
     func3->SetLineWidth(2);
     func3->SetLineColor(kGreen+1);
 
-    TLegend *leg1 = new TLegend(0.50, 0.6, 0.9, 0.88);
+    TLegend *leg1 = new TLegend(0.60, 0.6, 0.9, 0.88);
     leg1 -> SetBorderSize(0);
     int ip = int(fabs(p));
-    TString ptag = " (Pos)";
-    if (p < 0.)
-      ptag = " (Neg)";
-    leg1 -> SetHeader(Form("WCTE TB July 2022 p=%i MeV/c",ip) + ptag);
+    leg1 -> SetHeader("WCTE TB July 2022");
     
     int Ne = func->GetParameter(0)/h1->GetBinWidth(1);
     int Nmu = func->GetParameter(1)/h1->GetBinWidth(1);
