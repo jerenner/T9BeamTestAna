@@ -1,3 +1,9 @@
+#include <iostream>
+#include "TCanvas.h"
+#include "TLegend.h"
+#include "TFile.h"
+#include "TH2D.h"
+
 double GetBeta(double mass, double mom){
     double bg = mom/mass;
     double beta = sqrt(bg*bg/(1+bg*bg));
@@ -9,11 +15,11 @@ void FitTOF(string fileName, double p){
     double m[4]={0.511, 105.66, 139.57, 938.470};
     double c = 0.299792458;
     double l = 2.9;
-    TFile inFile(fileName.c_str(), "READ");
+    TFile *inFile = new TFile(fileName.c_str(), "READ");
     
-    TH1D* h1 = (TH1D*) inFile.Get("hTOFAll");
-    TH1D* h2 = (TH1D*) inFile.Get("hTOFEl");
-    TH1D* h3 = (TH1D*) inFile.Get("hTOFOther");
+    TH1D* h1 = (TH1D*) inFile->Get("hTOFAll");
+    TH1D* h2 = (TH1D*) inFile->Get("hTOFEl");
+    TH1D* h3 = (TH1D*) inFile->Get("hTOFOther");
     
     h3->GetXaxis()->SetTitle("t_{1}-t_{0} [ns]");
     h3->GetYaxis()->SetTitle("Events");
@@ -64,10 +70,10 @@ void FitTOF(string fileName, double p){
     
     h3->Fit(func);
     
-    TCanvas cv1("cv1", "", 1200, 800);
-    cv1.cd()->SetTickx(kTRUE);
-    cv1.cd()->SetTicky(kTRUE);
-    //cv1.cd()->SetLogy(kTRUE);
+    TCanvas *cv1 = new TCanvas("cv1", "", 1200, 800);
+    cv1->cd()->SetTickx(kTRUE);
+    cv1->cd()->SetTicky(kTRUE);
+    //cv1->cd()->SetLogy(kTRUE);
     h3->SetMarkerStyle(20);
     h3->Draw("ep");
     
@@ -100,7 +106,7 @@ void FitTOF(string fileName, double p){
     func3->SetLineWidth(2);
     func3->SetLineColor(kGreen+1);
 
-    TLegend leg1(0.6, 0.6, 0.9, 0.9);
+    TLegend *leg1 = new TLegend(0.6, 0.6, 0.9, 0.9);
 
     
     int Ne = func->GetParameter(0)/h1->GetBinWidth(1);
@@ -111,23 +117,23 @@ void FitTOF(string fileName, double p){
     int NmuErr = func->GetParError(1)/h1->GetBinWidth(1);
     int NpiErr = func->GetParError(4)/h1->GetBinWidth(1);
     
-    leg1.AddEntry(h3,"Data", "PE");
-    leg1.AddEntry(func, "Fit", "L");
+    leg1->AddEntry(h3,"Data", "PE");
+    leg1->AddEntry(func, "Fit", "L");
     string title = "Fit - e^{+}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
-    leg1.AddEntry(func1, title.c_str(), "L");
+    leg1->AddEntry(func1, title.c_str(), "L");
     title = "Fit - #mu^{+}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
-    leg1.AddEntry(func2, title.c_str(), "L");
+    leg1->AddEntry(func2, title.c_str(), "L");
     title = "Fit - #pi^{+}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
-    leg1.AddEntry(func3, title.c_str(), "L");
+    leg1->AddEntry(func3, title.c_str(), "L");
     
     
     func1->Draw("Csame");
     func2->Draw("Csame");
     func3->Draw("Csame");
     
-    leg1.Draw("same");
+    leg1->Draw("same");
     string name = fileName.substr(0, fileName.size()-5) + "_TOFfit.png";
-    cv1.Print(name.c_str());    
+    cv1->Print(name.c_str());    
 
     cout << GetBeta(m[0], p) << " " << GetBeta(m[1], p) << " " << GetBeta(m[2], p) << " " << GetBeta(m[3], p) << endl;
     cout << l/c/GetBeta(m[0], p) << " " << l/c/GetBeta(m[1], p) << " " << l/c/GetBeta(m[2], p) << " " << l/c/GetBeta(m[3], p) << endl;
