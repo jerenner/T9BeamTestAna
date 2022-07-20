@@ -110,12 +110,12 @@ void WaveformAnalysis::FindPeaks(){
     double maxVal = 0;
     int max = -1;
     int len = 0;
-    for(int i = fAnaWindowT0Bin; i < fAnaWindowT1Bin; i++){
+    /*for(int i = fAnaWindowT0Bin; i < fAnaWindowT1Bin; i++){
         double voltage = anaHist->GetBinContent(i)*fVoltScale-fPedestal;
         
         if(fPolarity==0) voltage = -1.0*voltage;
         
-        if(voltage > 3*fPedestalSigma){
+        if(voltage > 10*fPedestalSigma){
             len++;
             if(voltage > maxVal){
                 maxVal = voltage;
@@ -133,7 +133,7 @@ void WaveformAnalysis::FindPeaks(){
             max = -1;
             maxVal = 0;
         }
-    }
+    }*/
  
     if(fPeakBins.size() == 0){
         double peakVoltage = 0;

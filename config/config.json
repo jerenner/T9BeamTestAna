@@ -25,7 +25,7 @@
         "PedestalWindowHigh" : [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
 
         "comment" : "Analysis is done on the data in the analysis bin window.",
-        "AnalysisWindowLow"  : [50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50, 50],
+        "AnalysisWindowLow"  : [50, 50, 50, 50, 50, 50, 50, 50, 185, 125, 125, 135, 170, 185, 185, 185],
         "AnalysisWindowHigh" : [315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315, 315],
 	}
 }
