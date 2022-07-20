@@ -3,15 +3,15 @@
 #include "TLegend.h"
 #include "TFile.h"
 #include "TH2D.h"
+#include "TF1.h"
 
 double GetBeta(double mass, double mom){
     double bg = mom/mass;
     double beta = sqrt(bg*bg/(1+bg*bg));
     return beta;
 }
-void FitTOF(string fileName, double p){
 
-    
+void FitTOF(string fileName, double p){
     double m[4]={0.511, 105.66, 139.57, 938.470};
     double c = 0.299792458;
     double l = 2.9;
@@ -82,8 +82,8 @@ void FitTOF(string fileName, double p){
     func->Draw("csame");
     
     TF1* func1 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
-    TF1* func2 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
-    TF1* func3 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+    TF1* func2 = new TF1("func2", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+    TF1* func3 = new TF1("func3", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
     
     func1->SetParameter(0, func->GetParameter(0));
     func1->SetParameter(1, func->GetParameter(2));
@@ -145,4 +145,10 @@ void FitTOF(string fileName, double p){
     cout << "N_mu = " <<  func->GetParameter(1)/h1->GetBinWidth(1) << endl;
     cout << "N_pi = " <<  func->GetParameter(4)/h1->GetBinWidth(1) << endl;
 
+    /*
+    aciiname = "ascii_" + TString(inFile.GetName()).Replace(".root",".txt")
+    m_asciifile = new ofstream(asciiname.Data());
+    if (m_asciifile) m_asciifile->close();
+    */
+    
 }
