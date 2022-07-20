@@ -111,8 +111,13 @@ void FitTOF(string fileName, int p){
     func3->SetLineWidth(2);
     func3->SetLineColor(kGreen+1);
 
-    TLegend *leg1 = new TLegend(0.6, 0.6, 0.9, 0.9);
-
+    TLegend *leg1 = new TLegend(0.50, 0.6, 0.9, 0.88);
+    leg1 -> SetBorderSize(0);
+    int ip = int(fabs(p));
+    TString ptag = " (Pos)";
+    if (p < 0.)
+      ptag = " (Neg)";
+    leg1 -> SetHeader(Form("WCTE TB July 2022 p=%i MeV/c",ip) + ptag);
     
     int Ne = func->GetParameter(0)/h1->GetBinWidth(1);
     int Nmu = func->GetParameter(1)/h1->GetBinWidth(1);
