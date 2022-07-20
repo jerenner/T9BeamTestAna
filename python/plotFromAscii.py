@@ -1,5 +1,4 @@
 #!/usr/bin/python3
-# St 20. července 2022, 12:04:33 CEST
 
 import data_runs
 
@@ -110,12 +109,12 @@ def main(argv):
             gr.SetPoint(j, momentum, n)
 
     canname = 'MultiPerSpill_TBJuly2022_' + signTag
-    can = ROOT.TCanvas(canname, canname)
+    can = ROOT.TCanvas(canname, canname, 100, 100, 1100, 800)
     cans.append(can)
 
     pmin = 150.
     pmax = 400.
-    h2 = ROOT.TH2D("tmp", "tmp;p [MeV/c];N / spill", 100, pmin, pmax, 100, 0, 50.)
+    h2 = ROOT.TH2D("tmp", "tmp;p [MeV/c];N / spill", 100, pmin, pmax, 100, 0, 50.e1)
     h2.SetStats(0)
     h2.Draw()
 

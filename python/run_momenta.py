@@ -7,12 +7,18 @@ import os, sys
 RunAll = False
 #RunAll = True
 
+FitOnly = False
+
 argv = os.sys.argv
 print(argv)
 if len(argv) > 1:
-         if argv[1] == '1' or argv[1] == '1' or argv[1] == 'y' or argv[1] == 'Y':
+         if '1' in argv[1] or 'y' in argv[1] or 'r' in argv[1] or 'R' in argv[1]:
                   RunAll = True
+         if 'f' in argv[1] or 'F' in argv[1]:
+                  FitOnly = True
 
+
+print('Configured as: RunAll: {} FitOnly: {}'.format(RunAll, FitOnly))
 # make a link to you data directory
 datadir = 'data/'
 listdir = 'lists/'
@@ -37,8 +43,11 @@ for p in data_runs.Runs:
                   print(cmd)
                   if RunAll:
                            os.system(cmd)
+                  elif FitOnly and 'FitTOF' in cmd:
+                           os.system(cmd)
 
 
 print('DONE!')
 print('Consider:')
-print('python ./python/plotFromAscii.py')
+print('python ./python/plotFromAscii.py p')
+print('python ./python/plotFromAscii.py n')
