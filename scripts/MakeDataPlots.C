@@ -28,22 +28,22 @@ void MakeDataPlots(string fileName, int mom){
     int ent = tree->GetEntries();
     
     TH1D hTOF("hRef_TOFAll", "", 250, -100, 150);
-    TH1D hTOFAll("hTOFAll", "", 100, 37.5, 42.5);
-    TH1D hTOFEl("hTOFEl", "", 100, 37.5, 42.5);
-    TH1D hTOFOther("hTOFOther", "", 100, 37.5, 42.5);
+    TH1D hTOFAll("hTOFAll", "", 120, 37.5, 43.5);
+    TH1D hTOFEl("hTOFEl", "", 120, 37.5, 43.5);
+    TH1D hTOFOther("hTOFOther", "", 120, 37.5, 43.5);
     
     vector<TH1D> hCharge;
     vector<TH1D> hVoltage;
     vector<TH1D> hHit;
     vector<TH1D> hPedestalSigma;
     
-    TH2D hTOFACT1V("hRef_TOFACT1V", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, 37.5, 42.5, 200, 0., 1.6);
-    TH2D hTOFACT2V("hRef_TOFACT2V", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
+    TH2D hTOFACT1V("hRef_TOFACT1V", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, 37.5, 43.5, 200, 0., 1.6);
+    TH2D hTOFACT2V("hRef_TOFACT2V", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
     TH2D hTOFACT3V("hRef_TOFACT3V", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
     
-    TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 42.5, 200, 0., 0.016);
-    TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 42.5, 200, 0., 0.002);
-    TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 42.5, 200, 0., 0.002);
+    TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
+    TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
     
     
     
@@ -103,16 +103,26 @@ void MakeDataPlots(string fileName, int mom){
         bool pass = true;
         bool isEl = false;
         switch(mom){
+            case 200: {
+                if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.10)
+                    isEl = true;
+                if(peakVoltage->at(2).at(indices.at(2))+peakVoltage->at(3).at(indices.at(3))>0.010)
+                    isEl = true; 
+                if(peakVoltage->at(4).at(indices.at(4))+peakVoltage->at(5).at(indices.at(5))>0.012)
+                    isEl = true;
+                                                
+                break;
+            }
             case 220: {
 
-                double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.0014, 0.0014, 0.0016, 0.0014};
+                /*double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.0014, 0.0014, 0.0016, 0.0014};
                 for(int j = 0; j < 16; j++){
                 
                     if(pedestalSigma[j] > pedestalSigmaCut[j]){
                         pass = false;
                         break;
                     }
-                }
+                }*/
 
                 if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.12)
                     isEl = true;
@@ -125,14 +135,14 @@ void MakeDataPlots(string fileName, int mom){
             }
             
             case -220: {
-                double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.005, 0.009, 0.006, 0.006};
+                /*double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.005, 0.009, 0.006, 0.006};
                 for(int j = 0; j < 16; j++){
                 
                     if(pedestalSigma[j] > pedestalSigmaCut[j]){
                         pass = false;
                         break;
                     }
-                }
+                }*/
                    
                 if(peakVoltage->at(0).at(indices.at(0))+peakVoltage->at(1).at(indices.at(1)) > 0.18)
                     isEl = true;
@@ -144,6 +154,7 @@ void MakeDataPlots(string fileName, int mom){
                 
                 break;
             }
+
             default: {
                 cout << "Settings not implemented for " << mom << " MeV/c beam" << endl;
                 break;

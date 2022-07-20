@@ -19,13 +19,15 @@ void FitTOF(string fileName, double p){
     h3->GetYaxis()->SetTitle("Events");
     h3->SetStats(kFALSE);
     
-    TF1* func = new TF1("func", "[0]*TMath::Gaus(x, [2], [3], 1) + [1]*TMath::Gaus(x, [5], [3], 1) + [4]*TMath::Gaus(x, [6], [3], 1)", 38, 42.5);
+    TF1* func = new TF1("func", "[0]*TMath::Gaus(x, [2], [3], 1) + [1]*TMath::Gaus(x, [5], [7], 1) + [4]*TMath::Gaus(x, [6], [7], 1)", 38, 43.5);
     
     func->SetParName(0, "norm1");
-
+    func->SetParameter(0, 2000);
+    func->SetParLimits(0, 0, 20000);
     
     func->SetParName(1, "norm2");
-
+    func->SetParameter(1, 200);
+    func->SetParLimits(1, 0, 10000);
     
     
     func->SetParName(2, "mean_e");
@@ -35,11 +37,11 @@ void FitTOF(string fileName, double p){
     func->SetParName(3, "sigma_e");
     //func->FixParameter(2, 0.215);
     func->SetParameter(3, h2->GetStdDev());
-    func->SetParLimits(3, 0.8*h2->GetStdDev(), 1.1*h2->GetStdDev()); 
+    func->SetParLimits(3, 0.4*h2->GetStdDev(), 1.2*h2->GetStdDev()); 
     
     func->SetParName(4, "norm3");
-    //func->SetParameter(4, 0.85);
-    //func->SetParLimits(4, 0.75, 0.95);
+    func->SetParameter(4, 200);
+    func->SetParLimits(4, 0, 1000);
 
     double val1 = h2->GetMean()+l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
     func->SetParName(5, "mean_mu");
@@ -53,17 +55,19 @@ void FitTOF(string fileName, double p){
     double val2 = h2->GetMean()+l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
     func->SetParName(6, "mean_pi");
     //func->FixParameter(6, val2);
-    func->SetParLimits(6, val2-0.4, val2+0.4);       
+    func->SetParLimits(6, val2-0.2, val2+0.6);       
     
-    /*func->SetParName(8, "sigma_pi");
-    func->SetParameter(8, h2->GetStdDev());
-    func->SetParLimits(8, 0.9*h2->GetStdDev(), 1.1*h2->GetStdDev()); */
+    func->SetParName(7, "sigma_mupi");
+    //func->FixParameter(2, 0.215);
+    func->SetParameter(7, h2->GetStdDev());
+    func->SetParLimits(7, 0.6*h2->GetStdDev(), 1.2*h2->GetStdDev()); 
     
     h3->Fit(func);
     
     TCanvas cv1("cv1", "", 1200, 800);
     cv1.cd()->SetTickx(kTRUE);
     cv1.cd()->SetTicky(kTRUE);
+    //cv1.cd()->SetLogy(kTRUE);
     h3->SetMarkerStyle(20);
     h3->Draw("ep");
     
@@ -71,9 +75,9 @@ void FitTOF(string fileName, double p){
     func->SetLineColor(kBlack);
     func->Draw("csame");
     
-    TF1* func1 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 42.5);
-    TF1* func2 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 42.5);
-    TF1* func3 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 42.5);
+    TF1* func1 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+    TF1* func2 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+    TF1* func3 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
     
     func1->SetParameter(0, func->GetParameter(0));
     func1->SetParameter(1, func->GetParameter(2));
@@ -81,11 +85,11 @@ void FitTOF(string fileName, double p){
     
     func2->SetParameter(0, func->GetParameter(1));
     func2->SetParameter(1, func->GetParameter(5));
-    func2->SetParameter(2, func->GetParameter(3));
+    func2->SetParameter(2, func->GetParameter(7));
     
     func3->SetParameter(0, func->GetParameter(4));
     func3->SetParameter(1, func->GetParameter(6));
-    func3->SetParameter(2, func->GetParameter(3));
+    func3->SetParameter(2, func->GetParameter(7));
     
     func1->SetLineWidth(2);
     func1->SetLineColor(kRed+1);
