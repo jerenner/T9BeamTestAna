@@ -157,8 +157,10 @@ void FitTOF(string fileName, int p){
 	func->SetParameter(1, A);
 	func->SetParLimits(1, 0.8*A, 2*A);	
       }
-      
+
     }
+
+
 
     double delta = 0.05;    
     func->SetParName(2, "mean_e");
@@ -176,14 +178,14 @@ void FitTOF(string fileName, int p){
     func->SetParName(4, "norm3");
     func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
     func->SetParLimits(4, 0, 0.5*A);
-
+    
     double mdelta = 0.15;
-    double val1 = xe + dtmu; // func0 -> GetParameter(1) + dtmu ;// h3 ->GetMean() +l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
+    double dtval_mu = xe + dtmu; // func0 -> GetParameter(1) + dtmu ;// h3 ->GetMean() +l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
     func->SetParName(5, "mean_mu");
     if (!isProtonFit) {
-      func->SetParameter(5, val1);
-    //func->FixParameter(5, val1);
-      func->SetParLimits(5, (1. - mdelta)*val1, (1. + mdelta)*val1);       
+      func->SetParameter(5, dtval_mu);
+    //func->FixParameter(5, dtval_mu);
+      func->SetParLimits(5, (1. - mdelta)*dtval_mu, (1. + mdelta)*dtval_mu);       
     } else {
       func->SetParName(5, "mean_p");
       double valp = xe + dtp;
@@ -197,16 +199,17 @@ void FitTOF(string fileName, int p){
 	func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
       }
     }
+
     
     /*func->SetParName(6, "sigma_mu");
     func->SetParameter(6, h3->GetStdDev());
     func->SetParLimits(6, 0.9*h3->GetStdDev(), 1.1*h3->GetStdDev()); */
     
-    double val2 = func0 -> GetParameter(1) + dtpi; // h3->GetMean()  l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
+    double dtval_pi = func0 -> GetParameter(1) + dtpi; // h3->GetMean()  l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
     func->SetParName(6, "mean_pi");
-    func->SetParameter(6, val2);
-    func->FixParameter(6, val2);
-    func->SetParLimits(6,  (1. - mdelta)*val2,  (1. - mdelta)*val2);       
+    func->SetParameter(6, dtval_pi);
+    func->FixParameter(6, dtval_pi);
+    func->SetParLimits(6,  (1. - mdelta)*dtval_pi,  (1. - mdelta)*dtval_pi);       
     
     func->SetParName(7, "sigma_mupi");
     //func->FixParameter(2, 0.215);
@@ -217,6 +220,21 @@ void FitTOF(string fileName, int p){
      func->SetParName(7, "sigma_p");
     }
     
+    // special cases
+
+    if ( fabs(p + 340) < 1.e-3) {
+	func->SetParameter(0, 1.1*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 0.3*A);
+	func->SetParameter(6, 1.1*dtval_mu);
+	
+      }
+      
+
+
+
+
     cout << "The initial parameters are: " << endl;
     for (int ip = 0; ip < func -> GetNpar(); ++ ip) {
       cout << ip << " " << func->GetParName(ip) << " " << func->GetParameter(ip) << endl;      

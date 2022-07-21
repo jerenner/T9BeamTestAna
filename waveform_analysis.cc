@@ -154,7 +154,7 @@ int main(int argc, char **argv){
         chain1.GetEntry(i);
         chain2.GetEntry(i);
         if(!((i+1)%1000))
-            cout << "Processing event #: " << i+1 << endl;
+	  cout << "\rProcessing event #: " << i+1 << " / " << nent << flush;
 
         peakVoltage.clear();
         peakTime.clear();
@@ -182,6 +182,7 @@ int main(int argc, char **argv){
 
         ana_data->Fill();
     }
+    cout << endl << "Done! Processing event #: " << nent << " / " << nent << flush;    cout << endl;
     output.cd();
     ana_data->Write();
     output.Close();
