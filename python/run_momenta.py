@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import data_runs
+import pytools
 
 import os, sys
 
@@ -10,14 +11,23 @@ RunAll = False
 FitOnly = False
 
 argv = os.sys.argv
+
 print(argv)
-if len(argv) > 1:
-         if '1' in argv[1] or 'y' in argv[1] or 'r' in argv[1] or 'R' in argv[1]:
-                  RunAll = True
-         if 'f' in argv[1] or 'F' in argv[1]:
-                  FitOnly = True
+if len(argv) < 2:
+         print('Usage:')
+         print('{} 0/1[f] low/high/p')
+         print('1: run the commands, incl. the tree analysis')
+         print('0: do not run the commands, neither the tree analysis')
+         print('f: do the TOF fit only')
+         exit(1)
+         
+if '1' in argv[1] or 'y' in argv[1] or 'r' in argv[1] or 'R' in argv[1]:
+         RunAll = True
+if 'f' in argv[1] or 'F' in argv[1]:
+         FitOnly = True
 
-
+Runs = pytools.getRuns(argv[2])
+                  
 print('Configured as: RunAll: {} FitOnly: {}'.format(RunAll, FitOnly))
 # make a link to you data directory
 datadir = 'data/'
@@ -25,9 +35,10 @@ listdir = 'lists/'
 
 #################################################
 
-for p in data_runs.Runs:
+
+for p in Runs:
          print('*** {} ***'.format(p))
-         runspills = data_runs.Runs[p]
+         runspills = Runs[p]
          runs = runspills[0]
          ip = int(p.replace('n','').replace('p',''))
          if 'n' in p:
@@ -49,5 +60,9 @@ for p in data_runs.Runs:
 
 print('DONE!')
 print('Consider:')
-print('python ./python/plotFromAscii.py p')
-print('python ./python/plotFromAscii.py n')
+print('python ./python/plotFromAscii.py p low')
+print('python ./python/plotFromAscii.py n low')
+print('python ./python/plotFromAscii.py p high')
+print('python ./python/plotFromAscii.py n high')
+print('python ./python/plotFromAscii.py p p # for protons')
+

@@ -1,14 +1,24 @@
 #!/usr/bin/python3
-
+from collections import OrderedDict
 import data_runs
+import pytools
 
 import ROOT
 from math import sqrt, pow, log, exp
 import os, sys, getopt
 
+import ctypes
+
 cans = []
 stuff = []
 
+
+def printGr(gr):
+    x = ctypes.c_double(0.)
+    y = ctypes.c_double(0.)
+    for ip in range(0, gr.GetN()):
+        gr.GetPoint(ip, x,y)
+        print(ip, x, y)
 
 ##########################################
 # https://www.tutorialspoint.com/python/python_command_line_arguments.htm
@@ -58,35 +68,65 @@ def main(argv):
 
     ROOT.gStyle.SetOptTitle(0)
 
-    if len(argv) < 2:
+    if len(argv) < 3:
         print('Usage: need to specify n or p for negative or positive momenta to plot the mu and pi yields over momenta!')
-        print('{} n/p'.format(argv[0]))
+        print('{} n/p low/high/p'.format(argv[0]))
         exit(1)
     
 
     addgrep = ''
     signTag = 'all'
     print(argv)
-    if len(argv) > 1:
-         if argv[1] == 'n' or argv[1] == '_n' or argv[1] == 'neg' or argv[1] == 'Neg' or argv[1] == '_neg' or argv[1] == '_Neg':
-             addgrep = ' | grep n_'
-             signTag = 'Neg'
-         if argv[1] == 'p' or argv[1] == '_p' or argv[1] == 'pos' or argv[1] == 'Pos' or argv[1] == '_pos' or argv[1] == '_Pos':
-             addgrep = ' | grep p_'
-             signTag = 'Pos'
-             
+    if argv[1] == 'n' or argv[1] == '_n' or argv[1] == 'neg' or argv[1] == 'Neg' or argv[1] == '_neg' or argv[1] == '_Neg':
+        addgrep = ' | grep n_'
+        signTag = 'Neg'
+    if argv[1] == 'p' or argv[1] == '_p' or argv[1] == 'pos' or argv[1] == 'Pos' or argv[1] == '_pos' or argv[1] == '_Pos':
+        addgrep = ' | grep p_'
+        signTag = 'Pos'
+
+    isProtonFit = False
+    Runs = pytools.getRuns(argv[2])
+    twoComponentFit = argv[2] == 'high'
+    
+    if argv[2] == 'p' and signTag != 'p':
+        print('Asked for proton runs, so switching to assuming positive momenta!')
+        signTag = 'Pos'
+        isProtonFit = True
+
     print('Configured as: addreg="{}", sigTag={}'.format(addgrep, signTag))
              
     print('*** Settings:')
     print('tag={:}, batch={:}'.format(gTag, gBatch))
-    
-    xafilenames = os.popen('ls ascii*.txt {}'.format(addgrep)).readlines()
-    print(xafilenames)
 
+    egrep = ' | egrep "'
+    irun = 0
+    for run in Runs:
+        egrep = egrep + run
+        if irun < len(Runs) - 1:
+            egrep = egrep + '|'
+        irun = irun + 1
+    egrep = egrep + '"'
+    print(egrep)
+    xafilenames = os.popen('ls ascii*.txt {} {}'.format(egrep,addgrep)).readlines()
+    print(xafilenames)
+    if '1000' in xafilenames[0]:
+        xafilenamestmp = xafilenames[1:]
+        xafilenamestmp.append(xafilenames[0])
+        xafilenames = xafilenamestmp
+    print(xafilenames)
     parts = {'e' : ROOT.kRed,
              'mu' : ROOT.kBlue,
              'pi' : ROOT.kGreen+2}
-    Ns = {}
+    if twoComponentFit:
+        parts = {'e' : ROOT.kRed,
+                 'mupi' : ROOT.kMagenta
+        }
+    
+    if isProtonFit:
+        parts =  {'e' : ROOT.kRed,
+                  'proton' : ROOT.kBlack}
+    
+    Ns = OrderedDict()
     for part in parts:
         Ns[part] = []
     for xafilename in xafilenames:
@@ -102,14 +142,18 @@ def main(argv):
             signStr = 'n'
         pstr = alines[0].split()[1] + signStr
         #print(pstr)
-        
+
+        iline = -1
         for line in alines:
+            print(line)
+            iline = iline + 1
+            print('Processing particle {}'.format(part))
             for part in parts:
-                if part in line.split()[0]:
+                if line.split()[0] == 'N_' + part:
                     Ns[part].append([pstr, float(line.split()[1]), float(line.split()[2])] )
     print(Ns)
 
-    grs = {}
+    grs = OrderedDict()
     for part in parts:
         gr = ROOT.TGraphErrors()
         gr.SetName('gr_' + part)
@@ -122,22 +166,34 @@ def main(argv):
             pstr = data[0].replace('-','')
             ipstr = pstr.replace('p','').replace('n','')
             momentum = abs(int(ipstr))
-            nspills  = data_runs.Runs[pstr][1]
+            nspills  = Runs[pstr][1]
             print('p={} spills={}'.format(pstr, nspills))
             n = data[1] / nspills * tsf
             err = data[2] / nspills * tsf
+            print(part, n)
             gr.SetPoint(j, momentum, n)
             gr.SetPointError(j, 0, err)
 
-    canname = 'MultiPerSpill_TBJuly2022_' + signTag
+    print(grs)
+    canname = 'MultiPerSpill_TBJuly2022_' + signTag + "_" + argv[2]
     can = ROOT.TCanvas(canname, canname, 100, 100, 1100, 800)
     cans.append(can)
 
     pmin = 180.
     pmax = 300.
     y0 = 0
-  
     y1 = 20 * tsf
+
+    if twoComponentFit:
+        pmin = 290.
+        pmax = 370.
+        y1 = 80 * tsf
+    
+    if isProtonFit:
+        pmin = 300.
+        pmax = 1100.
+        y1 = 1.5*300 * tsf
+
     h2 = ROOT.TH2D("tmp", "tmp;p [MeV/c];N / day", 100, pmin, pmax, 100, y0, y1)
     h2.SetStats(0)
     h2.Draw()
@@ -157,11 +213,15 @@ def main(argv):
         gr.SetMarkerStyle(20)
         gr.SetMarkerSize(1.2)
         if part != 'e':
+            print('Drawing graph for {}'.format(part))
             gr.Draw(opt)
-            texX = ''
+            printGr(gr)
+            texX = part
             if part == 'pi' or part == 'mu':
-                texX = '#'
-            leg.AddEntry(gr, 'N_{' + texX + part + '} / spill (' + signTag + ')', 'PL')
+                texX = '#' + part
+            if part == 'mupi':
+                texX = '#mu+#pi'
+            leg.AddEntry(gr, 'N_{' + texX + '} / spill (' + signTag + ')', 'PL')
     leg.Draw()
 
     
