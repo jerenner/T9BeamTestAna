@@ -4,8 +4,10 @@
 #include "TCanvas.h"
 #include "TLegend.h"
 #include "TFile.h"
+#include "TH1D.h"
 #include "TH2D.h"
 #include "TF1.h"
+#include "TLine.h"
 #include "TString.h"
 
 const double cc = 299792458.;
@@ -16,7 +18,7 @@ double GetBeta(double mass, double mom){
     return beta;
 }
 
-  double GetTofDiffWrtE(double mass, double mom, double me, double L = 2.9){
+double GetTofDiffWrtE(double mass, double mom, double me, double L = 2.9){
     return L/cc* ( sqrt(1.+pow(mass/mom,2)) - sqrt(1.+pow(me/mom,2))*1) * 1e9;
 }
 
@@ -24,6 +26,8 @@ void FitTOF(string fileName, int p){
     double m[4]={0.511, 105.66, 139.57, 938.470};
     double c = 0.299792458;
     double l = 2.9;
+
+    bool isThreeComponentFit = fabs(p) < 299.;
 
     string ptag = " (Pos)";
     if (p < 0.)
@@ -34,6 +38,16 @@ void FitTOF(string fileName, int p){
     TH1D* h1 = (TH1D*) inFile->Get("hTOFAll");
     TH1D* h2 = (TH1D*) inFile->Get("hTOFEl");
     TH1D* h3 = (TH1D*) inFile->Get("hTOFOther");
+
+    // time diffs of mu and pi to e
+    for (int ibin = 0; ibin < h1->GetNbinsX()+1; ++ibin) {
+      cout << "hall i=" << ibin << " y=" << h1->GetBinContent(ibin) << endl;
+    }
+    
+    int imax = h1->GetMaximumBin();
+    double xe = h1->GetBinCenter(imax);
+    double dtmu = GetTofDiffWrtE(m[1], p, m[0]);
+    double dtpi = GetTofDiffWrtE(m[2], p, m[0]);
 
     cout << "Integrals: " 
 	 << " h1: " << h1->Integral()
@@ -86,15 +100,17 @@ void FitTOF(string fileName, int p){
     h3->SetStats(kFALSE);
     
     TF1* func = new TF1("func", "[0]*TMath::Gaus(x, [2], [3], 1) + [1]*TMath::Gaus(x, [5], [7], 1) + [4]*TMath::Gaus(x, [6], [7], 1)", 38, 43.5);
-
-    double A = h1 -> GetMaximum();
+    
+    double A = h3 -> GetMaximum();//func0 -> GetParameter(0); //h1 -> GetMaximum();
     func->SetParName(0, "norm1");
-    func->SetParameter(0, func0 -> GetParameter(0));
-    //    func->SetParLimits(0, 0.1*A, 2.*A);
+    func->SetParameter(0, A);
+    if (!isThreeComponentFit)
+      func->SetParLimits(0, 0.6*A, 1.2*A);
     
     func->SetParName(1, "norm2");
-    func->SetParameter(1, h3 -> GetMaximum()/2.);
-    //    func->SetParLimits(1, 0, 0.8*A);
+    func->SetParameter(1, 0.3*A); // h3 -> GetMaximum()/2.);
+    if (!isThreeComponentFit)
+      func->SetParLimits(1, 0, 0.6*A);
 
     double delta = 0.05;    
     func->SetParName(2, "mean_e");
@@ -107,24 +123,25 @@ void FitTOF(string fileName, int p){
     //    func->SetParLimits(3, 0.4*h1->GetStdDev(), 1.2*h1->GetStdDev()); 
     
     func->SetParName(4, "norm3");
-    func->SetParameter(4, h3 -> GetMaximum()/3.);
-    //    func->SetParLimits(4, 0, 0.8*A);
+    func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
+    func->SetParLimits(4, 0, 0.5*A);
 
-    double val1 = h3->GetMean()+l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
+    double mdelta = 0.15;
+    double val1 = xe + dtmu; // func0 -> GetParameter(1) + dtmu ;// h3 ->GetMean() +l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
     func->SetParName(5, "mean_mu");
     func->SetParameter(5, val1);
     //func->FixParameter(5, val1);
-    func->SetParLimits(5, (1. - delta)*val1, (1. + delta)*val1);       
+    func->SetParLimits(5, (1. - mdelta)*val1, (1. + mdelta)*val1);       
     
     /*func->SetParName(6, "sigma_mu");
     func->SetParameter(6, h3->GetStdDev());
     func->SetParLimits(6, 0.9*h3->GetStdDev(), 1.1*h3->GetStdDev()); */
     
-    double val2 = h3->GetMean()+l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
+    double val2 = func0 -> GetParameter(1) + dtpi; // h3->GetMean()  l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
     func->SetParName(6, "mean_pi");
     func->SetParameter(6, val2);
-    //func->FixParameter(6, val2);
-    func->SetParLimits(6,  (1. - delta)*val2,  (1. - delta)*val2);       
+    func->FixParameter(6, val2);
+    func->SetParLimits(6,  (1. - mdelta)*val2,  (1. - mdelta)*val2);       
     
     func->SetParName(7, "sigma_mupi");
     //func->FixParameter(2, 0.215);
@@ -135,7 +152,11 @@ void FitTOF(string fileName, int p){
     for (int ip = 0; ip < func -> GetNpar(); ++ ip) {
       cout << ip << " " << func->GetParName(ip) << " " << func->GetParameter(ip) << endl;      
     }
-    
+
+    if (!isThreeComponentFit) {
+      func -> FixParameter(4, 0.);
+      func -> FixParameter(6, 0.);
+    }
     h3->Fit(func);
     
     TCanvas *cv1 = new TCanvas("cv1", "", 1200, 800);
@@ -162,10 +183,14 @@ void FitTOF(string fileName, int p){
     func2->SetParameter(0, func->GetParameter(1));
     func2->SetParameter(1, func->GetParameter(5));
     func2->SetParameter(2, func->GetParameter(7));
-    
-    func3->SetParameter(0, func->GetParameter(4));
-    func3->SetParameter(1, func->GetParameter(6));
-    func3->SetParameter(2, func->GetParameter(7));
+
+    if (isThreeComponentFit) {
+      func3->SetParameter(0, func->GetParameter(4));
+      func3->SetParameter(1, func->GetParameter(6));
+      func3->SetParameter(2, func->GetParameter(7));
+      func3->SetLineWidth(2);
+      func3->SetLineColor(kGreen+1);
+    }
     
     func1->SetLineWidth(2);
     func1->SetLineColor(kRed+1);
@@ -173,9 +198,7 @@ void FitTOF(string fileName, int p){
     func2->SetLineWidth(2);
     func2->SetLineColor(kBlue+1);
     
-    func3->SetLineWidth(2);
-    func3->SetLineColor(kGreen+1);
-
+   
     TLegend *leg1 = new TLegend(0.60, 0.6, 0.9, 0.88);
     leg1 -> SetBorderSize(0);
     int ip = int(fabs(p));
@@ -183,54 +206,53 @@ void FitTOF(string fileName, int p){
     
     int Ne = func->GetParameter(0)/h1->GetBinWidth(1);
     int Nmu = func->GetParameter(1)/h1->GetBinWidth(1);
-    int Npi = func->GetParameter(4)/h1->GetBinWidth(1);
-    
+    int Npi = 0.;
     int NeErr = func->GetParError(0)/h1->GetBinWidth(1);
     int NmuErr = func->GetParError(1)/h1->GetBinWidth(1);
-    int NpiErr = func->GetParError(4)/h1->GetBinWidth(1);
-    
+    int NpiErr = 0.;
+    if (isThreeComponentFit) {
+      func->GetParameter(4)/h1->GetBinWidth(1);
+      int NpiErr = func->GetParError(4)/h1->GetBinWidth(1);
+    }
+        
     leg1->AddEntry(h3,"Data", "PE");
     leg1->AddEntry(func, "Fit", "L");
     title = "Fit - e^{+}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
     leg1->AddEntry(func1, title.c_str(), "L");
     title = "Fit - #mu^{+}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
     leg1->AddEntry(func2, title.c_str(), "L");
-    title = "Fit - #pi^{+}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
-    leg1->AddEntry(func3, title.c_str(), "L");
     
+    if (isThreeComponentFit) {
+      title = "Fit - #pi^{+}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
+      leg1->AddEntry(func3, title.c_str(), "L");
+    }
     
     func1->Draw("Csame");
-    func2->Draw("Csame");
-    func3->Draw("Csame");
+    func2->Draw("Csame");          
+    if (isThreeComponentFit)
+      func3->Draw("Csame");
     
     leg1->Draw("same");
-    string name = fileName.substr(0, fileName.size()-5) + "_TOFfit.png";
-    string namepdf = fileName.substr(0, fileName.size()-5) + "_TOFfit.pdf";
-    cv1->Print(name.c_str());
-    cv1->Print(namepdf.c_str());    
-
+ 
 
     // TLines
     int ls = 2;
     int lw = 2;
-    double y0 = h1->GetMinimum();
-    int imax = h1->GetMaximumBin();
-    double y1 = 1.1*h1->GetBinContent(imax);
-    double xe = h1->GetBinCenter(imax);
+    double y0 = h3->GetMinimum();
+    double y1 = 1.1* h3->GetBinContent(imax);
+    xe = func -> GetParameter(2);
     TLine *le = new TLine(xe, y0, xe, y1);
     le -> SetLineColor(kRed+1);
     le -> SetLineStyle(ls);
     le -> SetLineWidth(lw);
     le -> Draw();
 
-    double dtmu = GetTofDiffWrtE(m[1], p, m[0]);
     TLine *lmu = new TLine(xe + dtmu, y0, xe + dtmu, y1);
     lmu -> SetLineColor(kBlue+1);
     lmu -> SetLineStyle(ls);
     lmu -> SetLineWidth(lw);
     lmu -> Draw();
 
-    double dtpi = GetTofDiffWrtE(m[2], p, m[0]);
     TLine *lpi = new TLine(xe + dtpi, y0, xe + dtpi, y1);
     lpi -> SetLineColor(kGreen+1);
     lpi -> SetLineStyle(ls);
@@ -243,6 +265,10 @@ void FitTOF(string fileName, int p){
     lp -> SetLineStyle(ls);
     lp -> SetLineWidth(lw);
     lp -> Draw();
+
+    // todo:
+    // proton line for p > 400
+
     
     cout << GetBeta(m[0], p) << " " << GetBeta(m[1], p) << " " << GetBeta(m[2], p) << " " << GetBeta(m[3], p) << endl;
     cout << l/c/GetBeta(m[0], p) << " " << l/c/GetBeta(m[1], p) << " " << l/c/GetBeta(m[2], p) << " " << l/c/GetBeta(m[3], p) << endl;
@@ -252,16 +278,24 @@ void FitTOF(string fileName, int p){
     
     cout << "N_e = " <<  func->GetParameter(0)/h1->GetBinWidth(1) << endl;
     cout << "N_mu = " <<  func->GetParameter(1)/h1->GetBinWidth(1) << endl;
-    cout << "N_pi = " <<  func->GetParameter(4)/h1->GetBinWidth(1) << endl;
+    if (isThreeComponentFit) 
+      cout << "N_pi = " <<  func->GetParameter(4)/h1->GetBinWidth(1) << endl;
 
     TString asciiname = "ascii_" + TString(inFile->GetName()).ReplaceAll(".root",".txt");
     ofstream *asciifile = new ofstream(asciiname.Data());
     (*asciifile) << "p " << p << endl;
-    (*asciifile) << "N_e " << func->GetParameter(0)/h1->GetBinWidth(1) << endl;
-    (*asciifile) << "N_mu " <<  func->GetParameter(1)/h1->GetBinWidth(1) << endl;
-    (*asciifile) << "N_pi " <<  func->GetParameter(4)/h1->GetBinWidth(1) << endl;
+    (*asciifile) << "N_e " << func->GetParameter(0)/h1->GetBinWidth(1) << " " << NeErr << endl;
+    (*asciifile) << "N_mu " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
+    if (isThreeComponentFit) 
+      (*asciifile) << "N_pi " <<  func->GetParameter(4)/h1->GetBinWidth(1) << " " << NpiErr << endl;
     if (asciifile) asciifile->close();
 
+    string name = fileName.substr(0, fileName.size()-5) + "_TOFfit.png";
+    string namepdf = fileName.substr(0, fileName.size()-5) + "_TOFfit.pdf";
+    cv1->Print(name.c_str());
+    cv1->Print(namepdf.c_str());    
+
+    
     cout << "DONE!" << endl;
     cout << "See also " << asciiname.Data() << endl;
       

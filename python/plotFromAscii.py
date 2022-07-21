@@ -13,6 +13,14 @@ stuff = []
 ##########################################
 # https://www.tutorialspoint.com/python/python_command_line_arguments.htm
 def main(argv):
+
+    # CONVERSION CONSTANTS
+    spillSep = 40. # s
+    secsInDay = 24*3600
+    tsf = secsInDay / spillSep
+
+    ROOT.gStyle.SetPadLeftMargin(0.15)
+    
     #if len(sys.argv) > 1:
     #  foo = sys.argv[1]
 
@@ -50,11 +58,14 @@ def main(argv):
 
     ROOT.gStyle.SetOptTitle(0)
 
+    if len(argv) < 2:
+        print('Usage: need to specify n or p for negative or positive momenta to plot the mu and pi yields over momenta!')
+        print('{} n/p'.format(argv[0]))
+        exit(1)
+    
 
     addgrep = ''
     signTag = 'all'
-    
-
     print(argv)
     if len(argv) > 1:
          if argv[1] == 'n' or argv[1] == '_n' or argv[1] == 'neg' or argv[1] == 'Neg' or argv[1] == '_neg' or argv[1] == '_Neg':
@@ -63,12 +74,14 @@ def main(argv):
          if argv[1] == 'p' or argv[1] == '_p' or argv[1] == 'pos' or argv[1] == 'Pos' or argv[1] == '_pos' or argv[1] == '_Pos':
              addgrep = ' | grep p_'
              signTag = 'Pos'
-    
+             
+    print('Configured as: addreg="{}", sigTag={}'.format(addgrep, signTag))
+             
     print('*** Settings:')
     print('tag={:}, batch={:}'.format(gTag, gBatch))
     
     xafilenames = os.popen('ls ascii*.txt {}'.format(addgrep)).readlines()
-
+    print(xafilenames)
 
     parts = {'e' : ROOT.kRed,
              'mu' : ROOT.kBlue,
@@ -84,51 +97,71 @@ def main(argv):
         
         for aline in afile.readlines():
             alines.append(aline)
-        pstr = alines[0].split()[1] + alines[0].split()[0]
+        signStr = 'p'
+        if int(alines[0].split()[1]) < 0:
+            signStr = 'n'
+        pstr = alines[0].split()[1] + signStr
+        #print(pstr)
         
         for line in alines:
             for part in parts:
                 if part in line.split()[0]:
-                    Ns[part].append([pstr, float(line.split()[1]) ] )
+                    Ns[part].append([pstr, float(line.split()[1]), float(line.split()[2])] )
     print(Ns)
 
     grs = {}
     for part in parts:
-        gr = ROOT.TGraph()
+        gr = ROOT.TGraphErrors()
         gr.SetName('gr_' + part)
         grs[part] = gr
 
     for part in parts:
         gr = grs[part]
-        for pair in Ns[part]:
+        for data in Ns[part]:
             j = gr.GetN()
-            pstr = pair[0].replace('-','')
+            pstr = data[0].replace('-','')
             ipstr = pstr.replace('p','').replace('n','')
             momentum = abs(int(ipstr))
-            n = pair[1] / data_runs.Runs[pstr][1]
+            nspills  = data_runs.Runs[pstr][1]
+            print('p={} spills={}'.format(pstr, nspills))
+            n = data[1] / nspills * tsf
+            err = data[2] / nspills * tsf
             gr.SetPoint(j, momentum, n)
+            gr.SetPointError(j, 0, err)
 
     canname = 'MultiPerSpill_TBJuly2022_' + signTag
     can = ROOT.TCanvas(canname, canname, 100, 100, 1100, 800)
     cans.append(can)
 
-    pmin = 150.
-    pmax = 400.
-    h2 = ROOT.TH2D("tmp", "tmp;p [MeV/c];N / spill", 100, pmin, pmax, 100, 0, 50.e1)
+    pmin = 180.
+    pmax = 300.
+    y0 = 0
+  
+    y1 = 20 * tsf
+    h2 = ROOT.TH2D("tmp", "tmp;p [MeV/c];N / day", 100, pmin, pmax, 100, y0, y1)
     h2.SetStats(0)
     h2.Draw()
 
+    ROOT.gPad.SetGridy(1)
+    
     leg = ROOT.TLegend(0.55, 0.7, 0.88, 0.88)
     leg.SetBorderSize(0)
     leg.SetHeader('WCTE TB July 2022')
-    opt = 'PL'
+    opt = 'PLe1'
     for part in grs:
         gr = grs[part]
         gr.SetMarkerColor(parts[part])
         gr.SetLineColor(parts[part])
+        gr.SetLineStyle(1)
+        gr.SetLineWidth(2)
         gr.SetMarkerStyle(20)
-        gr.Draw(opt)
-        leg.AddEntry(gr, 'N_{' + part + '} / spill (' + signTag + ')', 'PL')
+        gr.SetMarkerSize(1.2)
+        if part != 'e':
+            gr.Draw(opt)
+            texX = ''
+            if part == 'pi' or part == 'mu':
+                texX = '#'
+            leg.AddEntry(gr, 'N_{' + texX + part + '} / spill (' + signTag + ')', 'PL')
     leg.Draw()
 
     
