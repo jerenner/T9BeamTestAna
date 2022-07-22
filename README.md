@@ -2,7 +2,7 @@
 Analysis package for the T9 beam test
 
 
-To compile the code type make in the main directory.
+To compile the code type **make** in the main directory.
 
 ## Processing data
 
@@ -55,7 +55,7 @@ One has to specify whether really run (0/1), or just print the commands to choos
 Output are png's, pdf's; and mainly ascii files with fitted numbers of e, mu, pi; or p; or mu+pi over 300 MeV.
  - E.g. ascii_output_220p_plots.txt
 
-## plotting the mu and pi yields scaled to per day rates
+## Plotting the mu and pi yields scaled to per day rates
 
  The yields scalling is based on interval between spills of 40s; as function of the momentum.
  
