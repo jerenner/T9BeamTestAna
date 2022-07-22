@@ -55,13 +55,17 @@ Output are png's, pdf's; and mainly ascii files with fitted numbers of e, mu, pi
  - E.g. ascii_output_220p_plots.txt
 
 ## plotting the mu and pi yields scaled to per day rates based on interval between spills of 40s; as function of the momentum:
-This is done by python/plotFromAscii.py for which one needs to choose the negative or positive beam p/n and the momenta range (low, high, or 'p' for protons).
+ This is done by python/plotFromAscii.py for which one needs to choose the negative or positive beam p/n and the momenta range (low, high, or 'p' for protons).
 
- ** python ./python/plotFromAscii.py p low
- ** python ./python/plotFromAscii.py n low
- ** python ./python/plotFromAscii.py p high
- ** python ./python/plotFromAscii.py n high
-python ./python/plotFromAscii.py p p # for protons
+  ** python ./python/plotFromAscii.py p low
+ 
+  ** python ./python/plotFromAscii.py n low
+ 
+  ** python ./python/plotFromAscii.py p high
+ 
+  ** python ./python/plotFromAscii.py n high
+ 
+  ** python ./python/plotFromAscii.py p p # for protons
 
 One can make a html page for viewing the fit results:
  ** ./scripts/make_html.sh
