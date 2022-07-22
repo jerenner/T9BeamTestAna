@@ -29,12 +29,14 @@ if 'f' in argv[1] or 'F' in argv[1]:
 Runs = pytools.getRuns(argv[2])
                   
 print('Configured as: RunAll: {} FitOnly: {}'.format(RunAll, FitOnly))
-# make a link to you data directory
+
+# make a link to you data directory!
 datadir = 'data/'
+
 listdir = 'lists/'
+os.system('mkdir -p {}'.format(listdir))
 
 #################################################
-
 
 for p in Runs:
          print('*** {} ***'.format(p))
