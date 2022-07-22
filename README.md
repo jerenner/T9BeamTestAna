@@ -47,9 +47,9 @@ Create a link name 'data' to a folded holding the TB ROOT files in name format a
 Running the waveform analysis, plotting and fitting for all momenta:
 One has to specify whether really run (0/1), or just print the commands to choose from, or optionally not run but just fit by '0f'. Momentum range low/high/p must be specified, so e.g.:
 
-  ** python ./python/run_momenta.py 1 low     # run, make histos, fit the TOF; for low momenta
-  ** python ./python/run_momenta.py 0f high   # do not run, just fit, higher momenta
-  ** python ./python/run_momenta.py 0 p       # just print commands for the proton runs
+  **python ./python/run_momenta.py 1 low     # run, make histos, fit the TOF; for low momenta
+  **python ./python/run_momenta.py 0f high   # do not run, just fit, higher momenta
+  **python ./python/run_momenta.py 0 p       # just print commands for the proton runs
 
 Output are png's, pdf's; and mainly ascii files with fitted numbers of e, mu, pi; or p; or mu+pi over 300 MeV.
  - E.g. ascii_output_220p_plots.txt
@@ -57,15 +57,15 @@ Output are png's, pdf's; and mainly ascii files with fitted numbers of e, mu, pi
 ## plotting the mu and pi yields scaled to per day rates based on interval between spills of 40s; as function of the momentum:
  This is done by python/plotFromAscii.py for which one needs to choose the negative or positive beam p/n and the momenta range (low, high, or 'p' for protons).
 
-  ** python ./python/plotFromAscii.py p low
+  **python ./python/plotFromAscii.py p low
  
-  ** python ./python/plotFromAscii.py n low
+  **python ./python/plotFromAscii.py n low
  
-  ** python ./python/plotFromAscii.py p high
+  **python ./python/plotFromAscii.py p high
  
-  ** python ./python/plotFromAscii.py n high
+  **python ./python/plotFromAscii.py n high
  
-  ** python ./python/plotFromAscii.py p p # for protons
+  **python ./python/plotFromAscii.py p p # for protons
 
 One can make a html page for viewing the fit results:
  ** ./scripts/make_html.sh
