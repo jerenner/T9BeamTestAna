@@ -40,6 +40,9 @@ The list of runs for every momentum is stored in python/data_runs.py
 
 The runs are split to low (200--280 MeV), high (300--360 MeV) and p (>= 400 MeV) runs.
 
+Create a link name 'data' to a folded holding the TB ROOT files in name format as root_run_000153_0000_clean.root
+ln -s YOURPATHTODATA data
+
 Running the waveform analysis, plotting and fitting for all momenta:
 One has to specify whether really run (0/1), or just print the commands to choose from, or optionally not run but just fit by '0f'. Momentum range low/high/p must be specified, so e.g.:
 
@@ -58,4 +61,7 @@ python ./python/plotFromAscii.py n low
 python ./python/plotFromAscii.py p high
 python ./python/plotFromAscii.py n high
 python ./python/plotFromAscii.py p p # for protons
+
+One can make a html page for viewing the fit results:
+./scripts/make_html.sh
 
