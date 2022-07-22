@@ -13,7 +13,7 @@ FitOnly = False
 argv = os.sys.argv
 
 print(argv)
-if len(argv) < 2:
+if len(argv) < 3:
          print('Usage:')
          print('{} 0/1[f] low/high/p')
          print('1: run the commands, incl. the tree analysis')
