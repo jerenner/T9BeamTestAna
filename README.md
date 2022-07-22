@@ -37,7 +37,7 @@ Example running:
 ## Additional scripting over all momenta
 
 The list of runs for every momentum is stored in **python/data_runs.py**
- - edit as needed, must enter also the total number of spills for the runs
+ - edit as needed, must enter also the total number of spills for the runs. The pipe separator between runs is needed as this is used to grep the proper runs. Again, 'p' and 'n' stand for positive and negative charged particles in given momentum setup.
 
 The runs are split to low (200--280 MeV), high (300--360 MeV) and p (>= 400 MeV) runs.
 
