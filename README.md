@@ -26,9 +26,9 @@ The script will use int momentum to recognize which cuts it needs to use. The sc
   - TOF histograms that are used to estimate the fraction of particles.  
 
 ## Fitting: the TOF distribution:
-scripts/FitTOF.C, compilable ROOT macro
- -- By default, a 3-component fit of 3 Gaussians is fitted to extract the number of e, mu and pi events;
- -- In the macro, booleans isThreeComponentFit and isProtonFit are set automatically based on the momentum.
+Done by **scripts/FitTOF.C**, a compilable ROOT macro
+ - By default, a 3-component fit of 3 Gaussians is fitted to extract the number of e, mu and pi events;
+ - In the macro, booleans isThreeComponentFit and isProtonFit are set automatically based on the momentum.
 
 Example running:
  ** root -l "scripts/FitTOF.C(\"output_260n_plots.root\",-260)"
@@ -42,9 +42,10 @@ The list of runs for every momentum is stored in python/data_runs.py
 The runs are split to low (200--280 MeV), high (300--360 MeV) and p (>= 400 MeV) runs.
 
 Create a link name 'data' to a folded holding the TB ROOT files in name format as root_run_000153_0000_clean.root
-  ** ln -s YOURPATHTODATA data
+  -  ln -s YOURPATHTODATA data
 
-Running the waveform analysis, plotting and fitting for all momenta:
+Running the waveform analysis, plotting and fitting for all momenta: done by **./python/run_momenta.py**
+
 One has to specify whether really run (0/1), or just print the commands to choose from, or optionally not run but just fit by '0f'. Momentum range low/high/p must be specified, so e.g.:
 
  - python ./python/run_momenta.py 1 low     # run, make histos, fit the TOF; for low momenta
@@ -54,8 +55,10 @@ One has to specify whether really run (0/1), or just print the commands to choos
 Output are png's, pdf's; and mainly ascii files with fitted numbers of e, mu, pi; or p; or mu+pi over 300 MeV.
  - E.g. ascii_output_220p_plots.txt
 
-## plotting the mu and pi yields scaled to per day rates based on interval between spills of 40s; as function of the momentum:
- This is done by python/plotFromAscii.py for which one needs to choose the negative or positive beam p/n and the momenta range (low, high, or 'p' for protons).
+## plotting the mu and pi yields scaled to per day rates
+
+ - ...based on interval between spills of 40s; as function of the momentum:
+ - This is done by **python/plotFromAscii.py** for which one needs to choose the negative or positive beam p/n and the momenta range (low, high, or 'p' for protons).
 
  - python ./python/plotFromAscii.py p low
  
