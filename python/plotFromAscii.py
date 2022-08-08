@@ -221,7 +221,7 @@ def main(argv):
                 texX = '#' + part
             if part == 'mupi':
                 texX = '#mu+#pi'
-            leg.AddEntry(gr, 'N_{' + texX + '} / spill (' + signTag + ')', 'PL')
+            leg.AddEntry(gr, 'N_{' + texX + '} / day (' + signTag + ')', 'PL')
     leg.Draw()
 
     

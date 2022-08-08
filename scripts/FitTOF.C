@@ -304,20 +304,24 @@ void FitTOF(string fileName, int p){
         
     leg1->AddEntry(h3,"Data", "PE");
     leg1->AddEntry(func, "Fit", "L");
-    title = "Fit - e^{+}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
+
+    string ssignum = "+";
+    if (p < 0)
+      ssignum = "-";
+    title = "Fit - e^{" + ssignum + "}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
     leg1->AddEntry(func1, title.c_str(), "L");
 
   
     
     if (isThreeComponentFit) {
-      title = "Fit - #mu^{+}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
-      title = "Fit - #pi^{+}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
+      title = "Fit - #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+      title = "Fit - #pi^{" + ssignum + "}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
       leg1->AddEntry(func3, title.c_str(), "L");
     } else {
       if (!isProtonFit)
-	title = "Fit - #mu^{+}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+	title = "Fit - #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
       else	
-	title = "Fit - p^{+}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+	title = "Fit - p^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
     }
     leg1->AddEntry(func2, title.c_str(), "L");
     
