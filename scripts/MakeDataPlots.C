@@ -34,7 +34,12 @@ void MakeDataPlots(string fileName, int mom){
     TH1D hTOFOther("hTOFOther", "", 120, 37.5, 43.5);
     TH1D hT0("hRef_T0", "", 270, 50, 320);
     TH1D hT1("hRef_T1", "", 270, 50, 320);
-    
+
+    // jiri 
+    TH1D hTimeReso0("hTimeReso0", "", 200, -100, 100);
+    TH1D hTimeReso1("hTimeReso1", "", 200, -100, 100);
+    TH1D hTimeReso0_zoom("hTimeReso0_zoom", "", 160, 20, 30);
+    TH1D hTimeReso1_zoom("hTimeReso1_zoom", "", 160, -5, 5);
     
     vector<TH1D> hCharge;
     vector<TH1D> hVoltage;
@@ -98,8 +103,22 @@ void MakeDataPlots(string fileName, int mom){
             hPedestalSigma.at(j).Fill(pedestalSigma[j]);   
 
         }
-  
-  
+
+
+	// JK's time resolution
+        double t0a = (signalTime->at(8).at(indices.at(8))   + signalTime->at(11).at(indices.at(11)))/2.;
+        double t0b = (signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)))/2.;
+        double t1a = (signalTime->at(12).at(indices.at(12)) + signalTime->at(15).at(indices.at(15)))/2.;
+        double t1b = (signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)))/2.;
+	// time diffs for time resolution histogramme:
+	double t0diff = t0a - t0b;
+	double t1diff = t1a - t1b;
+	// Fill resolution histograms:
+	hTimeReso0.Fill(t0diff);
+	hTimeReso1.Fill(t1diff);
+	hTimeReso0_zoom.Fill(t0diff);
+	hTimeReso1_zoom.Fill(t1diff);
+	  
         double t0 = (signalTime->at(8).at(indices.at(8)) + signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)) + signalTime->at(11).at(indices.at(11)))/4.;
         double t1 = (signalTime->at(12).at(indices.at(12)) + signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)) + signalTime->at(15).at(indices.at(15)))/4.;
 
@@ -314,6 +333,12 @@ void MakeDataPlots(string fileName, int mom){
     hTOF.Write();
     hT0.Write();
     hT1.Write();
+
+    hTimeReso0.Write();
+    hTimeReso1.Write();
+    hTimeReso0_zoom.Write();
+    hTimeReso1_zoom.Write();
+
     for (auto hist: hVoltage) hist.Write();
     for (auto hist: hCharge) hist.Write();
     for (auto hist: hHit) hist.Write();
