@@ -1,3 +1,7 @@
+//
+// Matej Pavin, modif. Jiri Kvita
+//
+
 #include <iostream>
 #include <fstream>
 
@@ -9,21 +13,34 @@
 #include "TF1.h"
 #include "TLine.h"
 #include "TString.h"
+#include "TLatex.h"
+
+// ______________________________________________________
 
 const double cc = 299792458.;
-  
+
+// ______________________________________________________
+
 double GetBeta(double mass, double mom){
     double bg = mom/mass;
     double beta = sqrt(bg*bg/(1+bg*bg));
     return beta;
 }
 
+// ______________________________________________________
+
 double GetTofDiffWrtE(double mass, double mom, double me, double L = 2.9){
     return L/cc* ( sqrt(1.+pow(mass/mom,2)) - sqrt(1.+pow(me/mom,2))*1) * 1e9;
 }
 
-void FitTOF(string fileName, int p){
-    double m[4]={0.511, 105.66, 139.57, 938.470};
+// ______________________________________________________
+// ______________________________________________________
+// ______________________________________________________
+
+
+void FitTOF(string fileName, int p, bool logy = true){
+    // e, mu. pi, proton, deuteron, tritium, alpha
+    double m[7]={0.511, 105.66, 139.57, 938.470, 1876., 3.01604928*931.494102, 3727.379};
     double c = 0.299792458;
     double l = 2.9;
 
@@ -34,7 +51,6 @@ void FitTOF(string fileName, int p){
     cout << " isThreeComponentFit: " << isThreeComponentFit << endl 
 	 << " isProtonFit: " << isProtonFit << endl 
 	 << endl;
-
     
     string ptag = " (Pos)";
     if (p < 0.)
@@ -45,6 +61,9 @@ void FitTOF(string fileName, int p){
     double dtmu = GetTofDiffWrtE(m[1], p, m[0]);
     double dtpi = GetTofDiffWrtE(m[2], p, m[0]);
     double dtp = GetTofDiffWrtE(m[3], p, m[0]);
+    double dtd = GetTofDiffWrtE(m[4], p, m[0]);
+    double dtt = GetTofDiffWrtE(m[5], p, m[0]);
+    double dta = GetTofDiffWrtE(m[6], p, m[0]);
 
     double tmin = 38.;
     double tmax = 43.5;
@@ -110,8 +129,7 @@ void FitTOF(string fileName, int p){
     else
       h1 -> Fit("func0");
 
-
-
+   
     // draw pref-fit:
     h1 -> SetMarkerStyle(20);
     h1 -> Draw("e1 hist same");
@@ -157,7 +175,6 @@ void FitTOF(string fileName, int p){
 	func->SetParameter(1, A);
 	func->SetParLimits(1, 0.8*A, 2*A);	
       }
-
     }
 
 
@@ -222,18 +239,24 @@ void FitTOF(string fileName, int p){
     
     // special cases
 
-    if ( fabs(p + 340) < 1.e-3) {
+    // 340n
+    if (fabs(p + 340) < 1.e-3) {
 	func->SetParameter(0, 1.1*A); 
 	func->SetParLimits(0, 0.1*A, 1.5*A);
 	func->SetParameter(1, A/4);
 	func->SetParLimits(1, 0.*A, 0.3*A);
 	func->SetParameter(6, 1.1*dtval_mu);
-	
       }
-      
 
-
-
+    // 300n
+    if (fabs(p + 300) < 1.e-3) {
+	func->SetParameter(0, A); 
+	func->SetParLimits(0, 0.1*A, 2*A);
+	func->SetParameter(1, A);
+	func->SetParLimits(1, 0.*A, 2*A);
+	func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
+	func->SetParameter(7, 0.9);
+      }
 
     cout << "The initial parameters are: " << endl;
     for (int ip = 0; ip < func -> GetNpar(); ++ ip) {
@@ -249,11 +272,15 @@ void FitTOF(string fileName, int p){
     TCanvas *cv1 = new TCanvas("cv1", "", 1200, 800);
     cv1->cd()->SetTickx(kTRUE);
     cv1->cd()->SetTicky(kTRUE);
-    //cv1->cd()->SetLogy(kTRUE);
-    
+    if (logy) {
+      cv1->cd()->SetLogy(kTRUE);
+      h3->SetMaximum(20.*h3->GetMaximum());
+    }
     h3->SetMarkerStyle(20);
     h3->SetMaximum(1.5*h3->GetMaximum());
     h3->Draw("ep");
+
+
     
     func->SetLineWidth(2);
     func->SetLineColor(kBlack);
@@ -277,7 +304,7 @@ void FitTOF(string fileName, int p){
       func3->SetParameter(2, func->GetParameter(7));
       func3->SetLineWidth(2);
       func3->SetLineColor(kGreen+1);
-    }
+    } 
     
     func1->SetLineWidth(2);
     func1->SetLineColor(kRed+1);
@@ -285,7 +312,15 @@ void FitTOF(string fileName, int p){
     func2->SetLineWidth(2);
     func2->SetLineColor(kBlue+1);
     
-   
+    if (!isThreeComponentFit) {
+      func2->SetLineColor(kBlack);
+      func2->SetLineStyle(2);
+    }
+
+    func1->SetLineStyle(2);
+    func3->SetLineStyle(2);
+
+    
     TLegend *leg1 = new TLegend(0.60, 0.6, 0.9, 0.88);
     leg1 -> SetBorderSize(0);
     int ip = int(fabs(p));
@@ -308,20 +343,19 @@ void FitTOF(string fileName, int p){
     string ssignum = "+";
     if (p < 0)
       ssignum = "-";
-    title = "Fit - e^{" + ssignum + "}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
+    title = "Fit e^{" + ssignum + "}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
     leg1->AddEntry(func1, title.c_str(), "L");
-
   
     
     if (isThreeComponentFit) {
-      title = "Fit - #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
-      title = "Fit - #pi^{" + ssignum + "}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
+      title = "Fit #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+      title = "Fit #pi^{" + ssignum + "}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
       leg1->AddEntry(func3, title.c_str(), "L");
     } else {
       if (!isProtonFit)
-	title = "Fit - #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+	title = "Fit #mu^{" + ssignum + "}+#pi^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
       else	
-	title = "Fit - p^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+	title = "Fit p^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
     }
     leg1->AddEntry(func2, title.c_str(), "L");
     
@@ -338,32 +372,88 @@ void FitTOF(string fileName, int p){
     int lw = 2;
     double y0 = h3->GetMinimum();
     double y1 = 1.1* h3->GetBinContent(imax);
+    double dy = 0.02 * h3->GetBinContent(imax);
+    double dx = -0.005 * ( h3->GetXaxis()->GetXmax() - h3->GetXaxis()->GetXmin() );
     xe = func -> GetParameter(2);
+    
     TLine *le = new TLine(xe, y0, xe, y1);
     le -> SetLineColor(kRed+1);
     le -> SetLineStyle(ls);
     le -> SetLineWidth(lw);
     le -> Draw();
+    TLatex *char_e = new TLatex(xe + dx, y1 + dy, "e");
+    char_e -> SetTextSize(0.03);
+    char_e -> SetTextColor(kRed+1);
+    char_e -> Draw();
 
     TLine *lmu = new TLine(xe + dtmu, y0, xe + dtmu, y1);
     lmu -> SetLineColor(kBlue+1);
     lmu -> SetLineStyle(ls);
     lmu -> SetLineWidth(lw);
     lmu -> Draw();
+    TLatex *char_mu = new TLatex(xe + dx + dtmu, y1 + dy, "#mu");
+    char_mu -> SetTextSize(0.03);
+    char_mu -> SetTextColor(kBlue+1);
+    char_mu -> Draw();
 
     TLine *lpi = new TLine(xe + dtpi, y0, xe + dtpi, y1);
     lpi -> SetLineColor(kGreen+1);
     lpi -> SetLineStyle(ls);
     lpi -> SetLineWidth(lw);
     lpi -> Draw();
+    TLatex *char_pi = new TLatex(xe + dx + dtpi, y1 + dy, "#pi");
+    char_pi -> SetTextSize(0.03);
+    char_pi -> SetTextColor(kGreen+1);
+    char_pi -> Draw();
 
-    double dtpp = GetTofDiffWrtE(m[3], p, m[0]);
-    TLine *lp = new TLine(xe + dtp, y0, xe + dtpp, y1);
+    //double dtpp = GetTofDiffWrtE(m[3], p, m[0]);
+    TLine *lp = new TLine(xe + dtp, y0, xe + dtp, y1);
     lp -> SetLineColor(kBlack);
     lp -> SetLineStyle(ls);
     lp -> SetLineWidth(lw);
     lp -> Draw();
+    TLatex *char_p = new TLatex(xe + dx + dtp, y1 + dy, "p");
+    char_p -> SetTextSize(0.03);
+    char_p -> SetTextColor(kBlack);
+    char_p -> Draw();
+    
+    TLine *ld = new TLine(xe + dtd, y0, xe + dtd, y1);
+    ld -> SetLineColor(kBlack);
+    ld -> SetLineStyle(ls);
+    ld -> SetLineWidth(lw);
+    ld -> Draw();
+    TLatex *char_d = new TLatex(xe + dx + dtd, y1 + dy, "d");
+    char_d -> SetTextSize(0.03);
+    char_d -> SetTextColor(kBlack);
+    char_d -> Draw();
+    
+    TLine *lt = new TLine(xe + dtt, y0, xe + dtt, y1);
+    lt -> SetLineColor(kBlack);
+    lt -> SetLineStyle(ls);
+    lt -> SetLineWidth(lw);
+    lt -> Draw();
+    TLatex *char_t = new TLatex(xe + dx + dtt, y1 + dy, "t");
+    char_t -> SetTextSize(0.03);
+    char_t -> SetTextColor(kBlack);
+    char_t -> Draw();
+    
+    TLine *la = new TLine(xe + dta, y0, xe + dta, y1);
+    la -> SetLineColor(kBlack);
+    la -> SetLineStyle(ls);
+    la -> SetLineWidth(lw);
+    la -> Draw();
+    TLatex *char_a = new TLatex(xe + dx + dta, y1 + dy, "#alpha");
+    char_a -> SetTextSize(0.03);
+    char_a -> SetTextColor(kBlack);
+    char_a -> Draw();
+    
 
+    double chi2 = func0 -> GetChisquare();
+    int ndf = func0 -> GetNDF();
+    TLatex *chi2text = new TLatex(0.13, 0.85, Form("#chi^{2}/ndf = %2.1f/%i = %1.1f", chi2, ndf, chi2/ndf));
+    chi2text -> SetNDC();
+    chi2text -> SetTextSize(0.03);
+    chi2text -> Draw();
      
     cout << GetBeta(m[0], p) << " " << GetBeta(m[1], p) << " " << GetBeta(m[2], p) << " " << GetBeta(m[3], p) << endl;
     cout << l/c/GetBeta(m[0], p) << " " << l/c/GetBeta(m[1], p) << " " << l/c/GetBeta(m[2], p) << " " << l/c/GetBeta(m[3], p) << endl;
@@ -378,6 +468,7 @@ void FitTOF(string fileName, int p){
     } else {
       cout << "N_mupi = " <<  func->GetParameter(1)/h1->GetBinWidth(1) << endl;
     }
+    
     TString asciiname = "ascii_" + TString(inFile->GetName()).ReplaceAll(".root",".txt");
     ofstream *asciifile = new ofstream(asciiname.Data());
     (*asciifile) << "mom " << p << endl;
@@ -404,3 +495,9 @@ void FitTOF(string fileName, int p){
       
     
 }
+
+
+// ______________________________________________________
+// ______________________________________________________
+// ______________________________________________________
+

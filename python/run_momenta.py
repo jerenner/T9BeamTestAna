@@ -1,5 +1,7 @@
 #!/usr/bin/python
 
+# jk 2022
+
 import data_runs
 import pytools
 
@@ -9,22 +11,25 @@ RunAll = False
 #RunAll = True
 
 FitOnly = False
-
+MakeDataPlotsOnly = False
 argv = os.sys.argv
 
 print(argv)
 if len(argv) < 3:
          print('Usage:')
-         print('{} 0/1[f] low/high/p')
+         print('{} 0/1[fm] low/high/p')
          print('1: run the commands, incl. the tree analysis')
          print('0: do not run the commands, neither the tree analysis')
          print('f: do the TOF fit only')
+         print('m: do MakeDataPlots part only only')
          exit(1)
          
 if '1' in argv[1] or 'y' in argv[1] or 'r' in argv[1] or 'R' in argv[1]:
          RunAll = True
 if 'f' in argv[1] or 'F' in argv[1]:
          FitOnly = True
+if 'm' in argv[1] or 'M' in argv[1]:
+         MakeDataPlotsOnly = True
 
 Runs = pytools.getRuns(argv[2])
                   
@@ -49,14 +54,16 @@ for p in Runs:
          
          cmds.append('ls {}*clean*.root | egrep "{}" > {}list_{}.txt'.format(datadir,runs,listdir,p))
          cmds.append('./bin/waveform_analysis.app -i {}list_{}.txt -o output_{}.root -c config/config.json'.format(listdir,p,p))
-         cmds.append('root -l -q "scripts/MakeDataPlots.C(\\"output_{}.root\\", {})"'.format(p,ip))
-         cmds.append('root -l -b -q "scripts/FitTOF.C(\\"output_{}_plots.root\\",{})"'.format(p, ip))
+         cmds.append('root -l -q "scripts/MakeDataPlots.C+(\\"output_{}.root\\", {})"'.format(p,ip))
+         cmds.append('root -l -b -q "scripts/FitTOF.C+(\\"output_{}_plots.root\\",{})"'.format(p, ip))
          
          for cmd in cmds:
                   print(cmd)
                   if RunAll:
                            os.system(cmd)
                   elif FitOnly and 'FitTOF' in cmd:
+                           os.system(cmd)
+                  elif MakeDataPlotsOnly and 'MakeDataPlots' in cmd:
                            os.system(cmd)
 
 

@@ -194,7 +194,7 @@ def main(argv):
         pmax = 1100.
         y1 = 1.5*300 * tsf
 
-    h2 = ROOT.TH2D("tmp", "tmp;p [MeV/c];N / day", 100, pmin, pmax, 100, y0, y1)
+    h2 = ROOT.TH2D("tmp", "tmp;|p| [MeV/c];N / day", 100, pmin, pmax, 100, y0, y1)
     h2.SetStats(0)
     h2.Draw()
 
