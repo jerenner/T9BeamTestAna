@@ -1,9 +1,12 @@
 //
-// Matej Pavin, modif. Jiri Kvita
+// Matej Pavin, modif. Jiri Kvita 2022
 //
 
 #include <iostream>
 #include <fstream>
+
+#include "TROOT.h"
+#include "TStyle.h"
 
 #include "TCanvas.h"
 #include "TLegend.h"
@@ -21,7 +24,7 @@ const double cc = 299792458.;
 
 // ______________________________________________________
 
-double GetBeta(double mass, double mom){
+double GetBeta(double mass, double mom) {
     double bg = mom/mass;
     double beta = sqrt(bg*bg/(1+bg*bg));
     return beta;
@@ -29,18 +32,32 @@ double GetBeta(double mass, double mom){
 
 // ______________________________________________________
 
-double GetTofDiffWrtE(double mass, double mom, double me, double L = 2.9){
+double GetTofDiffWrtE(double mass, double mom, double me, double L = 2.9) {
     return L/cc* ( sqrt(1.+pow(mass/mom,2)) - sqrt(1.+pow(me/mom,2))*1) * 1e9;
 }
 
 // ______________________________________________________
+
+double IntegrateAlongYInGivenXWindow(TH2D *h2, double t0, double tof_reso) {
+  double sum = 0.;
+  int i1 = h2 -> GetXaxis() -> FindBin(t0 - tof_reso);
+  int i2 = h2 -> GetXaxis() -> FindBin(t0 + tof_reso);
+  cout << "Integrating "  << h2 -> GetName() << " with nx=" <<  h2 -> GetXaxis() -> GetNbins() << " in x bin range " << i1 << "," << i2 << endl;
+  for (int i = i1; i <= i2; ++i) {
+    for (int j = 0; j <= h2 -> GetYaxis() -> GetNbins(); ++j) {
+      sum += h2 -> GetBinContent(i, j);
+    }
+  }
+  return sum;
+}
+
 // ______________________________________________________
 // ______________________________________________________
 
 
-void FitTOF(string fileName, int p, bool logy = true){
+void FitTOF(string fileName, int p, bool logy = false) {
     // e, mu. pi, proton, deuteron, tritium, alpha
-    double m[7]={0.511, 105.66, 139.57, 938.470, 1876., 3.01604928*931.494102, 3727.379};
+    double m[7] = {0.511, 105.66, 139.57, 938.470, 1876., 3.01604928*931.494102, 3727.379};
     double c = 0.299792458;
     double l = 2.9;
 
@@ -58,9 +75,11 @@ void FitTOF(string fileName, int p, bool logy = true){
     
     TFile *inFile = new TFile(fileName.c_str(), "READ");
 
+    // mu, pi, protons
     double dtmu = GetTofDiffWrtE(m[1], p, m[0]);
     double dtpi = GetTofDiffWrtE(m[2], p, m[0]);
     double dtp = GetTofDiffWrtE(m[3], p, m[0]);
+    // for fun also deuteron, triton, alpha
     double dtd = GetTofDiffWrtE(m[4], p, m[0]);
     double dtt = GetTofDiffWrtE(m[5], p, m[0]);
     double dta = GetTofDiffWrtE(m[6], p, m[0]);
@@ -83,7 +102,6 @@ void FitTOF(string fileName, int p, bool logy = true){
 
     int imax = h1->GetMaximumBin();
     double xe = h1->GetBinCenter(imax);
-
     
     // time diffs of mu and pi to e
     //for (int ibin = 0; ibin < h1->GetNbinsX()+1; ++ibin) {
@@ -109,7 +127,6 @@ void FitTOF(string fileName, int p, bool logy = true){
     TCanvas *cv0 = new TCanvas("cv0", "", 800, 800);
     cv0 -> Divide(2,2);
 
-
     // pre-fit to get initial pars for the full fit
     cv0->cd(1);
     
@@ -129,7 +146,6 @@ void FitTOF(string fileName, int p, bool logy = true){
     else
       h1 -> Fit("func0");
 
-   
     // draw pref-fit:
     h1 -> SetMarkerStyle(20);
     h1 -> Draw("e1 hist same");
@@ -159,7 +175,6 @@ void FitTOF(string fileName, int p, bool logy = true){
     if (isProtonFit) {
       func->SetParLimits(0, 0, 1.2*A);
     }
-
     
     func->SetParName(1, "norm2");
     func->SetParameter(1, 0.3*A); // h3 -> GetMaximum()/2.);
@@ -176,8 +191,6 @@ void FitTOF(string fileName, int p, bool logy = true){
 	func->SetParLimits(1, 0.8*A, 2*A);	
       }
     }
-
-
 
     double delta = 0.05;    
     func->SetParName(2, "mean_e");
@@ -239,16 +252,7 @@ void FitTOF(string fileName, int p, bool logy = true){
     
     // special cases
 
-    // 340n
-    if (fabs(p + 340) < 1.e-3) {
-	func->SetParameter(0, 1.1*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 0.3*A);
-	func->SetParameter(6, 1.1*dtval_mu);
-      }
-
-    // 300n
+  // 300n
     if (fabs(p + 300) < 1.e-3) {
 	func->SetParameter(0, A); 
 	func->SetParLimits(0, 0.1*A, 2*A);
@@ -257,6 +261,48 @@ void FitTOF(string fileName, int p, bool logy = true){
 	func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
 	func->SetParameter(7, 0.9);
       }
+
+
+    
+    // 340n
+    if (fabs(p + 340) < 1.e-3) {
+	func->SetParameter(0, 1.5*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.3*A);
+	func->SetParameter(6, 1.1*dtval_mu);
+      }
+
+    // 340p
+    if (fabs(p - 340) < 1.e-3) {
+	func->SetParameter(0, 1.*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.*A);
+	func->SetParameter(6, 1.1*dtval_mu);
+      }
+
+    // 360n
+    if (fabs(p + 360) < 1.e-3) {
+	func->SetParameter(0, 1.*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.*A);
+	func->SetParameter(6, 1.1*dtval_mu);
+      }
+
+
+   // 360p
+    if (fabs(p - 360) < 1.e-3) {
+	func->SetParameter(0, 1.*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.*A);
+	func->SetParameter(6, 1.1*dtval_mu);
+      }
+
+
+  
 
     cout << "The initial parameters are: " << endl;
     for (int ip = 0; ip < func -> GetNpar(); ++ ip) {
@@ -476,11 +522,93 @@ void FitTOF(string fileName, int p, bool logy = true){
     if (isProtonFit)
 	(*asciifile) << "N_proton " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
     else {
+
+      double tof_reso = 0.300; // ns	
+      TH2D* hACT2_nonele = (TH2D*) inFile -> Get("hRef_TOFACT2V_nonel");
+      TH2D* hACT2_all = (TH2D*) inFile -> Get("hRef_TOFACT2V");
+      hACT2_nonele -> SetStats(0);
+      hACT2_all -> SetStats(0);
+      
+
       if (isThreeComponentFit) {
 	(*asciifile) << "N_mu " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
 	(*asciifile) << "N_pi " <<  func->GetParameter(4)/h1->GetBinWidth(1) << " " << NpiErr << endl;
+	// integrate the ASC2 distribution below non-ele thr in the TOF time widow to get the ASC muon and pion ID efficiency
+
+	// mu
+	double nACT2_nonele_mu = IntegrateAlongYInGivenXWindow(hACT2_nonele, func->GetParameter(5), tof_reso);
+	double nACT2_all_mu    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(5), tof_reso);
+	double eff_mu          = nACT2_nonele_mu / nACT2_all_mu;
+
+	// pi
+	double pioff = 0.35;
+	double nACT2_nonele_pi = IntegrateAlongYInGivenXWindow(hACT2_nonele, func->GetParameter(6) + pioff, tof_reso);
+	double nACT2_all_pi    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(6) + pioff, tof_reso);
+	double eff_pi          = nACT2_nonele_pi / nACT2_all_pi;
+
+	TString canname = asciiname.ReplaceAll("ascii", "ACT2").ReplaceAll(".txt", "").ReplaceAll("_output", "");
+	TCanvas *h2can = new TCanvas(canname, canname, 200, 200, 1000, 500);
+	h2can -> Divide(2,1);
+
+	gStyle->SetPalette(kSolar);
+	
+	h2can -> cd(1);
+	hACT2_all -> Draw("colz");
+	h2can -> cd(2);
+	hACT2_nonele -> Draw("colz");
+	double x1 = func->GetParameter(5) - tof_reso;
+ 	double x2 = func->GetParameter(5) + tof_reso;
+	double y1 = 	hACT2_nonele -> GetYaxis() -> GetXmax();
+	double y2 = 	hACT2_nonele -> GetYaxis() -> GetXmin();
+
+	TLine *xlmu1 = new TLine(x1, y1, x1, y2);
+	xlmu1 -> SetLineColor(kBlue+1);
+	xlmu1 -> SetLineStyle(ls);
+	xlmu1 -> SetLineWidth(lw);
+	xlmu1 -> Draw();
+
+	TLine *xlmu2 = new TLine(x2, y1, x2, y2);
+	xlmu2 -> SetLineColor(kBlue+1);
+	xlmu2 -> SetLineStyle(ls);
+	xlmu2 -> SetLineWidth(lw);
+	xlmu2 -> Draw();
+
+
+	x1 = pioff+ func->GetParameter(6) - tof_reso;
+ 	x2 = pioff + func->GetParameter(6) + tof_reso;
+	
+	TLine *xlpi1 = new TLine(x1, y1, x1, y2);
+	xlpi1 -> SetLineColor(kGreen+1);
+	xlpi1 -> SetLineStyle(ls);
+	xlpi1 -> SetLineWidth(lw);
+	xlpi1 -> Draw();
+
+	TLine *xlpi2 = new TLine(x2, y1, x2, y2);
+	xlpi2 -> SetLineColor(kGreen+1);
+	xlpi2 -> SetLineStyle(ls);
+	xlpi2 -> SetLineWidth(lw);
+	xlpi2 -> Draw();
+
+	h2can -> Print(canname + ".png");
+	h2can -> Print(canname + ".pdf");
+
+	  
+	// so far zero error on the efficiency...
+	(*asciifile) << "eff_mu " << eff_mu  << " " << 0. << endl;
+	(*asciifile) << "eff_pi " << eff_pi  << " " << 0. << endl;
+	
+	
       } else     
 	(*asciifile) << "N_mupi " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
+      
+      	// mu+pi
+	double nACT2_nonele_mupi = IntegrateAlongYInGivenXWindow(hACT2_nonele, func->GetParameter(5), tof_reso);
+	double nACT2_all_mupi    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(5), tof_reso);
+	double eff_mupi          = nACT2_nonele_mupi / nACT2_all_mupi;
+	// so far zero error on the efficiency...
+	(*asciifile) << "eff_mupi " << eff_mupi  << " " << 0. << endl;
+
+      
     }
     if (asciifile) asciifile->close();
 

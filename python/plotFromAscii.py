@@ -127,8 +127,10 @@ def main(argv):
                   'proton' : ROOT.kBlack}
     
     Ns = OrderedDict()
+    Effs = OrderedDict()
     for part in parts:
         Ns[part] = []
+        Effs[part] = []
     for xafilename in xafilenames:
         afilename = xafilename[:-1]
         print(afilename)
@@ -151,7 +153,12 @@ def main(argv):
             for part in parts:
                 if line.split()[0] == 'N_' + part:
                     Ns[part].append([pstr, float(line.split()[1]), float(line.split()[2])] )
+                if line.split()[0] == 'eff_' + part:
+                    Effs[part].append([pstr, float(line.split()[1]), float(line.split()[2])] )
     print(Ns)
+    print(Effs)
+
+    # Expected particle counts:
 
     grs = OrderedDict()
     for part in parts:
@@ -215,7 +222,7 @@ def main(argv):
         if part != 'e':
             print('Drawing graph for {}'.format(part))
             gr.Draw(opt)
-            printGr(gr)
+            #printGr(gr)
             texX = part
             if part == 'pi' or part == 'mu':
                 texX = '#' + part
@@ -228,6 +235,89 @@ def main(argv):
     can.Update()
     can.Print(can.GetName() + '.png')
     can.Print(can.GetName() + '.pdf')
+
+
+    # Effs:
+
+    grsEff = OrderedDict()
+    for part in parts:
+        if part == 'e':
+            continue
+        gr = ROOT.TGraphErrors()
+        gr.SetName('grEff_' + part)
+        grsEff[part] = gr
+
+    for part in parts:
+        if part == 'e':
+            continue
+        gr = grsEff[part]
+
+        for data in Effs[part]:
+            #print('data ', data)
+            j = gr.GetN()
+            pstr = data[0].replace('-','')
+            ipstr = pstr.replace('p','').replace('n','')
+            momentum = abs(int(ipstr))
+            eff = data[1]
+            err = data[2]
+            print(part, eff)
+            gr.SetPoint(j, momentum, eff)
+            gr.SetPointError(j, 0, err)
+
+    print(grsEff)
+    canname = 'Effs_TBJuly2022_' + signTag + "_" + argv[2]
+    canEff = ROOT.TCanvas(canname, canname, 100, 100, 1100, 800)
+    cans.append(canEff)
+
+    pmin = 180.
+    pmax = 300.
+    y0 = 0
+    y1 = 1.4
+
+    if twoComponentFit:
+        pmin = 290.
+        pmax = 370.
+    
+    if isProtonFit:
+        pmin = 300.
+        pmax = 1100.
+
+    h2Eff = ROOT.TH2D("tmpEff", "tmpEff;|p| [MeV/c];Efficiency", 100, pmin, pmax, 100, y0, y1)
+    h2Eff.SetStats(0)
+    h2Eff.Draw()
+
+    ROOT.gPad.SetGridy(1)
+    
+    legEff = ROOT.TLegend(0.55, 0.7, 0.88, 0.88)
+    legEff.SetBorderSize(0)
+    legEff.SetHeader('WCTE TB July 2022')
+    opt = 'PLe1'
+    for part in grsEff:
+        print('Drawing eff for {}'.format(part))
+        gr = grsEff[part]
+        gr.SetMarkerColor(parts[part])
+        gr.SetLineColor(parts[part])
+        gr.SetLineStyle(1)
+        gr.SetLineWidth(2)
+        gr.SetMarkerStyle(20)
+        gr.SetMarkerSize(1.2)
+        if part != 'e':
+            print('Drawing graph for {}'.format(part))
+            gr.Draw(opt)
+            #printGr(gr)
+            texX = part
+            if part == 'pi' or part == 'mu':
+                texX = '#' + part
+            if part == 'mupi':
+                texX = '#mu+#pi'
+            legEff.AddEntry(gr, '#epsilon_{' + texX + '}^{' + signTag + '}', 'PL')
+    legEff.Draw()
+
+    
+    canEff.Update()
+    canEff.Print(canEff.GetName() + '.png')
+    canEff.Print(canEff.GetName() + '.pdf')
+    
     
     ROOT.gApplication.Run()
     return
