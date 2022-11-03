@@ -85,14 +85,26 @@ void MakeDataPlots(string fileName, int mom) {
     TH2D hTOFACT2C_el("hRef_TOFACT2C_el", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
     TH2D hTOFACT3C_el("hRef_TOFACT3C_el", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
 
-    // non-electrons
-    TH2D hTOFACT1V_nonel("hRef_TOFACT1V_nonel", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, 37.5, 43.5, 200, 0., 1.6);
-    TH2D hTOFACT2V_nonel("hRef_TOFACT2V_nonel", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
-    TH2D hTOFACT3V_nonel("hRef_TOFACT3V_nonel", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
+    // ACT2cut
+    TH2D hTOFACT1V_act2cut("hRef_TOFACT1V_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, 37.5, 43.5, 200, 0., 1.6);
+    TH2D hTOFACT2V_act2cut("hRef_TOFACT2V_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
+    TH2D hTOFACT3V_act2cut("hRef_TOFACT3V_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
     
-    TH2D hTOFACT1C_nonel("hRef_TOFACT1C_nonel", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
-    TH2D hTOFACT2C_nonel("hRef_TOFACT2C_nonel", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
-    TH2D hTOFACT3C_nonel("hRef_TOFACT3C_nonel", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT1C_act2cut("hRef_TOFACT1C_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
+    TH2D hTOFACT2C_act2cut("hRef_TOFACT2C_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT3C_act2cut("hRef_TOFACT3C_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+
+
+    // ACT3cut
+    TH2D hTOFACT1V_act3cut("hRef_TOFACT1V_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, 37.5, 43.5, 200, 0., 1.6);
+    TH2D hTOFACT2V_act3cut("hRef_TOFACT2V_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
+    TH2D hTOFACT3V_act3cut("hRef_TOFACT3V_act3cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
+    
+    TH2D hTOFACT1C_act3cut("hRef_TOFACT1C_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
+    TH2D hTOFACT2C_act3cut("hRef_TOFACT2C_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT3C_act3cut("hRef_TOFACT3C_act3cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+
+
 
     // 2D ACT charges
     TH2D hACT2CACT1C("hRef_ACT2CACT1C", "; ACT2 Charge; ACT1 Charge", 200, 0., 0.002, 200, 0., 0.016);
@@ -122,6 +134,8 @@ void MakeDataPlots(string fileName, int mom) {
         hPedestalSigma.push_back(temp4);
         hTime.push_back(temp5);
     }
+
+    // event loop
     
     for(int i = 0; i < ent; i++) {
 
@@ -328,7 +342,8 @@ void MakeDataPlots(string fileName, int mom) {
 	  } // 1000
 	        
 	  default: {
-	    cout << "WARNING: Using default settings for the " << mom << " MeV/c beam" << endl;
+	    if (i < 10)
+	      cout << "WARNING: Using default settings for the " << mom << " MeV/c beam" << endl;
 	    if (act1v > 0.18)
 	      isEl = true;
 	    if (act2v > 0.025)
@@ -360,15 +375,27 @@ void MakeDataPlots(string fileName, int mom) {
         else {
 	  // non-electrons
 	  hTOFOther.Fill(tof);
+	}
 
-	  hTOFACT1V_nonel.Fill(tof, act1v);
-	  hTOFACT2V_nonel.Fill(tof, act2v);
-	  hTOFACT3V_nonel.Fill(tof, act3v);
+	if (act2v > 0.0060) {
+	  hTOFACT1V_act2cut.Fill(tof, act1v);
+	  hTOFACT2V_act2cut.Fill(tof, act2v);
+	  hTOFACT3V_act2cut.Fill(tof, act3v);
 	      
-	  hTOFACT1C_nonel.Fill(tof, act1c);
-	  hTOFACT2C_nonel.Fill(tof, act2c);
-	  hTOFACT3C_nonel.Fill(tof, act3c);
-	  
+	  hTOFACT1C_act2cut.Fill(tof, act1c);
+	  hTOFACT2C_act2cut.Fill(tof, act2c);
+	  hTOFACT3C_act2cut.Fill(tof, act3c);
+        }
+
+	// TO VALIDATE!!!
+	if (act3v > 0.0060) {
+	  hTOFACT1V_act3cut.Fill(tof, act1v);
+	  hTOFACT2V_act3cut.Fill(tof, act2v);
+	  hTOFACT3V_act3cut.Fill(tof, act3v);
+	      
+	  hTOFACT1C_act3cut.Fill(tof, act1c);
+	  hTOFACT2C_act3cut.Fill(tof, act2c);
+	  hTOFACT3C_act3cut.Fill(tof, act3c);
         }
 
     } // entries
@@ -393,12 +420,21 @@ void MakeDataPlots(string fileName, int mom) {
     hTOFACT2C_el.Write();
     hTOFACT3C_el.Write();
     
-    hTOFACT1V_nonel.Write();
-    hTOFACT2V_nonel.Write();
-    hTOFACT3V_nonel.Write();
-    hTOFACT1C_nonel.Write();
-    hTOFACT2C_nonel.Write();
-    hTOFACT3C_nonel.Write();
+    hTOFACT1V_act2cut.Write();
+    hTOFACT2V_act2cut.Write();
+    hTOFACT3V_act2cut.Write();
+    hTOFACT1C_act2cut.Write();
+    hTOFACT2C_act2cut.Write();
+    hTOFACT3C_act2cut.Write();
+
+
+    hTOFACT1V_act3cut.Write();
+    hTOFACT2V_act3cut.Write();
+    hTOFACT3V_act3cut.Write();
+    hTOFACT1C_act3cut.Write();
+    hTOFACT2C_act3cut.Write();
+    hTOFACT3C_act3cut.Write();
+    
     
     hTOF.Write();
     hT0.Write();

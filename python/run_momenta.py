@@ -1,4 +1,5 @@
-#!/usr/bin/python
+#!/snap/bin/pyroot
+#/usr/bin/python
 
 # jk 2022
 

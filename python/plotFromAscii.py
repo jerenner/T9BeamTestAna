@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/snap/bin/pyroot
 from collections import OrderedDict
 import data_runs
 import pytools

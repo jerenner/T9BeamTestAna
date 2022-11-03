@@ -519,48 +519,69 @@ void FitTOF(string fileName, int p, bool logy = false) {
     ofstream *asciifile = new ofstream(asciiname.Data());
     (*asciifile) << "mom " << p << endl;
     (*asciifile) << "N_e " << func->GetParameter(0)/h1->GetBinWidth(1) << " " << NeErr << endl;
-    if (isProtonFit)
+    if (isProtonFit) {
 	(*asciifile) << "N_proton " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
-    else {
+    } else {
 
       double tof_reso = 0.300; // ns	
-      TH2D* hACT2_nonele = (TH2D*) inFile -> Get("hRef_TOFACT2V_nonel");
+      TH2D* hACT2_act2cut = (TH2D*) inFile -> Get("hRef_TOFACT2V_act2cut");
+      TH2D* hACT3_act3cut = (TH2D*) inFile -> Get("hRef_TOFACT3V_act3cut");
       TH2D* hACT2_all = (TH2D*) inFile -> Get("hRef_TOFACT2V");
-      hACT2_nonele -> SetStats(0);
+      TH2D* hACT3_all = (TH2D*) inFile -> Get("hRef_TOFACT3V");
+      hACT2_act2cut -> SetStats(0);
       hACT2_all -> SetStats(0);
+      hACT3_act3cut -> SetStats(0);
+      hACT3_all -> SetStats(0);
       
-
       if (isThreeComponentFit) {
 	(*asciifile) << "N_mu " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
 	(*asciifile) << "N_pi " <<  func->GetParameter(4)/h1->GetBinWidth(1) << " " << NpiErr << endl;
 	// integrate the ASC2 distribution below non-ele thr in the TOF time widow to get the ASC muon and pion ID efficiency
 
 	// mu
-	double nACT2_nonele_mu = IntegrateAlongYInGivenXWindow(hACT2_nonele, func->GetParameter(5), tof_reso);
+
+	double nACT2_act2cut_mu = IntegrateAlongYInGivenXWindow(hACT2_act2cut, func->GetParameter(5), tof_reso);
 	double nACT2_all_mu    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(5), tof_reso);
-	double eff_mu          = nACT2_nonele_mu / nACT2_all_mu;
+	double eff_mu          = nACT2_act2cut_mu / nACT2_all_mu;
+  cout << " nACT2_act2cut_mu=" << nACT2_act2cut_mu
+       << " nACT2_all_mu=" << nACT2_all_mu
+       << endl;
 
 	// pi
 	double pioff = 0.35;
-	double nACT2_nonele_pi = IntegrateAlongYInGivenXWindow(hACT2_nonele, func->GetParameter(6) + pioff, tof_reso);
-	double nACT2_all_pi    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(6) + pioff, tof_reso);
-	double eff_pi          = nACT2_nonele_pi / nACT2_all_pi;
+	double nACT3_act3cut_pi = IntegrateAlongYInGivenXWindow(hACT3_act3cut, func->GetParameter(6) + pioff, tof_reso);
+	double nACT3_all_pi    = IntegrateAlongYInGivenXWindow(hACT3_all, func->GetParameter(6) + pioff, tof_reso);
+	double eff_pi          = nACT3_act3cut_pi / nACT3_all_pi;
+cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
+     << " nACT3_all_pi=" << nACT3_all_pi
+     << endl;
 
-	TString canname = asciiname.ReplaceAll("ascii", "ACT2").ReplaceAll(".txt", "").ReplaceAll("_output", "");
+	TString canname = asciiname.ReplaceAll("ascii", "ACTCuts").ReplaceAll(".txt", "").ReplaceAll("_output", "");
 	TCanvas *h2can = new TCanvas(canname, canname, 200, 200, 1000, 500);
-	h2can -> Divide(2,1);
+	h2can -> Divide(2,2);
 
 	gStyle->SetPalette(kSolar);
 	
 	h2can -> cd(1);
 	hACT2_all -> Draw("colz");
 	h2can -> cd(2);
-	hACT2_nonele -> Draw("colz");
+	hACT2_act2cut -> Draw("colz");
 	double x1 = func->GetParameter(5) - tof_reso;
  	double x2 = func->GetParameter(5) + tof_reso;
-	double y1 = 	hACT2_nonele -> GetYaxis() -> GetXmax();
-	double y2 = 	hACT2_nonele -> GetYaxis() -> GetXmin();
+	double y1 = 	hACT2_act2cut -> GetYaxis() -> GetXmax();
+	double y2 = 	hACT2_act2cut -> GetYaxis() -> GetXmin();
 
+	h2can -> cd(3);
+	hACT3_all -> Draw("colz");
+	h2can -> cd(4);
+	hACT3_act3cut -> Draw("colz");
+	x1 = func->GetParameter(5) - tof_reso;
+ 	x2 = func->GetParameter(5) + tof_reso;
+	y1 = 	hACT3_act3cut -> GetYaxis() -> GetXmax();
+	y2 = 	hACT3_act3cut -> GetYaxis() -> GetXmin();
+
+	h2can -> cd(2);
+	
 	TLine *xlmu1 = new TLine(x1, y1, x1, y2);
 	xlmu1 -> SetLineColor(kBlue+1);
 	xlmu1 -> SetLineStyle(ls);
@@ -598,17 +619,17 @@ void FitTOF(string fileName, int p, bool logy = false) {
 	(*asciifile) << "eff_pi " << eff_pi  << " " << 0. << endl;
 	
 	
-      } else     
+      } else     {
 	(*asciifile) << "N_mupi " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
       
       	// mu+pi
-	double nACT2_nonele_mupi = IntegrateAlongYInGivenXWindow(hACT2_nonele, func->GetParameter(5), tof_reso);
+	double nACT2_act2cut_mupi = IntegrateAlongYInGivenXWindow(hACT2_act2cut, func->GetParameter(5), tof_reso);
 	double nACT2_all_mupi    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(5), tof_reso);
-	double eff_mupi          = nACT2_nonele_mupi / nACT2_all_mupi;
+	double eff_mupi          = nACT2_act2cut_mupi / nACT2_all_mupi;
 	// so far zero error on the efficiency...
 	(*asciifile) << "eff_mupi " << eff_mupi  << " " << 0. << endl;
 
-      
+      }
     }
     if (asciifile) asciifile->close();
 
