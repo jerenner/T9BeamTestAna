@@ -147,7 +147,7 @@ int main(int argc, char **argv){
     ana_data->Branch("SignalTime",&signalTime);
     ana_data->Branch("IntCharge",&intCharge);
 
-
+    TCanvas *can = new TCanvas("waveforms");
 
     for(int i = 0; i < nent; i++){
         //cout << "++++++++++++++++++++++++" << endl;
@@ -174,7 +174,13 @@ int main(int argc, char **argv){
                 peakTime.push_back(waveAna.at(j).GetPeakTime());
                 signalTime.push_back(waveAna.at(j).GetSignalTime());
                 intCharge.push_back(waveAna.at(j).GetIntegratedCharge());
-                
+
+		TH1D* wavef = waveforms.at(j);
+		if (i % 10000 == 0) {
+		  can -> cd();
+		  wavef -> Draw();
+		  can -> Print(Form("waveform_%i_%i.png", i, j));
+		}
 
             }
         }

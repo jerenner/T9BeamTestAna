@@ -15,7 +15,8 @@ VPATH = $(SRCDIR)
 
 CXX=g++
 CFLAGS=-c -O3 -fopenmp -g -Wall `root-config --cflags` -I${INCDIR}
-LDFLAGS=`root-config --glibs` -lHistPainter -lMinuit -ltbb
+LDFLAGS=`root-config --glibs` -lHistPainter -lMinuit
+#-ltbb
 #LDFLAGS=`root-config --glibs` -lHistPainter -lMinuit -lgomp
 
 
