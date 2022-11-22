@@ -18,6 +18,21 @@
 #include "TString.h"
 #include "TLatex.h"
 
+void AssignFitResults(TF1 *func, TH1D *h1, int &Ne, int &Nmu, int &Npi, 
+                      int &NeErr, int &NmuErr, int &NpiErr, bool isThreeComponentFit)
+{
+ Ne = (int) func->GetParameter(0)/h1->GetBinWidth(1);
+ Nmu = (int) func->GetParameter(1)/h1->GetBinWidth(1);
+ Npi = 0;
+ NeErr = (int) func->GetParError(0)/h1->GetBinWidth(1);
+ NmuErr = (int) func->GetParError(1)/h1->GetBinWidth(1);
+ NpiErr = 0;
+ if (isThreeComponentFit) {
+      Npi = func->GetParameter(4)/h1->GetBinWidth(1);
+      NpiErr = (int) func->GetParError(4)/h1->GetBinWidth(1);
+  }
+ return;   
+}
 // ______________________________________________________
 
 const double cc = 299792458.;
@@ -55,13 +70,15 @@ double IntegrateAlongYInGivenXWindow(TH2D *h2, double t0, double tof_reso) {
 // ______________________________________________________
 
 
-void FitTOF(string fileName, int p, bool logy = false) {
-    // e, mu. pi, proton, deuteron, tritium, alpha
+void FitTOF(string fileName, int p, bool logy = true) {
+
+    // masses: [MeV]
+    // e, mu, pi, proton, deuteron, tritium, alpha
     double m[7] = {0.511, 105.66, 139.57, 938.470, 1876., 3.01604928*931.494102, 3727.379};
-    double c = 0.299792458;
+    double c = 0.299792458; // [m/ns]
     double l = 2.9;
 
-    bool isThreeComponentFit = fabs(p) < 299.;
+    bool isThreeComponentFit = fabs(p) < 301.;
     bool isProtonFit = fabs(p) > 390.;
 
     cout << "Configured as" << endl;
@@ -91,14 +108,20 @@ void FitTOF(string fileName, int p, bool logy = false) {
     }
     cout << "Will fit TOF distribution betweem " << tmin << " " << tmax << endl;
 
-    string basehname = "hTOFOther";
+    // string basehname = "hTOFOther"; original, for standard TOF fit
+    // hack by Jiri, to extract mu and pi efficiencies ont he full sample and after dedicated ACT2 cuts
+    string basehname = "hTOFAll";
     if (isProtonFit) {
       basehname = "hTOFAllWide"; 
     }
+
     
     TH1D* h1 = (TH1D*) inFile->Get("hTOFAll");
     TH1D* h2 = (TH1D*) inFile->Get("hTOFEl");
     TH1D* h3 = (TH1D*) inFile->Get(basehname.c_str());
+        
+    TH1D* h3_act2cut = (TH1D*) inFile->Get("hTOF_act2cut");
+    TH1D* h3_act3cut = (TH1D*) inFile->Get("hTOF_act3cut");
 
     int imax = h1->GetMaximumBin();
     double xe = h1->GetBinCenter(imax);
@@ -166,6 +189,9 @@ void FitTOF(string fileName, int p, bool logy = false) {
     
     TF1* func = new TF1("func", "[0]*TMath::Gaus(x, [2], [3], 1) + [1]*TMath::Gaus(x, [5], [7], 1) + [4]*TMath::Gaus(x, [6], [7], 1)", 38, 43.5);
     func -> SetNpx(1000);
+    func->SetLineWidth(2);
+    func->SetLineColor(kBlack);
+
     double A = h3 -> GetMaximum();//func0 -> GetParameter(0); //h1 -> GetMaximum();
     cout << "A=" << A << endl;
     func->SetParName(0, "norm1");
@@ -209,14 +235,17 @@ void FitTOF(string fileName, int p, bool logy = false) {
     func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
     func->SetParLimits(4, 0, 0.5*A);
     
-    double mdelta = 0.15;
+    double mdelta = 0.8;
     double dtval_mu = xe + dtmu; // func0 -> GetParameter(1) + dtmu ;// h3 ->GetMean() +l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
     func->SetParName(5, "mean_mu");
     if (!isProtonFit) {
       func->SetParameter(5, dtval_mu);
-    //func->FixParameter(5, dtval_mu);
-      func->SetParLimits(5, (1. - mdelta)*dtval_mu, (1. + mdelta)*dtval_mu);       
+      //func->FixParameter(5, dtval_mu);
+      //func->SetParLimits(5, (1. - mdelta)*dtval_mu, (1. + mdelta)*dtval_mu);
+      func->SetParLimits(5, xe + dtmu*(1. - mdelta),       xe + dtmu*(1. + mdelta) );
+      cout << "Muons mean par limits: " << xe + dtmu*(1. - mdelta) << ", " << xe + dtmu*(1. + mdelta)  << endl;
     } else {
+      // proton fit
       func->SetParName(5, "mean_p");
       double valp = xe + dtp;
       func->SetParameter(5, valp);
@@ -238,13 +267,14 @@ void FitTOF(string fileName, int p, bool logy = false) {
     double dtval_pi = func0 -> GetParameter(1) + dtpi; // h3->GetMean()  l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
     func->SetParName(6, "mean_pi");
     func->SetParameter(6, dtval_pi);
-    func->FixParameter(6, dtval_pi);
+    //func->FixParameter(6, dtval_pi);
     func->SetParLimits(6,  (1. - mdelta)*dtval_pi,  (1. - mdelta)*dtval_pi);       
     
     func->SetParName(7, "sigma_mupi");
     //func->FixParameter(2, 0.215);
     func->SetParameter(7, h3->GetStdDev());
-    //    func->SetParLimits(7, 0.5*h3->GetStdDev(), 1.3*h3->GetStdDev()); 
+    //func->SetParLimits(7, 0.05, 1.); 
+    //func->SetParLimits(7, 0.5*h3->GetStdDev(), 1.3*h3->GetStdDev()); 
     if (isProtonFit) {
      func->SetParameter(7, 0.5);
      func->SetParName(7, "sigma_p");
@@ -252,14 +282,39 @@ void FitTOF(string fileName, int p, bool logy = false) {
     
     // special cases
 
+     if (p < 0) {
+      // negative bias fo the beam
+       func->SetParameter(5, func -> GetParameter(5) + 0.5 * 200. / fabs(p));
+       func->SetParameter(6, func -> GetParameter(6) + 0.5 * 200. / fabs(p));
+       
+    }
+    
+    // 200p, jk 22.11.2022
+    if (fabs(p - 200) < 1.e-3) {
+	func->SetParameter(0, A); 
+	func->SetParLimits(0, 0.1*A, 2*A);
+	func->SetParameter(1, A);
+	func->SetParLimits(1, 0., 0.2*A);
+	func->SetParLimits(4, 0., 0.1*A);
+	func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
+	func->SetParameter(7, 0.9);
+      }
+    
   // 300n
     if (fabs(p + 300) < 1.e-3) {
 	func->SetParameter(0, A); 
 	func->SetParLimits(0, 0.1*A, 2*A);
 	func->SetParameter(1, A);
 	func->SetParLimits(1, 0.*A, 2*A);
-	func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
-	func->SetParameter(7, 0.9);
+	//func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
+	//func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
+	func->SetParameter(5, dtval_mu + 0.2);
+	cout << "xe=" << xe << " dtval_mu=" << dtval_mu << endl;
+	func->SetParameter(7, 0.4);
+	func->SetParLimits(7, 0.1, 0.5);
+	// pi:
+	func->SetParameter(6, dtval_pi + 0.2);
+	
       }
 
 
@@ -314,6 +369,13 @@ void FitTOF(string fileName, int p, bool logy = false) {
       func -> FixParameter(6, 0.);
     }
     h3->Fit(func);
+
+    TF1 *func_act2cut = (TF1*)func -> Clone(TString(func -> GetName()) + "_act2cut");
+    h3_act2cut->Fit(func_act2cut);
+
+    TF1 *func_act3cut = (TF1*)func -> Clone(TString(func -> GetName()) + "_act3cut");
+    h3_act3cut->Fit(func_act3cut);
+
     
     TCanvas *cv1 = new TCanvas("cv1", "", 1200, 800);
     cv1->cd()->SetTickx(kTRUE);
@@ -327,11 +389,15 @@ void FitTOF(string fileName, int p, bool logy = false) {
     h3->Draw("ep");
 
 
-    
-    func->SetLineWidth(2);
-    func->SetLineColor(kBlack);
     func->Draw("csame");
+
+    // after ACT cuts:
+    func_act2cut->SetLineStyle(2);
+    func_act2cut->Draw("csame");
+    func_act3cut->SetLineStyle(3);
+    func_act3cut->Draw("csame");
     
+    //for the individual components of the main fit
     TF1* func1 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
     TF1* func2 = new TF1("func2", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
     TF1* func3 = new TF1("func3", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
@@ -365,24 +431,21 @@ void FitTOF(string fileName, int p, bool logy = false) {
 
     func1->SetLineStyle(2);
     func3->SetLineStyle(2);
-
-    
+ 
     TLegend *leg1 = new TLegend(0.60, 0.6, 0.9, 0.88);
     leg1 -> SetBorderSize(0);
     int ip = int(fabs(p));
     leg1 -> SetHeader("WCTE TB July 2022");
     
-    int Ne = func->GetParameter(0)/h1->GetBinWidth(1);
-    int Nmu = func->GetParameter(1)/h1->GetBinWidth(1);
-    int Npi = 0.;
-    int NeErr = func->GetParError(0)/h1->GetBinWidth(1);
-    int NmuErr = func->GetParError(1)/h1->GetBinWidth(1);
-    int NpiErr = 0.;
-    if (isThreeComponentFit) {
-      func->GetParameter(4)/h1->GetBinWidth(1);
-      int NpiErr = func->GetParError(4)/h1->GetBinWidth(1);
-    }
-        
+    int Ne, Nmu, Npi, NeErr, NmuErr, NpiErr;
+    AssignFitResults(func, h1, Ne, Nmu, Npi, NeErr, NmuErr, NpiErr, isThreeComponentFit);
+
+    int Ne_act2cut, Nmu_act2cut, Npi_act2cut, NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut;
+    AssignFitResults(func_act2cut, h1, Ne_act2cut, Nmu_act2cut, Npi_act2cut, NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut, isThreeComponentFit);
+
+    int Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut;
+    AssignFitResults(func_act3cut, h1, Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut, isThreeComponentFit);
+
     leg1->AddEntry(h3,"Data", "PE");
     leg1->AddEntry(func, "Fit", "L");
 
@@ -395,6 +458,7 @@ void FitTOF(string fileName, int p, bool logy = false) {
     
     if (isThreeComponentFit) {
       title = "Fit #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+      leg1->AddEntry(func2, title.c_str(), "L");
       title = "Fit #pi^{" + ssignum + "}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
       leg1->AddEntry(func3, title.c_str(), "L");
     } else {
@@ -403,15 +467,18 @@ void FitTOF(string fileName, int p, bool logy = false) {
       else	
 	title = "Fit p^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
     }
-    leg1->AddEntry(func2, title.c_str(), "L");
     
     func1->Draw("Csame");
     func2->Draw("Csame");          
     if (isThreeComponentFit)
       func3->Draw("Csame");
-    
     leg1->Draw("same");
- 
+
+    // JK: TODO!!!
+    // draw also the histogram, main fit and indivdual components also for the ACT2cut results!
+    
+
+// JK: todo: move this to a function DrawLines(TH1D *h3, ...);
 
     // TLines
     int ls = 2;
@@ -519,10 +586,12 @@ void FitTOF(string fileName, int p, bool logy = false) {
     ofstream *asciifile = new ofstream(asciiname.Data());
     (*asciifile) << "mom " << p << endl;
     (*asciifile) << "N_e " << func->GetParameter(0)/h1->GetBinWidth(1) << " " << NeErr << endl;
-    if (isProtonFit) {
-	(*asciifile) << "N_proton " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
-    } else {
 
+    // NOW SOME NUMBERS POSTPROCESSING ;-)
+    if (isProtonFit) {
+      (*asciifile) << "N_proton " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
+    } else {
+      // not a proton fit
       double tof_reso = 0.300; // ns	
       TH2D* hACT2_act2cut = (TH2D*) inFile -> Get("hRef_TOFACT2V_act2cut");
       TH2D* hACT3_act3cut = (TH2D*) inFile -> Get("hRef_TOFACT3V_act3cut");
@@ -536,8 +605,16 @@ void FitTOF(string fileName, int p, bool logy = false) {
       if (isThreeComponentFit) {
 	(*asciifile) << "N_mu " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
 	(*asciifile) << "N_pi " <<  func->GetParameter(4)/h1->GetBinWidth(1) << " " << NpiErr << endl;
-	// integrate the ASC2 distribution below non-ele thr in the TOF time widow to get the ASC muon and pion ID efficiency
 
+	// a by hand poion shift by Jiri!!!
+	//    double pioff = 0.35;
+	double pioff = 0.;
+	
+
+  /*
+
+  // OLD way/attempt by Jiri
+	// integrate the ASC2 distribution below non-ele thr in the TOF time widow to get the ASC muon and pion ID efficiency
 	// mu
 
 	double nACT2_act2cut_mu = IntegrateAlongYInGivenXWindow(hACT2_act2cut, func->GetParameter(5), tof_reso);
@@ -548,13 +625,23 @@ void FitTOF(string fileName, int p, bool logy = false) {
        << endl;
 
 	// pi
-	double pioff = 0.35;
+
 	double nACT3_act3cut_pi = IntegrateAlongYInGivenXWindow(hACT3_act3cut, func->GetParameter(6) + pioff, tof_reso);
 	double nACT3_all_pi    = IntegrateAlongYInGivenXWindow(hACT3_all, func->GetParameter(6) + pioff, tof_reso);
 	double eff_pi          = nACT3_act3cut_pi / nACT3_all_pi;
 cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
      << " nACT3_all_pi=" << nACT3_all_pi
      << endl;
+*/
+
+	// try the fit components results after the act2cut and w/o the cut
+	// the other try could be with the act3cut...to try?
+	double eff_mu = 0.;
+	if (Nmu > 0.)
+	  eff_mu = Nmu_act2cut /  (1.*Nmu);
+	double eff_pi = 0.;
+	if (Npi > 0.)
+	  eff_pi = Npi_act2cut / (1.*Npi);
 
 	TString canname = asciiname.ReplaceAll("ascii", "ACTCuts").ReplaceAll(".txt", "").ReplaceAll("_output", "");
 	TCanvas *h2can = new TCanvas(canname, canname, 200, 200, 1000, 500);
@@ -575,6 +662,10 @@ cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
 	hACT3_all -> Draw("colz");
 	h2can -> cd(4);
 	hACT3_act3cut -> Draw("colz");
+
+	
+	// lines:
+	/*
 	x1 = func->GetParameter(5) - tof_reso;
  	x2 = func->GetParameter(5) + tof_reso;
 	y1 = 	hACT3_act3cut -> GetYaxis() -> GetXmax();
@@ -594,7 +685,7 @@ cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
 	xlmu2 -> SetLineWidth(lw);
 	xlmu2 -> Draw();
 
-
+	
 	x1 = pioff+ func->GetParameter(6) - tof_reso;
  	x2 = pioff + func->GetParameter(6) + tof_reso;
 	
@@ -609,7 +700,8 @@ cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
 	xlpi2 -> SetLineStyle(ls);
 	xlpi2 -> SetLineWidth(lw);
 	xlpi2 -> Draw();
-
+	*/
+	
 	h2can -> Print(canname + ".png");
 	h2can -> Print(canname + ".pdf");
 
@@ -620,17 +712,22 @@ cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
 	
 	
       } else     {
+        // two-component fit
 	(*asciifile) << "N_mupi " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
       
+      /*
       	// mu+pi
 	double nACT2_act2cut_mupi = IntegrateAlongYInGivenXWindow(hACT2_act2cut, func->GetParameter(5), tof_reso);
 	double nACT2_all_mupi    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(5), tof_reso);
 	double eff_mupi          = nACT2_act2cut_mupi / nACT2_all_mupi;
+      */
+	double eff_mupi = Nmu_act2cut /  (1.*Nmu);
 	// so far zero error on the efficiency...
 	(*asciifile) << "eff_mupi " << eff_mupi  << " " << 0. << endl;
+	
+      } // two-component fit
+    } // not a proton fit
 
-      }
-    }
     if (asciifile) asciifile->close();
 
     string name = fileName.substr(0, fileName.size()-5) + "_TOFfit.png";

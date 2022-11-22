@@ -187,7 +187,7 @@ def main(argv):
     cans.append(can)
 
     pmin = 180.
-    pmax = 300.
+    pmax = 310.
     y0 = 0
     y1 = 20 * tsf
 
@@ -266,11 +266,11 @@ def main(argv):
 
     print(grsEff)
     canname = 'Effs_TBJuly2022_' + signTag + "_" + argv[2]
-    canEff = ROOT.TCanvas(canname, canname, 100, 100, 1100, 800)
+    canEff = ROOT.TCanvas(canname, canname, 0, 0, 1100, 800)
     cans.append(canEff)
 
     pmin = 180.
-    pmax = 300.
+    pmax = 310.
     y0 = 0
     y1 = 1.4
 
