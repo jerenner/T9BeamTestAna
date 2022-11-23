@@ -68,7 +68,7 @@ void DrawExpectedTimeArrivalLinesLegAndChi2(TH1D *h1,
 					    bool isThreeComponentFit, bool isProtonFit,
 					    int Ne, int Nmu, int Npi,
 					    int NeErr, int NmuErr, int NpiErr,
-					    double xe, double dtmu, double dtpi, double dtp, double dtd, double dtt, double dta)
+					    double tof_el, double dtmu, double dtpi, double dtp, double dtd, double dtt, double dta)
 {
     string ptag = " (Pos)";
     if (p < 0.)
@@ -93,73 +93,73 @@ void DrawExpectedTimeArrivalLinesLegAndChi2(TH1D *h1,
     double dy = 0.02 * h3->GetBinContent(imax);
     double dx = -0.005 * ( h3->GetXaxis()->GetXmax() - h3->GetXaxis()->GetXmin() );
     
-    TLine *le = new TLine(xe, y0, xe, y1);
+    TLine *le = new TLine(tof_el, y0, tof_el, y1);
     le -> SetLineColor(kRed+1);
     le -> SetLineStyle(ls);
     le -> SetLineWidth(lw);
     le -> Draw();
-    TLatex *char_e = new TLatex(xe + dx, y1 + dy, "e");
+    TLatex *char_e = new TLatex(tof_el + dx, y1 + dy, "e");
     char_e -> SetTextSize(0.03);
     char_e -> SetTextColor(kRed+1);
     char_e -> Draw();
 
-    TLine *lmu = new TLine(xe + dtmu, y0, xe + dtmu, y1);
+    TLine *lmu = new TLine(tof_el + dtmu, y0, tof_el + dtmu, y1);
     lmu -> SetLineColor(kBlue+1);
     lmu -> SetLineStyle(ls);
     lmu -> SetLineWidth(lw);
     lmu -> Draw();
-    TLatex *char_mu = new TLatex(xe + dx + dtmu, y1 + dy, "#mu");
+    TLatex *char_mu = new TLatex(tof_el + dx + dtmu, y1 + dy, "#mu");
     char_mu -> SetTextSize(0.03);
     char_mu -> SetTextColor(kBlue+1);
     char_mu -> Draw();
 
-    TLine *lpi = new TLine(xe + dtpi, y0, xe + dtpi, y1);
+    TLine *lpi = new TLine(tof_el + dtpi, y0, tof_el + dtpi, y1);
     lpi -> SetLineColor(kGreen+1);
     lpi -> SetLineStyle(ls);
     lpi -> SetLineWidth(lw);
     lpi -> Draw();
-    TLatex *char_pi = new TLatex(xe + dx + dtpi, y1 + dy, "#pi");
+    TLatex *char_pi = new TLatex(tof_el + dx + dtpi, y1 + dy, "#pi");
     char_pi -> SetTextSize(0.03);
     char_pi -> SetTextColor(kGreen+1);
     char_pi -> Draw();
 
     //double dtpp = GetTofDiffWrtE(m[3], p, m[0]);
-    TLine *lp = new TLine(xe + dtp, y0, xe + dtp, y1);
+    TLine *lp = new TLine(tof_el + dtp, y0, tof_el + dtp, y1);
     lp -> SetLineColor(kBlack);
     lp -> SetLineStyle(ls);
     lp -> SetLineWidth(lw);
     lp -> Draw();
-    TLatex *char_p = new TLatex(xe + dx + dtp, y1 + dy, "p");
+    TLatex *char_p = new TLatex(tof_el + dx + dtp, y1 + dy, "p");
     char_p -> SetTextSize(0.03);
     char_p -> SetTextColor(kBlack);
     char_p -> Draw();
     
-    TLine *ld = new TLine(xe + dtd, y0, xe + dtd, y1);
+    TLine *ld = new TLine(tof_el + dtd, y0, tof_el + dtd, y1);
     ld -> SetLineColor(kBlack);
     ld -> SetLineStyle(ls);
     ld -> SetLineWidth(lw);
     ld -> Draw();
-    TLatex *char_d = new TLatex(xe + dx + dtd, y1 + dy, "d");
+    TLatex *char_d = new TLatex(tof_el + dx + dtd, y1 + dy, "d");
     char_d -> SetTextSize(0.03);
     char_d -> SetTextColor(kBlack);
     char_d -> Draw();
     
-    TLine *lt = new TLine(xe + dtt, y0, xe + dtt, y1);
+    TLine *lt = new TLine(tof_el + dtt, y0, tof_el + dtt, y1);
     lt -> SetLineColor(kBlack);
     lt -> SetLineStyle(ls);
     lt -> SetLineWidth(lw);
     lt -> Draw();
-    TLatex *char_t = new TLatex(xe + dx + dtt, y1 + dy, "t");
+    TLatex *char_t = new TLatex(tof_el + dx + dtt, y1 + dy, "t");
     char_t -> SetTextSize(0.03);
     char_t -> SetTextColor(kBlack);
     char_t -> Draw();
     
-    TLine *la = new TLine(xe + dta, y0, xe + dta, y1);
+    TLine *la = new TLine(tof_el + dta, y0, tof_el + dta, y1);
     la -> SetLineColor(kBlack);
     la -> SetLineStyle(ls);
     la -> SetLineWidth(lw);
     la -> Draw();
-    TLatex *char_a = new TLatex(xe + dx + dta, y1 + dy, "#alpha");
+    TLatex *char_a = new TLatex(tof_el + dx + dta, y1 + dy, "#alpha");
     char_a -> SetTextSize(0.03);
     char_a -> SetTextColor(kBlack);
     char_a -> Draw();
@@ -218,6 +218,182 @@ void AssignFitResults(TF1 *func, TH1D *h1, int &Ne, int &Nmu, int &Npi,
   }
  return;   
 }
+
+// ______________________________________________________
+
+void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
+		       TH1D *h3, 
+		       int p,
+		       double A,
+		       TF1 *func0,
+		       TF1 *func,
+		       double tof_el,
+		       double delta, double mdelta,
+		       double dtmu, double dtp,
+		       double tof_mu, double tof_pi)
+{
+
+    func->SetParName(0, "norm1");
+    func->SetParameter(0, A);
+    if (!isThreeComponentFit)
+      func->SetParLimits(0, 0.6*A, 1.2*A);
+    if (isProtonFit) {
+      func->SetParLimits(0, 0, 1.2*A);
+    }
+    
+    func->SetParName(1, "norm2");
+    func->SetParameter(1, 0.3*A); // h3 -> GetMaximum()/2.);
+    if (!isThreeComponentFit)
+      func->SetParLimits(1, 0, 0.6*A);
+    if (isProtonFit) {
+      func->SetParameter(1, A); 
+      func->SetParLimits(1, 0, 1.2*A);
+      
+      if (fabs(p) > 950) {
+	func->SetParameter(0, A/3.); 
+	func->SetParLimits(0, 0.1*A, 0.5*A);
+	func->SetParameter(1, A);
+	func->SetParLimits(1, 0.8*A, 2*A);	
+      }
+    }
+
+   
+    func->SetParName(2, "mean_e");
+    func->SetParameter(2, func0 -> GetParameter(1));//h1->GetMean());
+    //    func->SetParLimits(2, (1.-delta)*h1->GetMean(), (1. + delta)*h1->GetMean());
+    if (isProtonFit && fabs(p) > 950) {
+      func->SetParameter(2, 39.5);
+    }
+
+    func->SetParName(3, "sigma_e");
+    //func->FixParameter(2, 0.215);
+    func->SetParameter(3, func0 -> GetParameter(2));//h1->GetStdDev());
+    //    func->SetParLimits(3, 0.4*h1->GetStdDev(), 1.2*h1->GetStdDev()); 
+    
+    func->SetParName(4, "norm3");
+    func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
+    func->SetParLimits(4, 0, 0.5*A);
+
+    func->SetParName(5, "mean_mu");
+    if (!isProtonFit) {
+      func->SetParameter(5, tof_mu);
+      //func->FixParameter(5, tof_mu);
+      //func->SetParLimits(5, (1. - mdelta)*tof_mu, (1. + mdelta)*tof_mu);
+      func->SetParLimits(5, tof_el + dtmu*(1. - mdelta),       tof_el + dtmu*(1. + mdelta) );
+      cout << "Muons mean par limits: " << tof_el + dtmu*(1. - mdelta) << ", " << tof_el + dtmu*(1. + mdelta)  << endl;
+    } else {
+      // proton fit
+      func->SetParName(5, "mean_p");
+      double valp = tof_el + dtp;
+      func->SetParameter(5, valp);
+      //func->FixParameter(5, valp);
+      double pdelta = 0.15;
+      func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
+      if (fabs(p) > 950) {
+	double valp = 39.5 + dtp;
+	func->SetParameter(5, valp);
+	func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
+      }
+    }
+    
+    /*func->SetParName(6, "sigma_mu");
+    func->SetParameter(6, h3->GetStdDev());
+    func->SetParLimits(6, 0.9*h3->GetStdDev(), 1.1*h3->GetStdDev()); */
+    
+    func->SetParName(6, "mean_pi");
+    func->SetParameter(6, tof_pi);
+    //func->FixParameter(6, tof_pi);
+    func->SetParLimits(6,  (1. - mdelta)*tof_pi,  (1. - mdelta)*tof_pi);       
+    
+    func->SetParName(7, "sigma_mupi");
+    //func->FixParameter(2, 0.215);
+    func->SetParameter(7, h3->GetStdDev());
+    //func->SetParLimits(7, 0.05, 1.); 
+    //func->SetParLimits(7, 0.5*h3->GetStdDev(), 1.3*h3->GetStdDev()); 
+    if (isProtonFit) {
+     func->SetParameter(7, 0.5);
+     func->SetParName(7, "sigma_p");
+    }
+
+}
+
+// ______________________________________________________
+
+void SetParsSpecialMomenta(int p, double A, TF1 *func, double tof_el, double tof_mu, double tof_pi)
+{
+
+     if (p < 0) {
+      // negative bias fo the beam
+       func->SetParameter(5, func -> GetParameter(5) + 0.5 * 200. / fabs(p));
+       func->SetParameter(6, func -> GetParameter(6) + 0.5 * 200. / fabs(p));
+       
+    }
+    
+    // 200p, jk 22.11.2022
+    if (fabs(p - 200) < 1.e-3) {
+	func->SetParameter(0, A); 
+	func->SetParLimits(0, 0.1*A, 2*A);
+	func->SetParameter(1, A);
+	func->SetParLimits(1, 0., 0.2*A);
+	func->SetParLimits(4, 0., 0.1*A);
+	func->SetParameter(5, 0.5*( tof_mu + tof_pi) );
+	func->SetParameter(7, 0.9);
+      }
+    
+    // 300n
+    if (fabs(p + 300) < 1.e-3) {
+	func->SetParameter(0, A); 
+	func->SetParLimits(0, 0.1*A, 2*A);
+	func->SetParameter(1, A);
+	func->SetParLimits(1, 0.*A, 2*A);
+	//func->SetParameter(5, 0.5*( tof_mu + tof_pi) );
+	//func->SetParameter(5, 0.5*( tof_mu + tof_pi) );
+	func->SetParameter(5, tof_mu + 0.2);
+	cout << "tof_el=" << tof_el << " tof_mu=" << tof_mu << endl;
+	func->SetParameter(7, 0.4);
+	func->SetParLimits(7, 0.1, 0.5);
+	// pi:
+	func->SetParameter(6, tof_pi + 0.2);	
+      }
+
+    // 340n
+    if (fabs(p + 340) < 1.e-3) {
+	func->SetParameter(0, 1.5*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.3*A);
+	func->SetParameter(6, 1.1*tof_mu);
+      }
+
+    // 340p
+    if (fabs(p - 340) < 1.e-3) {
+	func->SetParameter(0, 1.*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.*A);
+	func->SetParameter(6, 1.1*tof_mu);
+      }
+
+    // 360n
+    if (fabs(p + 360) < 1.e-3) {
+	func->SetParameter(0, 1.*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.*A);
+	func->SetParameter(6, 1.1*tof_mu);
+      }
+
+    // 360p
+    if (fabs(p - 360) < 1.e-3) {
+	func->SetParameter(0, 1.*A); 
+	func->SetParLimits(0, 0.1*A, 1.5*A);
+	func->SetParameter(1, A/4);
+	func->SetParLimits(1, 0.*A, 1.*A);
+	func->SetParameter(6, 1.1*tof_mu);
+      }
+}
+
+
 // ______________________________________________________
 
 const double cc = 299792458.;
@@ -252,6 +428,34 @@ double IntegrateAlongYInGivenXWindow(TH2D *h2, double t0, double tof_reso) {
 }
 
 // ______________________________________________________
+
+void PrintIntegrals(TH1D *h1, TH1D *h2, TH1D *h3)
+{
+  cout << "Integrals: " 
+	 << " h1: " << h1->Integral()
+      	 << " h2: " << h2->Integral()
+      	 << " h3: " << h3->Integral()
+	 << endl;
+    cout << "Means: " 
+	 << " h1: " << h1->GetMean()
+      	 << " h2: " << h2->GetMean()
+      	 << " h3: " << h3->GetMean()
+	 << endl;
+    cout << "StdDev: " 
+	 << " h1: " << h1->GetStdDev()
+      	 << " h2: " << h2->GetStdDev()
+      	 << " h3: " << h3->GetStdDev()
+	 << endl;
+    
+    // time diffs of mu and pi to e
+    //for (int ibin = 0; ibin < h1->GetNbinsX()+1; ++ibin) {
+    //  cout << "hall i=" << ibin << " y=" << h1->GetBinContent(ibin) << endl;
+    //}
+
+    
+}
+
+// ______________________________________________________
 // ______________________________________________________
 // ______________________________________________________
 
@@ -267,14 +471,13 @@ void FitTOF(string fileName, int p, bool logy = true) {
     bool isThreeComponentFit = fabs(p) < 301.;
     bool isProtonFit = fabs(p) > 390.;
 
+    
     cout << "Configured as" << endl;
     cout << " isThreeComponentFit: " << isThreeComponentFit << endl 
 	 << " isProtonFit: " << isProtonFit << endl 
 	 << endl;
     
-    TFile *inFile = new TFile(fileName.c_str(), "READ");
-
-    // mu, pi, protons
+    // dt = delta_t = delay times of mu, pi, protons w.r.t. electrons
     double dtmu = GetTofDiffWrtE(m[1], p, m[0]);
     double dtpi = GetTofDiffWrtE(m[2], p, m[0]);
     double dtp = GetTofDiffWrtE(m[3], p, m[0]);
@@ -283,58 +486,42 @@ void FitTOF(string fileName, int p, bool logy = true) {
     double dtt = GetTofDiffWrtE(m[5], p, m[0]);
     double dta = GetTofDiffWrtE(m[6], p, m[0]);
 
+    // HARD-CODED TOF BOUNDRIES!
     double tmin = 38.;
     double tmax = 43.5;
     if (isProtonFit) {
-      tmax = 42 + dtp;
+      tmax = 42. + dtp;
     }
     cout << "Will fit TOF distribution betweem " << tmin << " " << tmax << endl;
-
-    // string basehname = "hTOFOther"; original, for standard TOF fit
+   
+    // ORIGINAL: string basehname = "hTOFOther"; original, for standard TOF fit
     // hack by Jiri, to extract mu and pi efficiencies ont he full sample and after dedicated ACT2 cuts
     string basehname = "hTOFAll";
     if (isProtonFit) {
       basehname = "hTOFAllWide"; 
     }
 
-    
+    // read histograms
+    TFile *inFile = new TFile(fileName.c_str(), "READ");
+    // TODO
+    // carefully: to rename h1 to hTOFAll, h2 to hTOFEl, h3 to hTOF!!
     TH1D* h1 = (TH1D*) inFile->Get("hTOFAll");
     TH1D* h2 = (TH1D*) inFile->Get("hTOFEl");
     TH1D* h3 = (TH1D*) inFile->Get(basehname.c_str());
-        
+
+    // TOF distr. after ACT cuts:
     TH1D* h3_act2cut = (TH1D*) inFile->Get("hTOF_act2cut");
     TH1D* h3_act3cut = (TH1D*) inFile->Get("hTOF_act3cut");
 
     int imax = h1->GetMaximumBin();
-    double xe = h1->GetBinCenter(imax);
+    double tof_el = h1->GetBinCenter(imax);
     
-    // time diffs of mu and pi to e
-    //for (int ibin = 0; ibin < h1->GetNbinsX()+1; ++ibin) {
-    //  cout << "hall i=" << ibin << " y=" << h1->GetBinContent(ibin) << endl;
-    //}
-    
-    cout << "Integrals: " 
-	 << " h1: " << h1->Integral()
-      	 << " h2: " << h2->Integral()
-      	 << " h3: " << h3->Integral()
-	 << endl;
-    cout << "Means: " 
-	 << " h1: " << h1->GetMean()
-      	 << " h2: " << h2->GetMean()
-      	 << " h3: " << h3->GetMean()
-	 << endl;
-    cout << "StdDev: " 
-	 << " h1: " << h1->GetStdDev()
-      	 << " h2: " << h2->GetStdDev()
-      	 << " h3: " << h3->GetStdDev()
-	 << endl;
-
-    TCanvas *can_aux = new TCanvas("can_aux", "", 800, 800);
-    can_aux -> Divide(2,2);
+    PrintIntegrals(h1, h2, h3);
 
     // pre-fit to get initial pars for the full fit
+    TCanvas *can_aux = new TCanvas("can_aux", "", 800, 800);
+    can_aux -> Divide(2,2);
     can_aux->cd(1);
-    
     TF1* func0 = new TF1("func0", "[0]*TMath::Gaus(x, [1], [2], 1)", tmin, tmax);
     func0 -> SetNpx(1000);
     h1 -> Draw("e1");
@@ -362,8 +549,6 @@ void FitTOF(string fileName, int p, bool logy = true) {
     can_aux -> cd(4);
 
     // the main full fit:
-   
-    
     TF1* func = new TF1("func", "[0]*TMath::Gaus(x, [2], [3], 1) + [1]*TMath::Gaus(x, [5], [7], 1) + [4]*TMath::Gaus(x, [6], [7], 1)", 38, 43.5);
     func -> SetNpx(1000);
     func->SetLineWidth(2);
@@ -371,164 +556,19 @@ void FitTOF(string fileName, int p, bool logy = true) {
 
     double A = h3 -> GetMaximum();//func0 -> GetParameter(0); //h1 -> GetMaximum();
     cout << "A=" << A << endl;
-    func->SetParName(0, "norm1");
-    func->SetParameter(0, A);
-    if (!isThreeComponentFit)
-      func->SetParLimits(0, 0.6*A, 1.2*A);
-    if (isProtonFit) {
-      func->SetParLimits(0, 0, 1.2*A);
-    }
-    
-    func->SetParName(1, "norm2");
-    func->SetParameter(1, 0.3*A); // h3 -> GetMaximum()/2.);
-    if (!isThreeComponentFit)
-      func->SetParLimits(1, 0, 0.6*A);
-    if (isProtonFit) {
-      func->SetParameter(1, A); 
-      func->SetParLimits(1, 0, 1.2*A);
-      
-      if (fabs(p) > 950) {
-	func->SetParameter(0, A/3.); 
-	func->SetParLimits(0, 0.1*A, 0.5*A);
-	func->SetParameter(1, A);
-	func->SetParLimits(1, 0.8*A, 2*A);	
-      }
-    }
 
+    // for fit parameters initial values and limits:
     double delta = 0.05;    
-    func->SetParName(2, "mean_e");
-    func->SetParameter(2, func0 -> GetParameter(1));//h1->GetMean());
-    //    func->SetParLimits(2, (1.-delta)*h1->GetMean(), (1. + delta)*h1->GetMean());
-    if (isProtonFit and fabs(p) > 950) {
-      func->SetParameter(2, 39.5);
-    }
-
-    func->SetParName(3, "sigma_e");
-    //func->FixParameter(2, 0.215);
-    func->SetParameter(3, func0 -> GetParameter(2));//h1->GetStdDev());
-    //    func->SetParLimits(3, 0.4*h1->GetStdDev(), 1.2*h1->GetStdDev()); 
-    
-    func->SetParName(4, "norm3");
-    func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
-    func->SetParLimits(4, 0, 0.5*A);
-    
     double mdelta = 0.8;
-    double dtval_mu = xe + dtmu; // func0 -> GetParameter(1) + dtmu ;// h3 ->GetMean() +l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
-    func->SetParName(5, "mean_mu");
-    if (!isProtonFit) {
-      func->SetParameter(5, dtval_mu);
-      //func->FixParameter(5, dtval_mu);
-      //func->SetParLimits(5, (1. - mdelta)*dtval_mu, (1. + mdelta)*dtval_mu);
-      func->SetParLimits(5, xe + dtmu*(1. - mdelta),       xe + dtmu*(1. + mdelta) );
-      cout << "Muons mean par limits: " << xe + dtmu*(1. - mdelta) << ", " << xe + dtmu*(1. + mdelta)  << endl;
-    } else {
-      // proton fit
-      func->SetParName(5, "mean_p");
-      double valp = xe + dtp;
-      func->SetParameter(5, valp);
-      //func->FixParameter(5, valp);
-      double pdelta = 0.15;
-      func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
-      if (fabs(p) > 950) {
-	double valp = 39.5 + dtp;
-	func->SetParameter(5, valp);
-	func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
-      }
-    }
-
+    double tof_mu = tof_el + dtmu; // func0 -> GetParameter(1) + dtmu ;// h3 ->GetMean() +l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p);
+    double tof_pi = func0 -> GetParameter(1) + dtpi; // h3->GetMean()  l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
     
-    /*func->SetParName(6, "sigma_mu");
-    func->SetParameter(6, h3->GetStdDev());
-    func->SetParLimits(6, 0.9*h3->GetStdDev(), 1.1*h3->GetStdDev()); */
-    
-    double dtval_pi = func0 -> GetParameter(1) + dtpi; // h3->GetMean()  l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p);
-    func->SetParName(6, "mean_pi");
-    func->SetParameter(6, dtval_pi);
-    //func->FixParameter(6, dtval_pi);
-    func->SetParLimits(6,  (1. - mdelta)*dtval_pi,  (1. - mdelta)*dtval_pi);       
-    
-    func->SetParName(7, "sigma_mupi");
-    //func->FixParameter(2, 0.215);
-    func->SetParameter(7, h3->GetStdDev());
-    //func->SetParLimits(7, 0.05, 1.); 
-    //func->SetParLimits(7, 0.5*h3->GetStdDev(), 1.3*h3->GetStdDev()); 
-    if (isProtonFit) {
-     func->SetParameter(7, 0.5);
-     func->SetParName(7, "sigma_p");
-    }
-    
+    // set initial fit parameters
+    SetInitialFitPars(isThreeComponentFit, isProtonFit, h3, p, A, func0, func, tof_el, delta, mdelta, dtmu, dtp, tof_mu, tof_pi);
     // special cases
+    SetParsSpecialMomenta(p, A, func,  tof_el, tof_mu, tof_pi);
 
-     if (p < 0) {
-      // negative bias fo the beam
-       func->SetParameter(5, func -> GetParameter(5) + 0.5 * 200. / fabs(p));
-       func->SetParameter(6, func -> GetParameter(6) + 0.5 * 200. / fabs(p));
-       
-    }
-    
-    // 200p, jk 22.11.2022
-    if (fabs(p - 200) < 1.e-3) {
-	func->SetParameter(0, A); 
-	func->SetParLimits(0, 0.1*A, 2*A);
-	func->SetParameter(1, A);
-	func->SetParLimits(1, 0., 0.2*A);
-	func->SetParLimits(4, 0., 0.1*A);
-	func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
-	func->SetParameter(7, 0.9);
-      }
-    
-    // 300n
-    if (fabs(p + 300) < 1.e-3) {
-	func->SetParameter(0, A); 
-	func->SetParLimits(0, 0.1*A, 2*A);
-	func->SetParameter(1, A);
-	func->SetParLimits(1, 0.*A, 2*A);
-	//func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
-	//func->SetParameter(5, 0.5*( dtval_mu + dtval_pi) );
-	func->SetParameter(5, dtval_mu + 0.2);
-	cout << "xe=" << xe << " dtval_mu=" << dtval_mu << endl;
-	func->SetParameter(7, 0.4);
-	func->SetParLimits(7, 0.1, 0.5);
-	// pi:
-	func->SetParameter(6, dtval_pi + 0.2);	
-      }
-
-    // 340n
-    if (fabs(p + 340) < 1.e-3) {
-	func->SetParameter(0, 1.5*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.3*A);
-	func->SetParameter(6, 1.1*dtval_mu);
-      }
-
-    // 340p
-    if (fabs(p - 340) < 1.e-3) {
-	func->SetParameter(0, 1.*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.*A);
-	func->SetParameter(6, 1.1*dtval_mu);
-      }
-
-    // 360n
-    if (fabs(p + 360) < 1.e-3) {
-	func->SetParameter(0, 1.*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.*A);
-	func->SetParameter(6, 1.1*dtval_mu);
-      }
-
-    // 360p
-    if (fabs(p - 360) < 1.e-3) {
-	func->SetParameter(0, 1.*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.*A);
-	func->SetParameter(6, 1.1*dtval_mu);
-      }
-
+    // print fit initial parameters
     cout << "The initial parameters are: " << endl;
     for (int ip = 0; ip < func -> GetNpar(); ++ ip) {
       cout << ip << " " << func->GetParName(ip) << " " << func->GetParameter(ip) << endl;      
@@ -538,15 +578,18 @@ void FitTOF(string fileName, int p, bool logy = true) {
       func -> FixParameter(4, 0.);
       func -> FixParameter(6, 0.);
     }
+
+    // MAIN FIT!
     h3->Fit(func);
 
+    // fits for TOF after ACT2 nad ACT3 cuts:
     TF1 *func_act2cut = (TF1*)func -> Clone(TString(func -> GetName()) + "_act2cut");
     h3_act2cut->Fit(func_act2cut);
 
     TF1 *func_act3cut = (TF1*)func -> Clone(TString(func -> GetName()) + "_act3cut");
     h3_act3cut->Fit(func_act3cut);
 
-    
+    // plot main fit result
     TCanvas *can_main_fit = new TCanvas("can_main_fit", "", 1200, 800);
     can_main_fit->cd()->SetTickx(kTRUE);
     can_main_fit->cd()->SetTicky(kTRUE);
@@ -559,7 +602,8 @@ void FitTOF(string fileName, int p, bool logy = true) {
     h3->Draw("ep");
     func->Draw("csame");
 
-    // add also the total fits after ACT cuts:
+    // draw add also the total fits after ACT cuts:
+    // can be removed
     func_act2cut->SetLineStyle(2);
     func_act2cut->Draw("csame");
     func_act3cut->SetLineStyle(3);
@@ -586,21 +630,23 @@ void FitTOF(string fileName, int p, bool logy = true) {
     int Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut;
     AssignFitResults(func_act3cut, h1, Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut, isThreeComponentFit);
 
+    // finish drawing of the main fit
+    can_main_fit->cd();
     func1->Draw("Csame");
     func2->Draw("Csame");          
     if (isThreeComponentFit)
       func3->Draw("Csame");
     
-    xe = func -> GetParameter(2);
+    tof_el = func -> GetParameter(2);
     DrawExpectedTimeArrivalLinesLegAndChi2(h1, h3, func, func1, func2, func3,
 					   p, imax, 
 					   isThreeComponentFit, isProtonFit,
 					   Ne, Nmu, Npi,
 					   NeErr, NmuErr, NpiErr,
-					   xe, dtmu, dtpi, dtp, dtd, dtt, dta);
+					   tof_el, dtmu, dtpi, dtp, dtd, dtt, dta);
 
 
-    // now draw also the histogram, main fit and indivdual components also for the ACT2cut results
+    // and now draw also the histogram, main fit and indivdual components also for the ACT2cut results
     h3_act2cut->SetStats(kFALSE);
     TCanvas *can_main_fit_act2cut = new TCanvas("can_main_fit_act2cut", "", 1200, 800);
     can_main_fit_act2cut->cd()->SetTickx(kTRUE);
@@ -608,7 +654,7 @@ void FitTOF(string fileName, int p, bool logy = true) {
     if (logy) {
       can_main_fit_act2cut->cd()->SetLogy(kTRUE);
     }
-    h3_act2cut->SetMaximum(h3->GetMaximum()); // yes, set max as in the case of the fit w/o cuts;)
+    h3_act2cut->SetMaximum(h3->GetMaximum()); // yes, set max same as in the case of the fit w/o cuts;)
     h3_act2cut->SetMarkerStyle(20);
     h3_act2cut->Draw("ep");
     func_act2cut->Draw("csame");
@@ -618,13 +664,13 @@ void FitTOF(string fileName, int p, bool logy = true) {
     if (isThreeComponentFit)
       func3_act2cut->Draw("Csame");
     
-    xe = func_act2cut -> GetParameter(2);
+    tof_el = func_act2cut -> GetParameter(2);
     DrawExpectedTimeArrivalLinesLegAndChi2(h1, h3_act2cut, func_act2cut, func1_act2cut, func2_act2cut, func3_act2cut,
 					   p, imax, 
 					   isThreeComponentFit, isProtonFit,
 					   Ne_act2cut, Nmu_act2cut, Npi_act2cut,
 					   NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut,
-					   xe, dtmu, dtpi, dtp, dtd, dtt, dta);
+					   tof_el, dtmu, dtpi, dtp, dtd, dtt, dta);
 
 
     // some printouts    
@@ -730,16 +776,12 @@ void FitTOF(string fileName, int p, bool logy = true) {
     string namepdf_act2cut = fileName.substr(0, fileName.size()-5) + "_TOFfit_act2cut.pdf";
     can_main_fit_act2cut->Print(name_act2cut.c_str());
     can_main_fit_act2cut->Print(namepdf_act2cut.c_str());    
-
     
     cout << "DONE!" << endl;
     cout << "See also " << asciiname.Data() << endl;
-      
-    
 }
 
 
 // ______________________________________________________
 // ______________________________________________________
 // ______________________________________________________
-
