@@ -18,18 +18,203 @@
 #include "TString.h"
 #include "TLatex.h"
 
+// ______________________________________________________
+void GetIndividualFitComponents(TF1 *func, TF1 *&func1, TF1 *&func2, TF1 *&func3, bool isThreeComponentFit)
+{
+  func1 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+  func2 = new TF1("func2", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+  func3 = new TF1("func3", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+  
+  func1->SetParameter(0, func->GetParameter(0));
+  func1->SetParameter(1, func->GetParameter(2));
+  func1->SetParameter(2, func->GetParameter(3));
+  
+  func2->SetParameter(0, func->GetParameter(1));
+  func2->SetParameter(1, func->GetParameter(5));
+  func2->SetParameter(2, func->GetParameter(7));
+  
+  if (isThreeComponentFit) {
+    func3->SetParameter(0, func->GetParameter(4));
+    func3->SetParameter(1, func->GetParameter(6));
+    func3->SetParameter(2, func->GetParameter(7));
+    func3->SetLineWidth(2);
+    func3->SetLineColor(kGreen+1);
+  } 
+  
+  func1->SetLineWidth(2);
+  func1->SetLineColor(kRed+1);
+  
+  func2->SetLineWidth(2);
+  func2->SetLineColor(kBlue+1);
+  
+  if (!isThreeComponentFit) {
+    func2->SetLineColor(kBlack);
+    func2->SetLineStyle(2);
+  }
+  
+  func1->SetLineStyle(2);
+  func3->SetLineStyle(2);
+
+  return;
+}
+
+// ______________________________________________________
+
+void DrawExpectedTimeArrivalLinesLegAndChi2(TH1D *h1,
+					    TH1D *h3,
+					    TF1* func,
+					    TF1* func1, TF1* func2, TF1* func3,
+					    int p, int imax, 
+					    bool isThreeComponentFit, bool isProtonFit,
+					    int Ne, int Nmu, int Npi,
+					    int NeErr, int NmuErr, int NpiErr,
+					    double xe, double dtmu, double dtpi, double dtp, double dtd, double dtt, double dta)
+{
+    string ptag = " (Pos)";
+    if (p < 0.)
+      ptag = " (Neg)";
+    
+    string title = "p = " + to_string(abs(p)) + " MeV/c" + ptag ;
+    if (TString(h3->GetName()).Contains("act2cut"))
+      title = title + ", ACT2 cuts";
+    if (TString(h3->GetName()).Contains("act3cut"))
+      title = title + ", ACT3 cuts";
+    h3->SetTitle(title.c_str());
+    h3->GetXaxis()->SetTitle("t_{1}-t_{0} [ns]");
+    h3->GetYaxis()->SetTitle("Events");
+    h3->SetStats(kFALSE);
+  
+   // TLines
+    int ls = 2;
+    int lw = 2;
+    
+    double y0 = h3->GetMinimum();
+    double y1 = 1.1* h3->GetBinContent(imax);
+    double dy = 0.02 * h3->GetBinContent(imax);
+    double dx = -0.005 * ( h3->GetXaxis()->GetXmax() - h3->GetXaxis()->GetXmin() );
+    
+    TLine *le = new TLine(xe, y0, xe, y1);
+    le -> SetLineColor(kRed+1);
+    le -> SetLineStyle(ls);
+    le -> SetLineWidth(lw);
+    le -> Draw();
+    TLatex *char_e = new TLatex(xe + dx, y1 + dy, "e");
+    char_e -> SetTextSize(0.03);
+    char_e -> SetTextColor(kRed+1);
+    char_e -> Draw();
+
+    TLine *lmu = new TLine(xe + dtmu, y0, xe + dtmu, y1);
+    lmu -> SetLineColor(kBlue+1);
+    lmu -> SetLineStyle(ls);
+    lmu -> SetLineWidth(lw);
+    lmu -> Draw();
+    TLatex *char_mu = new TLatex(xe + dx + dtmu, y1 + dy, "#mu");
+    char_mu -> SetTextSize(0.03);
+    char_mu -> SetTextColor(kBlue+1);
+    char_mu -> Draw();
+
+    TLine *lpi = new TLine(xe + dtpi, y0, xe + dtpi, y1);
+    lpi -> SetLineColor(kGreen+1);
+    lpi -> SetLineStyle(ls);
+    lpi -> SetLineWidth(lw);
+    lpi -> Draw();
+    TLatex *char_pi = new TLatex(xe + dx + dtpi, y1 + dy, "#pi");
+    char_pi -> SetTextSize(0.03);
+    char_pi -> SetTextColor(kGreen+1);
+    char_pi -> Draw();
+
+    //double dtpp = GetTofDiffWrtE(m[3], p, m[0]);
+    TLine *lp = new TLine(xe + dtp, y0, xe + dtp, y1);
+    lp -> SetLineColor(kBlack);
+    lp -> SetLineStyle(ls);
+    lp -> SetLineWidth(lw);
+    lp -> Draw();
+    TLatex *char_p = new TLatex(xe + dx + dtp, y1 + dy, "p");
+    char_p -> SetTextSize(0.03);
+    char_p -> SetTextColor(kBlack);
+    char_p -> Draw();
+    
+    TLine *ld = new TLine(xe + dtd, y0, xe + dtd, y1);
+    ld -> SetLineColor(kBlack);
+    ld -> SetLineStyle(ls);
+    ld -> SetLineWidth(lw);
+    ld -> Draw();
+    TLatex *char_d = new TLatex(xe + dx + dtd, y1 + dy, "d");
+    char_d -> SetTextSize(0.03);
+    char_d -> SetTextColor(kBlack);
+    char_d -> Draw();
+    
+    TLine *lt = new TLine(xe + dtt, y0, xe + dtt, y1);
+    lt -> SetLineColor(kBlack);
+    lt -> SetLineStyle(ls);
+    lt -> SetLineWidth(lw);
+    lt -> Draw();
+    TLatex *char_t = new TLatex(xe + dx + dtt, y1 + dy, "t");
+    char_t -> SetTextSize(0.03);
+    char_t -> SetTextColor(kBlack);
+    char_t -> Draw();
+    
+    TLine *la = new TLine(xe + dta, y0, xe + dta, y1);
+    la -> SetLineColor(kBlack);
+    la -> SetLineStyle(ls);
+    la -> SetLineWidth(lw);
+    la -> Draw();
+    TLatex *char_a = new TLatex(xe + dx + dta, y1 + dy, "#alpha");
+    char_a -> SetTextSize(0.03);
+    char_a -> SetTextColor(kBlack);
+    char_a -> Draw();
+
+  TLegend *leg1 = new TLegend(0.60, 0.6, 0.9, 0.88);
+    leg1 -> SetBorderSize(0);
+    int ip = int(fabs(p));
+    leg1 -> SetHeader("WCTE TB July 2022");
+
+    leg1->AddEntry(h3,"Data", "PE");
+    leg1->AddEntry(func, "Fit", "L");
+
+    string ssignum = "+";
+    if (p < 0)
+      ssignum = "-";
+    title = "Fit e^{" + ssignum + "}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
+    leg1->AddEntry(func1, title.c_str(), "L");
+    
+    if (isThreeComponentFit) {
+      title = "Fit #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+      leg1->AddEntry(func2, title.c_str(), "L");
+      title = "Fit #pi^{" + ssignum + "}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
+      leg1->AddEntry(func3, title.c_str(), "L");
+    } else {
+      if (!isProtonFit)
+	title = "Fit #mu^{" + ssignum + "}+#pi^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+      else	
+	title = "Fit p^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+    }
+    leg1->Draw("same");
+
+    double chi2 = func -> GetChisquare(); // was func0!
+    int ndf = func -> GetNDF(); // was func0!
+    TLatex *chi2text = new TLatex(0.13, 0.85, Form("#chi^{2}/ndf = %2.1f/%i = %1.1f", chi2, ndf, chi2/ndf));
+    chi2text -> SetNDC();
+    chi2text -> SetTextSize(0.03);
+    chi2text -> Draw();
+
+    return;
+}
+
+// ______________________________________________________
+
 void AssignFitResults(TF1 *func, TH1D *h1, int &Ne, int &Nmu, int &Npi, 
                       int &NeErr, int &NmuErr, int &NpiErr, bool isThreeComponentFit)
 {
- Ne = (int) func->GetParameter(0)/h1->GetBinWidth(1);
- Nmu = (int) func->GetParameter(1)/h1->GetBinWidth(1);
+ Ne  = (int) func->GetParameter(0) / h1->GetBinWidth(1);
+ Nmu = (int) func->GetParameter(1) / h1->GetBinWidth(1);
  Npi = 0;
- NeErr = (int) func->GetParError(0)/h1->GetBinWidth(1);
- NmuErr = (int) func->GetParError(1)/h1->GetBinWidth(1);
+ NeErr  = (int) func->GetParError(0) / h1->GetBinWidth(1);
+ NmuErr = (int) func->GetParError(1) / h1->GetBinWidth(1);
  NpiErr = 0;
  if (isThreeComponentFit) {
-      Npi = func->GetParameter(4)/h1->GetBinWidth(1);
-      NpiErr = (int) func->GetParError(4)/h1->GetBinWidth(1);
+      Npi = func->GetParameter(4) / h1->GetBinWidth(1);
+      NpiErr = (int) func->GetParError(4) / h1->GetBinWidth(1);
   }
  return;   
 }
@@ -68,6 +253,7 @@ double IntegrateAlongYInGivenXWindow(TH2D *h2, double t0, double tof_reso) {
 
 // ______________________________________________________
 // ______________________________________________________
+// ______________________________________________________
 
 
 void FitTOF(string fileName, int p, bool logy = true) {
@@ -85,10 +271,6 @@ void FitTOF(string fileName, int p, bool logy = true) {
     cout << " isThreeComponentFit: " << isThreeComponentFit << endl 
 	 << " isProtonFit: " << isProtonFit << endl 
 	 << endl;
-    
-    string ptag = " (Pos)";
-    if (p < 0.)
-      ptag = " (Neg)";
     
     TFile *inFile = new TFile(fileName.c_str(), "READ");
 
@@ -147,11 +329,11 @@ void FitTOF(string fileName, int p, bool logy = true) {
       	 << " h3: " << h3->GetStdDev()
 	 << endl;
 
-    TCanvas *cv0 = new TCanvas("cv0", "", 800, 800);
-    cv0 -> Divide(2,2);
+    TCanvas *can_aux = new TCanvas("can_aux", "", 800, 800);
+    can_aux -> Divide(2,2);
 
     // pre-fit to get initial pars for the full fit
-    cv0->cd(1);
+    can_aux->cd(1);
     
     TF1* func0 = new TF1("func0", "[0]*TMath::Gaus(x, [1], [2], 1)", tmin, tmax);
     func0 -> SetNpx(1000);
@@ -173,19 +355,14 @@ void FitTOF(string fileName, int p, bool logy = true) {
     h1 -> SetMarkerStyle(20);
     h1 -> Draw("e1 hist same");
     func0 -> Draw("same");
-    cv0 -> cd(2);
+    can_aux -> cd(2);
     h2 -> Draw("e1");
-    cv0 -> cd(3);
+    can_aux -> cd(3);
     h3 -> Draw("e1");
-    cv0 -> cd(4);
+    can_aux -> cd(4);
 
     // the main full fit:
    
-    string title = "p = " + to_string(abs(p)) + " MeV/c" + ptag ;
-    h3->SetTitle(title.c_str());
-    h3->GetXaxis()->SetTitle("t_{1}-t_{0} [ns]");
-    h3->GetYaxis()->SetTitle("Events");
-    h3->SetStats(kFALSE);
     
     TF1* func = new TF1("func", "[0]*TMath::Gaus(x, [2], [3], 1) + [1]*TMath::Gaus(x, [5], [7], 1) + [4]*TMath::Gaus(x, [6], [7], 1)", 38, 43.5);
     func -> SetNpx(1000);
@@ -300,7 +477,7 @@ void FitTOF(string fileName, int p, bool logy = true) {
 	func->SetParameter(7, 0.9);
       }
     
-  // 300n
+    // 300n
     if (fabs(p + 300) < 1.e-3) {
 	func->SetParameter(0, A); 
 	func->SetParLimits(0, 0.1*A, 2*A);
@@ -313,12 +490,9 @@ void FitTOF(string fileName, int p, bool logy = true) {
 	func->SetParameter(7, 0.4);
 	func->SetParLimits(7, 0.1, 0.5);
 	// pi:
-	func->SetParameter(6, dtval_pi + 0.2);
-	
+	func->SetParameter(6, dtval_pi + 0.2);	
       }
 
-
-    
     // 340n
     if (fabs(p + 340) < 1.e-3) {
 	func->SetParameter(0, 1.5*A); 
@@ -346,8 +520,7 @@ void FitTOF(string fileName, int p, bool logy = true) {
 	func->SetParameter(6, 1.1*dtval_mu);
       }
 
-
-   // 360p
+    // 360p
     if (fabs(p - 360) < 1.e-3) {
 	func->SetParameter(0, 1.*A); 
 	func->SetParLimits(0, 0.1*A, 1.5*A);
@@ -355,9 +528,6 @@ void FitTOF(string fileName, int p, bool logy = true) {
 	func->SetParLimits(1, 0.*A, 1.*A);
 	func->SetParameter(6, 1.1*dtval_mu);
       }
-
-
-  
 
     cout << "The initial parameters are: " << endl;
     for (int ip = 0; ip < func -> GetNpar(); ++ ip) {
@@ -377,197 +547,87 @@ void FitTOF(string fileName, int p, bool logy = true) {
     h3_act3cut->Fit(func_act3cut);
 
     
-    TCanvas *cv1 = new TCanvas("cv1", "", 1200, 800);
-    cv1->cd()->SetTickx(kTRUE);
-    cv1->cd()->SetTicky(kTRUE);
+    TCanvas *can_main_fit = new TCanvas("can_main_fit", "", 1200, 800);
+    can_main_fit->cd()->SetTickx(kTRUE);
+    can_main_fit->cd()->SetTicky(kTRUE);
     if (logy) {
-      cv1->cd()->SetLogy(kTRUE);
+      can_main_fit->cd()->SetLogy(kTRUE);
       h3->SetMaximum(20.*h3->GetMaximum());
     }
     h3->SetMarkerStyle(20);
     h3->SetMaximum(1.5*h3->GetMaximum());
     h3->Draw("ep");
-
-
     func->Draw("csame");
 
-    // after ACT cuts:
+    // add also the total fits after ACT cuts:
     func_act2cut->SetLineStyle(2);
     func_act2cut->Draw("csame");
     func_act3cut->SetLineStyle(3);
     func_act3cut->Draw("csame");
     
-    //for the individual components of the main fit
-    TF1* func1 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
-    TF1* func2 = new TF1("func2", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
-    TF1* func3 = new TF1("func3", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
-    
-    func1->SetParameter(0, func->GetParameter(0));
-    func1->SetParameter(1, func->GetParameter(2));
-    func1->SetParameter(2, func->GetParameter(3));
-    
-    func2->SetParameter(0, func->GetParameter(1));
-    func2->SetParameter(1, func->GetParameter(5));
-    func2->SetParameter(2, func->GetParameter(7));
-
-    if (isThreeComponentFit) {
-      func3->SetParameter(0, func->GetParameter(4));
-      func3->SetParameter(1, func->GetParameter(6));
-      func3->SetParameter(2, func->GetParameter(7));
-      func3->SetLineWidth(2);
-      func3->SetLineColor(kGreen+1);
-    } 
-    
-    func1->SetLineWidth(2);
-    func1->SetLineColor(kRed+1);
-    
-    func2->SetLineWidth(2);
-    func2->SetLineColor(kBlue+1);
-    
-    if (!isThreeComponentFit) {
-      func2->SetLineColor(kBlack);
-      func2->SetLineStyle(2);
-    }
-
-    func1->SetLineStyle(2);
-    func3->SetLineStyle(2);
- 
-    TLegend *leg1 = new TLegend(0.60, 0.6, 0.9, 0.88);
-    leg1 -> SetBorderSize(0);
-    int ip = int(fabs(p));
-    leg1 -> SetHeader("WCTE TB July 2022");
-    
+    // now get the the individual components of the main fit
+    TF1* func1 = 0;
+    TF1* func2 = 0;
+    TF1* func3 = 0;
+    GetIndividualFitComponents(func, func1, func2, func3, isThreeComponentFit);
     int Ne, Nmu, Npi, NeErr, NmuErr, NpiErr;
     AssignFitResults(func, h1, Ne, Nmu, Npi, NeErr, NmuErr, NpiErr, isThreeComponentFit);
 
+    // and the individual components of the fit after ACT2 amplitude cuts
+    TF1* func1_act2cut = 0;
+    TF1* func2_act2cut = 0;
+    TF1* func3_act2cut = 0;
+    GetIndividualFitComponents(func_act2cut, func1_act2cut, func2_act2cut, func3_act2cut, isThreeComponentFit);
     int Ne_act2cut, Nmu_act2cut, Npi_act2cut, NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut;
     AssignFitResults(func_act2cut, h1, Ne_act2cut, Nmu_act2cut, Npi_act2cut, NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut, isThreeComponentFit);
 
+    // could get the individual components of the fit after ACT3 cuts here as well
+    // but not needed
     int Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut;
     AssignFitResults(func_act3cut, h1, Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut, isThreeComponentFit);
 
-    leg1->AddEntry(h3,"Data", "PE");
-    leg1->AddEntry(func, "Fit", "L");
-
-    string ssignum = "+";
-    if (p < 0)
-      ssignum = "-";
-    title = "Fit e^{" + ssignum + "}, N = " + to_string(Ne) + " #pm " + to_string(NeErr);
-    leg1->AddEntry(func1, title.c_str(), "L");
-  
-    
-    if (isThreeComponentFit) {
-      title = "Fit #mu^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
-      leg1->AddEntry(func2, title.c_str(), "L");
-      title = "Fit #pi^{" + ssignum + "}, N = " + to_string(Npi) + " #pm " + to_string(NpiErr);
-      leg1->AddEntry(func3, title.c_str(), "L");
-    } else {
-      if (!isProtonFit)
-	title = "Fit #mu^{" + ssignum + "}+#pi^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
-      else	
-	title = "Fit p^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
-    }
-    
     func1->Draw("Csame");
     func2->Draw("Csame");          
     if (isThreeComponentFit)
       func3->Draw("Csame");
-    leg1->Draw("same");
-
-    // JK: TODO!!!
-    // draw also the histogram, main fit and indivdual components also for the ACT2cut results!
     
-
-// JK: todo: move this to a function DrawLines(TH1D *h3, ...);
-
-    // TLines
-    int ls = 2;
-    int lw = 2;
-    double y0 = h3->GetMinimum();
-    double y1 = 1.1* h3->GetBinContent(imax);
-    double dy = 0.02 * h3->GetBinContent(imax);
-    double dx = -0.005 * ( h3->GetXaxis()->GetXmax() - h3->GetXaxis()->GetXmin() );
     xe = func -> GetParameter(2);
-    
-    TLine *le = new TLine(xe, y0, xe, y1);
-    le -> SetLineColor(kRed+1);
-    le -> SetLineStyle(ls);
-    le -> SetLineWidth(lw);
-    le -> Draw();
-    TLatex *char_e = new TLatex(xe + dx, y1 + dy, "e");
-    char_e -> SetTextSize(0.03);
-    char_e -> SetTextColor(kRed+1);
-    char_e -> Draw();
+    DrawExpectedTimeArrivalLinesLegAndChi2(h1, h3, func, func1, func2, func3,
+					   p, imax, 
+					   isThreeComponentFit, isProtonFit,
+					   Ne, Nmu, Npi,
+					   NeErr, NmuErr, NpiErr,
+					   xe, dtmu, dtpi, dtp, dtd, dtt, dta);
 
-    TLine *lmu = new TLine(xe + dtmu, y0, xe + dtmu, y1);
-    lmu -> SetLineColor(kBlue+1);
-    lmu -> SetLineStyle(ls);
-    lmu -> SetLineWidth(lw);
-    lmu -> Draw();
-    TLatex *char_mu = new TLatex(xe + dx + dtmu, y1 + dy, "#mu");
-    char_mu -> SetTextSize(0.03);
-    char_mu -> SetTextColor(kBlue+1);
-    char_mu -> Draw();
 
-    TLine *lpi = new TLine(xe + dtpi, y0, xe + dtpi, y1);
-    lpi -> SetLineColor(kGreen+1);
-    lpi -> SetLineStyle(ls);
-    lpi -> SetLineWidth(lw);
-    lpi -> Draw();
-    TLatex *char_pi = new TLatex(xe + dx + dtpi, y1 + dy, "#pi");
-    char_pi -> SetTextSize(0.03);
-    char_pi -> SetTextColor(kGreen+1);
-    char_pi -> Draw();
+    // now draw also the histogram, main fit and indivdual components also for the ACT2cut results
+    h3_act2cut->SetStats(kFALSE);
+    TCanvas *can_main_fit_act2cut = new TCanvas("can_main_fit_act2cut", "", 1200, 800);
+    can_main_fit_act2cut->cd()->SetTickx(kTRUE);
+    can_main_fit_act2cut->cd()->SetTicky(kTRUE);
+    if (logy) {
+      can_main_fit_act2cut->cd()->SetLogy(kTRUE);
+    }
+    h3_act2cut->SetMaximum(h3->GetMaximum()); // yes, set max as in the case of the fit w/o cuts;)
+    h3_act2cut->SetMarkerStyle(20);
+    h3_act2cut->Draw("ep");
+    func_act2cut->Draw("csame");
 
-    //double dtpp = GetTofDiffWrtE(m[3], p, m[0]);
-    TLine *lp = new TLine(xe + dtp, y0, xe + dtp, y1);
-    lp -> SetLineColor(kBlack);
-    lp -> SetLineStyle(ls);
-    lp -> SetLineWidth(lw);
-    lp -> Draw();
-    TLatex *char_p = new TLatex(xe + dx + dtp, y1 + dy, "p");
-    char_p -> SetTextSize(0.03);
-    char_p -> SetTextColor(kBlack);
-    char_p -> Draw();
+    func1_act2cut->Draw("Csame");
+    func2_act2cut->Draw("Csame");          
+    if (isThreeComponentFit)
+      func3_act2cut->Draw("Csame");
     
-    TLine *ld = new TLine(xe + dtd, y0, xe + dtd, y1);
-    ld -> SetLineColor(kBlack);
-    ld -> SetLineStyle(ls);
-    ld -> SetLineWidth(lw);
-    ld -> Draw();
-    TLatex *char_d = new TLatex(xe + dx + dtd, y1 + dy, "d");
-    char_d -> SetTextSize(0.03);
-    char_d -> SetTextColor(kBlack);
-    char_d -> Draw();
-    
-    TLine *lt = new TLine(xe + dtt, y0, xe + dtt, y1);
-    lt -> SetLineColor(kBlack);
-    lt -> SetLineStyle(ls);
-    lt -> SetLineWidth(lw);
-    lt -> Draw();
-    TLatex *char_t = new TLatex(xe + dx + dtt, y1 + dy, "t");
-    char_t -> SetTextSize(0.03);
-    char_t -> SetTextColor(kBlack);
-    char_t -> Draw();
-    
-    TLine *la = new TLine(xe + dta, y0, xe + dta, y1);
-    la -> SetLineColor(kBlack);
-    la -> SetLineStyle(ls);
-    la -> SetLineWidth(lw);
-    la -> Draw();
-    TLatex *char_a = new TLatex(xe + dx + dta, y1 + dy, "#alpha");
-    char_a -> SetTextSize(0.03);
-    char_a -> SetTextColor(kBlack);
-    char_a -> Draw();
-    
+    xe = func_act2cut -> GetParameter(2);
+    DrawExpectedTimeArrivalLinesLegAndChi2(h1, h3_act2cut, func_act2cut, func1_act2cut, func2_act2cut, func3_act2cut,
+					   p, imax, 
+					   isThreeComponentFit, isProtonFit,
+					   Ne_act2cut, Nmu_act2cut, Npi_act2cut,
+					   NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut,
+					   xe, dtmu, dtpi, dtp, dtd, dtt, dta);
 
-    double chi2 = func0 -> GetChisquare();
-    int ndf = func0 -> GetNDF();
-    TLatex *chi2text = new TLatex(0.13, 0.85, Form("#chi^{2}/ndf = %2.1f/%i = %1.1f", chi2, ndf, chi2/ndf));
-    chi2text -> SetNDC();
-    chi2text -> SetTextSize(0.03);
-    chi2text -> Draw();
-     
+
+    // some printouts    
     cout << GetBeta(m[0], p) << " " << GetBeta(m[1], p) << " " << GetBeta(m[2], p) << " " << GetBeta(m[3], p) << endl;
     cout << l/c/GetBeta(m[0], p) << " " << l/c/GetBeta(m[1], p) << " " << l/c/GetBeta(m[2], p) << " " << l/c/GetBeta(m[3], p) << endl;
     cout << h2->GetMean() << " " << h2->GetMean()+l/c/GetBeta(m[1], p)-l/c/GetBeta(m[0], p) << " " << h2->GetMean()+l/c/GetBeta(m[2], p)-l/c/GetBeta(m[0], p) << endl;
@@ -609,30 +669,6 @@ void FitTOF(string fileName, int p, bool logy = true) {
 	// a by hand poion shift by Jiri!!!
 	//    double pioff = 0.35;
 	double pioff = 0.;
-	
-
-  /*
-
-  // OLD way/attempt by Jiri
-	// integrate the ASC2 distribution below non-ele thr in the TOF time widow to get the ASC muon and pion ID efficiency
-	// mu
-
-	double nACT2_act2cut_mu = IntegrateAlongYInGivenXWindow(hACT2_act2cut, func->GetParameter(5), tof_reso);
-	double nACT2_all_mu    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(5), tof_reso);
-	double eff_mu          = nACT2_act2cut_mu / nACT2_all_mu;
-  cout << " nACT2_act2cut_mu=" << nACT2_act2cut_mu
-       << " nACT2_all_mu=" << nACT2_all_mu
-       << endl;
-
-	// pi
-
-	double nACT3_act3cut_pi = IntegrateAlongYInGivenXWindow(hACT3_act3cut, func->GetParameter(6) + pioff, tof_reso);
-	double nACT3_all_pi    = IntegrateAlongYInGivenXWindow(hACT3_all, func->GetParameter(6) + pioff, tof_reso);
-	double eff_pi          = nACT3_act3cut_pi / nACT3_all_pi;
-cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
-     << " nACT3_all_pi=" << nACT3_all_pi
-     << endl;
-*/
 
 	// try the fit components results after the act2cut and w/o the cut
 	// the other try could be with the act3cut...to try?
@@ -643,6 +679,7 @@ cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
 	if (Npi > 0.)
 	  eff_pi = Npi_act2cut / (1.*Npi);
 
+	// Draw the ACT2 amplitude vs TOF arrival time, before and after cuts:
 	TString canname = asciiname.ReplaceAll("ascii", "ACTCuts").ReplaceAll(".txt", "").ReplaceAll("_output", "");
 	TCanvas *h2can = new TCanvas(canname, canname, 200, 200, 1000, 500);
 	h2can -> Divide(2,2);
@@ -663,64 +700,17 @@ cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
 	h2can -> cd(4);
 	hACT3_act3cut -> Draw("colz");
 
-	
-	// lines:
-	/*
-	x1 = func->GetParameter(5) - tof_reso;
- 	x2 = func->GetParameter(5) + tof_reso;
-	y1 = 	hACT3_act3cut -> GetYaxis() -> GetXmax();
-	y2 = 	hACT3_act3cut -> GetYaxis() -> GetXmin();
-
-	h2can -> cd(2);
-	
-	TLine *xlmu1 = new TLine(x1, y1, x1, y2);
-	xlmu1 -> SetLineColor(kBlue+1);
-	xlmu1 -> SetLineStyle(ls);
-	xlmu1 -> SetLineWidth(lw);
-	xlmu1 -> Draw();
-
-	TLine *xlmu2 = new TLine(x2, y1, x2, y2);
-	xlmu2 -> SetLineColor(kBlue+1);
-	xlmu2 -> SetLineStyle(ls);
-	xlmu2 -> SetLineWidth(lw);
-	xlmu2 -> Draw();
-
-	
-	x1 = pioff+ func->GetParameter(6) - tof_reso;
- 	x2 = pioff + func->GetParameter(6) + tof_reso;
-	
-	TLine *xlpi1 = new TLine(x1, y1, x1, y2);
-	xlpi1 -> SetLineColor(kGreen+1);
-	xlpi1 -> SetLineStyle(ls);
-	xlpi1 -> SetLineWidth(lw);
-	xlpi1 -> Draw();
-
-	TLine *xlpi2 = new TLine(x2, y1, x2, y2);
-	xlpi2 -> SetLineColor(kGreen+1);
-	xlpi2 -> SetLineStyle(ls);
-	xlpi2 -> SetLineWidth(lw);
-	xlpi2 -> Draw();
-	*/
-	
 	h2can -> Print(canname + ".png");
 	h2can -> Print(canname + ".pdf");
-
 	  
 	// so far zero error on the efficiency...
 	(*asciifile) << "eff_mu " << eff_mu  << " " << 0. << endl;
 	(*asciifile) << "eff_pi " << eff_pi  << " " << 0. << endl;
 	
-	
       } else     {
         // two-component fit
-	(*asciifile) << "N_mupi " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;
-      
-      /*
-      	// mu+pi
-	double nACT2_act2cut_mupi = IntegrateAlongYInGivenXWindow(hACT2_act2cut, func->GetParameter(5), tof_reso);
-	double nACT2_all_mupi    = IntegrateAlongYInGivenXWindow(hACT2_all, func->GetParameter(5), tof_reso);
-	double eff_mupi          = nACT2_act2cut_mupi / nACT2_all_mupi;
-      */
+	(*asciifile) << "N_mupi " <<  func->GetParameter(1)/h1->GetBinWidth(1) << " " << NmuErr << endl;      
+    
 	double eff_mupi = Nmu_act2cut /  (1.*Nmu);
 	// so far zero error on the efficiency...
 	(*asciifile) << "eff_mupi " << eff_mupi  << " " << 0. << endl;
@@ -730,10 +720,16 @@ cout << " nACT3_act3cut_pi=" << nACT3_act3cut_pi
 
     if (asciifile) asciifile->close();
 
+    // print:
     string name = fileName.substr(0, fileName.size()-5) + "_TOFfit.png";
     string namepdf = fileName.substr(0, fileName.size()-5) + "_TOFfit.pdf";
-    cv1->Print(name.c_str());
-    cv1->Print(namepdf.c_str());    
+    can_main_fit->Print(name.c_str());
+    can_main_fit->Print(namepdf.c_str());    
+
+    string name_act2cut = fileName.substr(0, fileName.size()-5) + "_TOFfit_act2cut.png";
+    string namepdf_act2cut = fileName.substr(0, fileName.size()-5) + "_TOFfit_act2cut.pdf";
+    can_main_fit_act2cut->Print(name_act2cut.c_str());
+    can_main_fit_act2cut->Print(namepdf_act2cut.c_str());    
 
     
     cout << "DONE!" << endl;
