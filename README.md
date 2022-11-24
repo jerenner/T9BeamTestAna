@@ -48,9 +48,12 @@ Running the waveform analysis, plotting and fitting for all momenta: done by **.
 
 One has to specify whether really run (0/1), or just print the commands to choose from, or optionally not run but just fit by '0f'. Momentum range low/high/p must be specified, so e.g.:
 
- - python ./python/run_momenta.py 1 low     # run, make histos, fit the TOF; for low momenta
- - python ./python/run_momenta.py 0f high   # do not run, just fit, higher momenta
- - python ./python/run_momenta.py 0 p       # just print commands for the proton runs
+ - python ./python/run_momenta.py 1 low    # run everytging: waveforms analyis, make histos, fit the TOF; for low momenta
+ - python ./python/run_momenta.py 1 high   # same as above; for high momenta
+ - python ./python/run_momenta.py 0f low   # do not run the waveform analysis, just fit, higher momenta
+ - python ./python/run_momenta.py 0m low   # do not run the waveform analysis, but run making the histograms and cuts
+ - python ./python/run_momenta.py 0fm low  # do not run the waveform analysis, but run making the histograms and cuts; and fit	
+ - python ./python/run_momenta.py 0 p      # just print commands for the proton runs
 
 Output are png's, pdf's; and mainly ascii files with fitted numbers of e, mu, pi; or p; or mu+pi over 300 MeV.
  - E.g. ascii_output_220p_plots.txt

@@ -19,11 +19,11 @@
 #include "TLatex.h"
 
 // ______________________________________________________
-void GetIndividualFitComponents(TF1 *func, TF1 *&func1, TF1 *&func2, TF1 *&func3, bool isThreeComponentFit)
+void GetIndividualFitComponents(TF1 *func, TF1 *&func1, TF1 *&func2, TF1 *&func3, bool isThreeComponentFit, TString tag = "")
 {
-  func1 = new TF1("func1", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
-  func2 = new TF1("func2", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
-  func3 = new TF1("func3", "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+  func1 = new TF1("func1" + tag, "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+  func2 = new TF1("func2" + tag, "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
+  func3 = new TF1("func3" + tag, "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
   
   func1->SetParameter(0, func->GetParameter(0));
   func1->SetParameter(1, func->GetParameter(2));
@@ -185,7 +185,7 @@ void DrawExpectedTimeArrivalLinesLegAndChi2(TH1D *h1,
       leg1->AddEntry(func3, title.c_str(), "L");
     } else {
       if (!isProtonFit)
-	title = "Fit #mu^{" + ssignum + "}+#pi^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
+	title = "Fit #mu^{" + ssignum + "}+#pi^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr); 
       else	
 	title = "Fit p^{" + ssignum + "}, N = " + to_string(Nmu) + " #pm " + to_string(NmuErr);
     }
@@ -233,6 +233,10 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
 		       double tof_mu, double tof_pi)
 {
 
+  // electrons:  norm [0], mean [2], sigma [3]
+  // muons:      norm [1], mean [5], sigma [7]
+  // pions:      norm [4], mean [6], sigma [7] -- same!
+  
     func->SetParName(0, "norm1");
     func->SetParameter(0, A);
     if (!isThreeComponentFit)
@@ -241,7 +245,7 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
       func->SetParLimits(0, 0, 1.2*A);
     }
     
-    func->SetParName(1, "norm2");
+    func->SetParName(1, "norm_mu");
     func->SetParameter(1, 0.3*A); // h3 -> GetMaximum()/2.);
     if (!isThreeComponentFit)
       func->SetParLimits(1, 0, 0.6*A);
@@ -270,7 +274,7 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
     func->SetParameter(3, func0 -> GetParameter(2));//h1->GetStdDev());
     //    func->SetParLimits(3, 0.4*h1->GetStdDev(), 1.2*h1->GetStdDev()); 
     
-    func->SetParName(4, "norm3");
+    func->SetParName(4, "norm_pi");
     func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
     func->SetParLimits(4, 0, 0.5*A);
 
@@ -281,6 +285,9 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
       //func->SetParLimits(5, (1. - mdelta)*tof_mu, (1. + mdelta)*tof_mu);
       func->SetParLimits(5, tof_el + dtmu*(1. - mdelta),       tof_el + dtmu*(1. + mdelta) );
       cout << "Muons mean par limits: " << tof_el + dtmu*(1. - mdelta) << ", " << tof_el + dtmu*(1. + mdelta)  << endl;
+      if (!isThreeComponentFit) {
+	func->SetParName(1, "normmupi");
+      }	
     } else {
       // proton fit
       func->SetParName(5, "mean_p");
@@ -321,14 +328,23 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
 
 void SetParsSpecialMomenta(int p, double A, TF1 *func, double tof_el, double tof_mu, double tof_pi)
 {
-
+  // electrons:  norm [0], mean [2], sigma [3]
+  // muons:      norm [1], mean [5], sigma [7]
+  // pions:      norm [4], mean [6], sigma [7] -- same!
+  
      if (p < 0) {
       // negative bias fo the beam
-       func->SetParameter(5, func -> GetParameter(5) + 0.5 * 200. / fabs(p));
-       func->SetParameter(6, func -> GetParameter(6) + 0.5 * 200. / fabs(p));
-       
+       double bias_mu = 0.5 * 200. / fabs(p);
+       double bias_pi = 0.5 * 200. / fabs(p);
+       func->SetParameter(5, func -> GetParameter(5) + bias_mu);
+       func->SetParameter(6, func -> GetParameter(6) + bias_pi);
     }
-    
+
+     // 200n, 220n, jk 22.11.2022, 24.11.2022
+    if (fabs(p + 200) < 1.e-3 || fabs(p + 220) < 1.e-3 ) {
+	func->SetParLimits(7, 0.1, 0.4);
+      }
+     
     // 200p, jk 22.11.2022
     if (fabs(p - 200) < 1.e-3) {
 	func->SetParameter(0, A); 
@@ -604,16 +620,18 @@ void FitTOF(string fileName, int p, bool logy = true) {
 
     // draw add also the total fits after ACT cuts:
     // can be removed
-    func_act2cut->SetLineStyle(2);
-    func_act2cut->Draw("csame");
-    func_act3cut->SetLineStyle(3);
-    func_act3cut->Draw("csame");
+    /*
+      func_act2cut->SetLineStyle(2);
+      func_act2cut->Draw("csame");
+      func_act3cut->SetLineStyle(3);
+      func_act3cut->Draw("csame");
+    */
     
     // now get the the individual components of the main fit
     TF1* func1 = 0;
     TF1* func2 = 0;
     TF1* func3 = 0;
-    GetIndividualFitComponents(func, func1, func2, func3, isThreeComponentFit);
+    GetIndividualFitComponents(func, func1, func2, func3, isThreeComponentFit, "");
     int Ne, Nmu, Npi, NeErr, NmuErr, NpiErr;
     AssignFitResults(func, h1, Ne, Nmu, Npi, NeErr, NmuErr, NpiErr, isThreeComponentFit);
 
@@ -621,7 +639,7 @@ void FitTOF(string fileName, int p, bool logy = true) {
     TF1* func1_act2cut = 0;
     TF1* func2_act2cut = 0;
     TF1* func3_act2cut = 0;
-    GetIndividualFitComponents(func_act2cut, func1_act2cut, func2_act2cut, func3_act2cut, isThreeComponentFit);
+    GetIndividualFitComponents(func_act2cut, func1_act2cut, func2_act2cut, func3_act2cut, isThreeComponentFit, "_act2cut");
     int Ne_act2cut, Nmu_act2cut, Npi_act2cut, NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut;
     AssignFitResults(func_act2cut, h1, Ne_act2cut, Nmu_act2cut, Npi_act2cut, NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut, isThreeComponentFit);
 

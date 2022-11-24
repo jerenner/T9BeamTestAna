@@ -383,7 +383,7 @@ void MakeDataPlots(string fileName, int mom) {
         } // non-electrons
 
 
-	if (act2v > 0.0057) { // was: 0.0060, tried also 0.0055
+	if (act2v > 0.0060) { // was: 0.0057, 0.0060, tried also 0.0055
 	  hTOFACT1V_act2cut.Fill(tof, act1v);
 	  hTOFACT2V_act2cut.Fill(tof, act2v);
 	  hTOFACT3V_act2cut.Fill(tof, act3v);
