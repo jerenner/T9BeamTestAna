@@ -1,4 +1,7 @@
 #!/snap/bin/pyroot
+
+# jiri kvita 2022
+
 from collections import OrderedDict
 import data_runs
 import pytools
@@ -12,6 +15,44 @@ import ctypes
 cans = []
 stuff = []
 
+MeV = 1.
+
+##########################################
+def getThrMomenta():
+    ms = {'mu' : 105.66*MeV, 'pi' : 139.57*MeV }
+    ns = [ 1.10, 1.15] # act0: 1.06
+    pthr = {}
+    for part in ms:
+        m = ms[part]
+        pthr[part] = 0.#[]
+        for n in ns:
+            beta = 1/n
+            gamma = 1./sqrt(1 - beta*beta)
+            p = beta*gamma*m
+            pthr[part] = p #.append(p)
+    return pthr
+
+##########################################
+def makeLines(pthr, h2, parts):
+    lines = []
+    y1 = h2.GetYaxis().GetXmin()
+    y2 = h2.GetYaxis().GetXmax()
+    for part in pthr:
+        p = pthr[part]
+        print(p, y1, p, y2)
+        line = ROOT.TLine(p, y1, p, y2)
+        line.SetLineStyle(2)
+        line.SetLineWidth(2)
+        line.SetLineColor(parts[part])
+        tex = ROOT.TLatex(p + 2.*MeV, 0.35*(y1+y2), 'p_{thr}^{#' + part + '}')
+        tex.SetTextColor(parts[part])
+        tex.SetTextSize(0.03)
+        lines.append(line)
+        lines.append(tex)
+    return lines
+
+
+##########################################
 
 def printGr(gr):
     x = ctypes.c_double(0.)
@@ -30,6 +71,11 @@ def main(argv):
     tsf = secsInDay / spillSep
 
     ROOT.gStyle.SetPadLeftMargin(0.15)
+
+    parts = {'e' : ROOT.kRed,
+         'mu' : ROOT.kBlue,
+         'pi' : ROOT.kGreen+2}
+
     
     #if len(sys.argv) > 1:
     #  foo = sys.argv[1]
@@ -114,9 +160,6 @@ def main(argv):
         xafilenamestmp.append(xafilenames[0])
         xafilenames = xafilenamestmp
     print(xafilenames)
-    parts = {'e' : ROOT.kRed,
-             'mu' : ROOT.kBlue,
-             'pi' : ROOT.kGreen+2}
     if twoComponentFit:
         parts = {'e' : ROOT.kRed,
                  'mupi' : ROOT.kMagenta
@@ -186,19 +229,19 @@ def main(argv):
     can = ROOT.TCanvas(canname, canname, 100, 100, 1100, 800)
     cans.append(can)
 
-    pmin = 180.
-    pmax = 310.
+    pmin = 180.*MeV
+    pmax = 310.*MeV
     y0 = 0
     y1 = 20 * tsf
 
     if twoComponentFit:
-        pmin = 290.
-        pmax = 370.
+        pmin = 290.*MeV
+        pmax = 370.*MeV
         y1 = 80 * tsf
     
     if isProtonFit:
-        pmin = 300.
-        pmax = 1100.
+        pmin = 300.*MeV
+        pmax = 1100.*MeV
         y1 = 1.5*300 * tsf
 
     h2 = ROOT.TH2D("tmp", "tmp;|p| [MeV/c];N / day", 100, pmin, pmax, 100, y0, y1)
@@ -268,19 +311,19 @@ def main(argv):
     canname = 'Effs_TBJuly2022_' + signTag + "_" + argv[2]
     canEff = ROOT.TCanvas(canname, canname, 0, 0, 1100, 800)
     cans.append(canEff)
-
-    pmin = 180.
-    pmax = 310.
+    canEff.cd()
+    pmin = 180.*MeV
+    pmax = 310.*MeV
     y0 = 0
     y1 = 1.4
 
     if twoComponentFit:
-        pmin = 290.
-        pmax = 370.
+        pmin = 290.*MeV
+        pmax = 370.*MeV
     
     if isProtonFit:
-        pmin = 300.
-        pmax = 1100.
+        pmin = 300.*MeV
+        pmax = 1100.*MeV
 
     h2Eff = ROOT.TH2D("tmpEff", "tmpEff;|p| [MeV/c];Efficiency", 100, pmin, pmax, 100, y0, y1)
     h2Eff.SetStats(0)
@@ -312,6 +355,14 @@ def main(argv):
                 texX = '#mu+#pi'
             legEff.AddEntry(gr, '#epsilon_{' + texX + '}^{' + signTag + '}', 'PL')
     legEff.Draw()
+    # threshold momenta:
+    pthr = getThrMomenta()
+    print(pthr)
+    plines = makeLines(pthr, h2Eff, parts)
+    print(plines)
+    stuff.append(plines)
+    for line in plines:
+        line.Draw()
 
     
     canEff.Update()

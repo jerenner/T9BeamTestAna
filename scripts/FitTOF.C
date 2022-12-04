@@ -20,6 +20,158 @@
 
 // ______________________________________________________
 
+void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
+		       TH1D *h3, 
+		       int p,
+		       double A,
+		       TF1 *func0,
+		       TF1 *func,
+		       double tof_el,
+		       double delta, double mdelta,
+		       double dtmu, double dtp,
+		       double tof_mu, double tof_pi)
+{
+
+  // electrons:  norm [0], mean [2], sigma [3]
+  // muons:      norm [1], mean [5], sigma [7]
+  // pions:      norm [4], mean [6], sigma [7] -- same!
+  
+    func->SetParName(0, "norm1");
+    func->SetParameter(0, A/2);
+    if (!isThreeComponentFit)
+      func->SetParLimits(0, 0.6*A, 1.2*A);
+    if (isProtonFit) {
+      func->SetParLimits(0, 0, 1.2*A);
+    }
+    
+    func->SetParName(1, "norm_mu");
+    func->SetParameter(1, 0.3*A); // h3 -> GetMaximum()/2.);
+    if (!isThreeComponentFit)
+      func->SetParLimits(1, 0, 0.6*A);
+    if (isProtonFit) {
+      func->SetParameter(1, A); 
+      func->SetParLimits(1, 0, 1.2*A);
+      
+      if (fabs(p) > 950) {
+	func->SetParameter(0, A/3.); 
+	func->SetParLimits(0, 0.1*A, 0.5*A);
+	func->SetParameter(1, A);
+	func->SetParLimits(1, 0.8*A, 2*A);	
+      }
+    }
+
+   
+    func->SetParName(2, "mean_e");
+    func->SetParameter(2, func0 -> GetParameter(1));//h1->GetMean());
+    //    func->SetParLimits(2, (1.-delta)*h1->GetMean(), (1. + delta)*h1->GetMean());
+    //if (isProtonFit && fabs(p) > 950) {
+    func->SetParameter(2, 39.5);
+    //}
+
+    func->SetParName(3, "sigma_e");
+    //func->FixParameter(2, 0.215);
+    func->SetParameter(3, func0 -> GetParameter(2));//h1->GetStdDev());
+    //    func->SetParLimits(3, 0.4*h1->GetStdDev(), 1.2*h1->GetStdDev()); 
+    
+    func->SetParName(4, "norm_pi");
+    func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
+    func->SetParLimits(4, 0, 1.*A); // was: 0.1. but not enough for high momenta
+
+    func->SetParName(5, "mean_mu");
+
+    if (!isProtonFit) {
+      func->SetParameter(5, tof_mu);
+      //func->FixParameter(5, tof_mu);
+      //func->SetParLimits(5, (1. - mdelta)*tof_mu, (1. + mdelta)*tof_mu);
+      func->SetParLimits(5, tof_el + dtmu*(1. - mdelta),       tof_el + dtmu*(1. + mdelta) );
+      cout << "Muons mean par limits: " << tof_el + dtmu*(1. - mdelta) << ", " << tof_el + dtmu*(1. + mdelta)  << endl;
+      if (!isThreeComponentFit) {
+	func->SetParName(1, "normmupi");
+      }
+      // jk 28.11.2022
+      func->SetParLimits(7, 0.05, 0.4); 
+    } else {
+      // proton fit
+      func->SetParName(5, "mean_p");
+      double valp = tof_el + dtp;
+      func->SetParameter(5, valp);
+      //func->FixParameter(5, valp);
+      double pdelta = 0.15;
+      func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
+      if (fabs(p) > 950) {
+	double valp = 39.5 + dtp;
+	func->SetParameter(5, valp);
+	func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
+      }
+    } // proton fit
+    
+    /*func->SetParName(6, "sigma_mu");
+    func->SetParameter(6, h3->GetStdDev());
+    func->SetParLimits(6, 0.9*h3->GetStdDev(), 1.1*h3->GetStdDev()); */
+    
+    func->SetParName(6, "mean_pi");
+    func->SetParameter(6, tof_pi);
+    //func->FixParameter(6, tof_pi);
+    func->SetParLimits(6,  (1. - mdelta)*tof_pi,  (1. - mdelta)*tof_pi);       
+    
+    func->SetParName(7, "sigma_mupi");
+    //func->FixParameter(2, 0.215);
+    func->SetParameter(7, h3->GetStdDev());
+    // jk 28.11.2022
+    //func->SetParLimits(7, 0.05, 0.6); 
+    //func->SetParLimits(7, 0.5*h3->GetStdDev(), 1.3*h3->GetStdDev());
+
+
+    if (!isProtonFit) { 
+      // adjust for the momentum bias:
+      // Dec 2022
+      if (p < 0) {
+	// negative bias fo the negative beam
+	if (fabs(p) < 255) {
+	  cout << "OK, adjusting beam biases for negative low momenta..." << endl;
+	  double bias_mu = 0.5 * 200. / fabs(p);
+	  double bias_pi = 0.5 * 200. / fabs(p);
+	  func->SetParameter(5, func -> GetParameter(5) + bias_mu);
+	  func->SetParameter(6, func -> GetParameter(6) + bias_pi);
+	} else {
+	}
+      } else  {
+	// positive bias fo the positive beam
+	if (fabs(p) < 255) {
+	  cout << "OK, adjusting beam biases for positive low momenta..." << endl;
+	  double bias_mu = -0.2 * 200. / fabs(p);
+	  double bias_pi = -0.25 * 200. / fabs(p);
+	  func->SetParameter(5, func -> GetParameter(5) + bias_mu);
+	  func->SetParameter(6, func -> GetParameter(6) + bias_pi);
+	} else {
+	}
+      }
+
+    
+      if (fabs(p) > 255) {
+	// pions expected to have a large contribution
+	double sf = 1.;
+	cout << h3 -> GetName() << endl;
+	if (TString(h3->GetName()).Contains("act2cut") || TString(h3->GetName()).Contains("act3cut"))
+	  sf = 1.9;
+	cout << "OK, adjusting mu and pi parameters for higher momenta... p=" << p << " sf=" << sf << endl;
+	// pions expected to have a large contribution
+	func->SetParameter(1, sf*0.5*A);
+	func->SetParameter(4, sf*0.5*A);
+	func->SetParameter(7, 0.15);
+      }
+    }
+    else {
+      // just a name change;-)
+      func->SetParameter(7, 0.5);
+      func->SetParName(7, "sigma_p");
+    }
+    
+}
+
+
+// ______________________________________________________
+
 void GetIndividualFitComponents(TF1 *func, TF1 *&func1, TF1 *&func2, TF1 *&func3, bool isThreeComponentFit, TString tag = "")
 {
   func1 = new TF1("func1" + tag, "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
@@ -222,200 +374,6 @@ void AssignFitResults(TF1 *func, TH1D *h1, int &Ne, int &Nmu, int &Npi,
 
 // ______________________________________________________
 
-void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
-		       TH1D *h3, 
-		       int p,
-		       double A,
-		       TF1 *func0,
-		       TF1 *func,
-		       double tof_el,
-		       double delta, double mdelta,
-		       double dtmu, double dtp,
-		       double tof_mu, double tof_pi)
-{
-
-  // electrons:  norm [0], mean [2], sigma [3]
-  // muons:      norm [1], mean [5], sigma [7]
-  // pions:      norm [4], mean [6], sigma [7] -- same!
-  
-    func->SetParName(0, "norm1");
-    func->SetParameter(0, A/2);
-    if (!isThreeComponentFit)
-      func->SetParLimits(0, 0.6*A, 1.2*A);
-    if (isProtonFit) {
-      func->SetParLimits(0, 0, 1.2*A);
-    }
-    
-    func->SetParName(1, "norm_mu");
-    func->SetParameter(1, 0.3*A); // h3 -> GetMaximum()/2.);
-    if (!isThreeComponentFit)
-      func->SetParLimits(1, 0, 0.6*A);
-    if (isProtonFit) {
-      func->SetParameter(1, A); 
-      func->SetParLimits(1, 0, 1.2*A);
-      
-      if (fabs(p) > 950) {
-	func->SetParameter(0, A/3.); 
-	func->SetParLimits(0, 0.1*A, 0.5*A);
-	func->SetParameter(1, A);
-	func->SetParLimits(1, 0.8*A, 2*A);	
-      }
-    }
-
-   
-    func->SetParName(2, "mean_e");
-    func->SetParameter(2, func0 -> GetParameter(1));//h1->GetMean());
-    //    func->SetParLimits(2, (1.-delta)*h1->GetMean(), (1. + delta)*h1->GetMean());
-    //if (isProtonFit && fabs(p) > 950) {
-    func->SetParameter(2, 39.5);
-    //}
-
-    func->SetParName(3, "sigma_e");
-    //func->FixParameter(2, 0.215);
-    func->SetParameter(3, func0 -> GetParameter(2));//h1->GetStdDev());
-    //    func->SetParLimits(3, 0.4*h1->GetStdDev(), 1.2*h1->GetStdDev()); 
-    
-    func->SetParName(4, "norm_pi");
-    func->SetParameter(4, 0.1*A); //h3 -> GetMaximum()/3.);
-    func->SetParLimits(4, 0, 0.5*A);
-
-    func->SetParName(5, "mean_mu");
-    if (!isProtonFit) {
-      func->SetParameter(5, tof_mu);
-      //func->FixParameter(5, tof_mu);
-      //func->SetParLimits(5, (1. - mdelta)*tof_mu, (1. + mdelta)*tof_mu);
-      func->SetParLimits(5, tof_el + dtmu*(1. - mdelta),       tof_el + dtmu*(1. + mdelta) );
-      cout << "Muons mean par limits: " << tof_el + dtmu*(1. - mdelta) << ", " << tof_el + dtmu*(1. + mdelta)  << endl;
-      if (!isThreeComponentFit) {
-	func->SetParName(1, "normmupi");
-      }
-      // jk 28.11.2022
-      func->SetParLimits(7, 0.05, 0.4); 
-    } else {
-      // proton fit
-      func->SetParName(5, "mean_p");
-      double valp = tof_el + dtp;
-      func->SetParameter(5, valp);
-      //func->FixParameter(5, valp);
-      double pdelta = 0.15;
-      func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
-      if (fabs(p) > 950) {
-	double valp = 39.5 + dtp;
-	func->SetParameter(5, valp);
-	func->SetParLimits(5, (1. - pdelta)*valp, (1. + pdelta)*valp);
-      }
-    }
-    
-    /*func->SetParName(6, "sigma_mu");
-    func->SetParameter(6, h3->GetStdDev());
-    func->SetParLimits(6, 0.9*h3->GetStdDev(), 1.1*h3->GetStdDev()); */
-    
-    func->SetParName(6, "mean_pi");
-    func->SetParameter(6, tof_pi);
-    //func->FixParameter(6, tof_pi);
-    func->SetParLimits(6,  (1. - mdelta)*tof_pi,  (1. - mdelta)*tof_pi);       
-    
-    func->SetParName(7, "sigma_mupi");
-    //func->FixParameter(2, 0.215);
-    func->SetParameter(7, h3->GetStdDev());
-    // jk 28.11.2022
-    //func->SetParLimits(7, 0.05, 0.6); 
-    //func->SetParLimits(7, 0.5*h3->GetStdDev(), 1.3*h3->GetStdDev()); 
-    if (isProtonFit) {
-     func->SetParameter(7, 0.5);
-     func->SetParName(7, "sigma_p");
-    }
-
-}
-
-// ______________________________________________________
-
-void SetParsSpecialMomenta(int p, double A, TF1 *func, double tof_el, double tof_mu, double tof_pi)
-{
-  // electrons:  norm [0], mean [2], sigma [3]
-  // muons:      norm [1], mean [5], sigma [7]
-  // pions:      norm [4], mean [6], sigma [7] -- same!
-  
-     if (p < 0) {
-      // negative bias fo the beam
-       double bias_mu = 0.5 * 200. / fabs(p);
-       double bias_pi = 0.5 * 200. / fabs(p);
-       func->SetParameter(5, func -> GetParameter(5) + bias_mu);
-       func->SetParameter(6, func -> GetParameter(6) + bias_pi);
-    }
-
-     // 200n, 220n, jk 22.11.2022, 24.11.2022
-    if (fabs(p + 200) < 1.e-3 || fabs(p + 220) < 1.e-3 ) {
-	func->SetParLimits(7, 0.1, 0.4);
-      }
-     
-    // 200p, jk 22.11.2022
-    if (fabs(p - 200) < 1.e-3) {
-	func->SetParameter(0, A); 
-	func->SetParLimits(0, 0.1*A, 2*A);
-	func->SetParameter(1, A);
-	func->SetParLimits(1, 0., 0.2*A);
-	func->SetParLimits(4, 0., 0.1*A);
-	func->SetParameter(5, 0.5*( tof_mu + tof_pi) );
-	func->SetParameter(7, 0.9);
-      }
-    
-    // 300n
-    if (fabs(p + 300) < 1.e-3) {
-	func->SetParameter(0, A); 
-	func->SetParLimits(0, 0.1*A, 2*A);
-	func->SetParameter(1, A);
-	func->SetParLimits(1, 0.*A, 2*A);
-	//func->SetParameter(5, 0.5*( tof_mu + tof_pi) );
-	//func->SetParameter(5, 0.5*( tof_mu + tof_pi) );
-	func->SetParameter(5, tof_mu + 0.2);
-	cout << "tof_el=" << tof_el << " tof_mu=" << tof_mu << endl;
-	func->SetParameter(7, 0.4);
-	func->SetParLimits(7, 0.1, 0.5);
-	// pi:
-	func->SetParameter(6, tof_pi + 0.2);	
-      }
-
-    // 340n
-    if (fabs(p + 340) < 1.e-3) {
-	func->SetParameter(0, 1.5*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.3*A);
-	func->SetParameter(6, 1.1*tof_mu);
-      }
-
-    // 340p
-    if (fabs(p - 340) < 1.e-3) {
-	func->SetParameter(0, 1.*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.*A);
-	func->SetParameter(6, 1.1*tof_mu);
-      }
-
-    // 360n
-    if (fabs(p + 360) < 1.e-3) {
-	func->SetParameter(0, 1.*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.*A);
-	func->SetParameter(6, 1.1*tof_mu);
-      }
-
-    // 360p
-    if (fabs(p - 360) < 1.e-3) {
-	func->SetParameter(0, 1.*A); 
-	func->SetParLimits(0, 0.1*A, 1.5*A);
-	func->SetParameter(1, A/4);
-	func->SetParLimits(1, 0.*A, 1.*A);
-	func->SetParameter(6, 1.1*tof_mu);
-      }
-}
-
-
-// ______________________________________________________
-
 const double cc = 299792458.;
 
 // ______________________________________________________
@@ -483,10 +441,10 @@ void PrintIntegrals(TH1D *h1, TH1D *h2, TH1D *h3)
 void FitTOF(string fileName, int p, bool logy = true) {
 
     // masses: [MeV]
-    // e, mu, pi, proton, deuteron, tritium, alpha
+    //             e, mu, pi, proton, deuteron, tritium, alpha
     double m[7] = {0.511, 105.66, 139.57, 938.470, 1876., 3.01604928*931.494102, 3727.379};
     double c = 0.299792458; // [m/ns]
-    double l = 2.9;
+    double l = 2.9; // [m]
 
     bool isThreeComponentFit = fabs(p) < 301.;
     bool isProtonFit = fabs(p) > 390.;
@@ -604,9 +562,11 @@ void FitTOF(string fileName, int p, bool logy = true) {
 
     // fits for TOF after ACT2 nad ACT3 cuts:
     TF1 *func_act2cut = (TF1*)func -> Clone(TString(func -> GetName()) + "_act2cut");
+    SetInitialFitPars(isThreeComponentFit, isProtonFit, h3_act2cut, p, A, func0, func_act2cut, tof_el, delta, mdelta, dtmu, dtp, tof_mu, tof_pi);
     h3_act2cut->Fit(func_act2cut);
 
     TF1 *func_act3cut = (TF1*)func -> Clone(TString(func -> GetName()) + "_act3cut");
+    SetInitialFitPars(isThreeComponentFit, isProtonFit, h3_act3cut, p, A, func0, func_act3cut, tof_el, delta, mdelta, dtmu, dtp, tof_mu, tof_pi);
     h3_act3cut->Fit(func_act3cut);
 
     // plot main fit result
@@ -829,11 +789,18 @@ void FitTOF(string fileName, int p, bool logy = true) {
     can_main_fit->Print(name.c_str());
     can_main_fit->Print(namepdf.c_str());    
 
+    /*
     string name_act2cut = fileName.substr(0, fileName.size()-5) + "_TOFfit_act2cut.png";
     string namepdf_act2cut = fileName.substr(0, fileName.size()-5) + "_TOFfit_act2cut.pdf";
     can_main_fit_act2cut->Print(name_act2cut.c_str());
     can_main_fit_act2cut->Print(namepdf_act2cut.c_str());    
+    */
     
+    string name_act3cut = fileName.substr(0, fileName.size()-5) + "_TOFfit_act3cut.png";
+    string namepdf_act3cut = fileName.substr(0, fileName.size()-5) + "_TOFfit_act3cut.pdf";
+    can_main_fit_act3cut->Print(name_act3cut.c_str());
+    can_main_fit_act3cut->Print(namepdf_act3cut.c_str());    
+
     cout << "DONE!" << endl;
     cout << "See also " << asciiname.Data() << endl;
 }
