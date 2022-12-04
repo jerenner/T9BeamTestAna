@@ -19,6 +19,7 @@
 #include "TLatex.h"
 
 // ______________________________________________________
+
 void GetIndividualFitComponents(TF1 *func, TF1 *&func1, TF1 *&func2, TF1 *&func3, bool isThreeComponentFit, TString tag = "")
 {
   func1 = new TF1("func1" + tag, "[0]*TMath::Gaus(x, [1], [2], 1)", 38, 43.5);
@@ -238,7 +239,7 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
   // pions:      norm [4], mean [6], sigma [7] -- same!
   
     func->SetParName(0, "norm1");
-    func->SetParameter(0, A);
+    func->SetParameter(0, A/2);
     if (!isThreeComponentFit)
       func->SetParLimits(0, 0.6*A, 1.2*A);
     if (isProtonFit) {
@@ -265,9 +266,9 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
     func->SetParName(2, "mean_e");
     func->SetParameter(2, func0 -> GetParameter(1));//h1->GetMean());
     //    func->SetParLimits(2, (1.-delta)*h1->GetMean(), (1. + delta)*h1->GetMean());
-    if (isProtonFit && fabs(p) > 950) {
-      func->SetParameter(2, 39.5);
-    }
+    //if (isProtonFit && fabs(p) > 950) {
+    func->SetParameter(2, 39.5);
+    //}
 
     func->SetParName(3, "sigma_e");
     //func->FixParameter(2, 0.215);
@@ -287,7 +288,9 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
       cout << "Muons mean par limits: " << tof_el + dtmu*(1. - mdelta) << ", " << tof_el + dtmu*(1. + mdelta)  << endl;
       if (!isThreeComponentFit) {
 	func->SetParName(1, "normmupi");
-      }	
+      }
+      // jk 28.11.2022
+      func->SetParLimits(7, 0.05, 0.4); 
     } else {
       // proton fit
       func->SetParName(5, "mean_p");
@@ -315,7 +318,8 @@ void SetInitialFitPars(bool isThreeComponentFit, bool isProtonFit,
     func->SetParName(7, "sigma_mupi");
     //func->FixParameter(2, 0.215);
     func->SetParameter(7, h3->GetStdDev());
-    //func->SetParLimits(7, 0.05, 1.); 
+    // jk 28.11.2022
+    //func->SetParLimits(7, 0.05, 0.6); 
     //func->SetParLimits(7, 0.5*h3->GetStdDev(), 1.3*h3->GetStdDev()); 
     if (isProtonFit) {
      func->SetParameter(7, 0.5);
@@ -512,7 +516,7 @@ void FitTOF(string fileName, int p, bool logy = true) {
    
     // ORIGINAL: string basehname = "hTOFOther"; original, for standard TOF fit
     // hack by Jiri, to extract mu and pi efficiencies ont he full sample and after dedicated ACT2 cuts
-    string basehname = "hTOFAll";
+    string basehname = "hTOFAll"; // still, this is after custom ACT1 electron removal cut
     if (isProtonFit) {
       basehname = "hTOFAllWide"; 
     }
@@ -582,7 +586,7 @@ void FitTOF(string fileName, int p, bool logy = true) {
     // set initial fit parameters
     SetInitialFitPars(isThreeComponentFit, isProtonFit, h3, p, A, func0, func, tof_el, delta, mdelta, dtmu, dtp, tof_mu, tof_pi);
     // special cases
-    SetParsSpecialMomenta(p, A, func,  tof_el, tof_mu, tof_pi);
+    // old: for the case of w/o any el cuts SetParsSpecialMomenta(p, A, func,  tof_el, tof_mu, tof_pi);
 
     // print fit initial parameters
     cout << "The initial parameters are: " << endl;
@@ -644,7 +648,11 @@ void FitTOF(string fileName, int p, bool logy = true) {
     AssignFitResults(func_act2cut, h1, Ne_act2cut, Nmu_act2cut, Npi_act2cut, NeErr_act2cut, NmuErr_act2cut, NpiErr_act2cut, isThreeComponentFit);
 
     // could get the individual components of the fit after ACT3 cuts here as well
-    // but not needed
+    // and the individual components of the fit after ACT2 amplitude cuts
+    TF1* func1_act3cut = 0;
+    TF1* func2_act3cut = 0;
+    TF1* func3_act3cut = 0;
+    GetIndividualFitComponents(func_act3cut, func1_act3cut, func2_act3cut, func3_act3cut, isThreeComponentFit, "_act3cut");
     int Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut;
     AssignFitResults(func_act3cut, h1, Ne_act3cut, Nmu_act3cut, Npi_act3cut, NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut, isThreeComponentFit);
 
@@ -664,6 +672,7 @@ void FitTOF(string fileName, int p, bool logy = true) {
 					   tof_el, dtmu, dtpi, dtp, dtd, dtt, dta);
 
 
+    // ---------------------------------------------------------------------------------------------------
     // and now draw also the histogram, main fit and indivdual components also for the ACT2cut results
     h3_act2cut->SetStats(kFALSE);
     TCanvas *can_main_fit_act2cut = new TCanvas("can_main_fit_act2cut", "", 1200, 800);
@@ -691,6 +700,37 @@ void FitTOF(string fileName, int p, bool logy = true) {
 					   tof_el, dtmu, dtpi, dtp, dtd, dtt, dta);
 
 
+    // ---------------------------------------------------------------------------------------------------
+    // sorry, the same code just act2cut --> act3cut
+    // and now draw also the histogram, main fit and indivdual components also for the ACT3cut results
+    h3_act3cut->SetStats(kFALSE);
+    TCanvas *can_main_fit_act3cut = new TCanvas("can_main_fit_act3cut", "", 1200, 800);
+    can_main_fit_act3cut->cd()->SetTickx(kTRUE);
+    can_main_fit_act3cut->cd()->SetTicky(kTRUE);
+    if (logy) {
+      can_main_fit_act3cut->cd()->SetLogy(kTRUE);
+    }
+    h3_act3cut->SetMaximum(h3->GetMaximum()); // yes, set max same as in the case of the fit w/o cuts;)
+    h3_act3cut->SetMarkerStyle(20);
+    h3_act3cut->Draw("ep");
+    func_act3cut->Draw("csame");
+
+    func1_act3cut->Draw("Csame");
+    func2_act3cut->Draw("Csame");          
+    if (isThreeComponentFit)
+      func3_act3cut->Draw("Csame");
+    
+    tof_el = func_act3cut -> GetParameter(2);
+    DrawExpectedTimeArrivalLinesLegAndChi2(h1, h3_act3cut, func_act3cut, func1_act3cut, func2_act3cut, func3_act3cut,
+					   p, imax, 
+					   isThreeComponentFit, isProtonFit,
+					   Ne_act3cut, Nmu_act3cut, Npi_act3cut,
+					   NeErr_act3cut, NmuErr_act3cut, NpiErr_act3cut,
+					   tof_el, dtmu, dtpi, dtp, dtd, dtt, dta);
+
+
+
+    
     // some printouts    
     cout << GetBeta(m[0], p) << " " << GetBeta(m[1], p) << " " << GetBeta(m[2], p) << " " << GetBeta(m[3], p) << endl;
     cout << l/c/GetBeta(m[0], p) << " " << l/c/GetBeta(m[1], p) << " " << l/c/GetBeta(m[2], p) << " " << l/c/GetBeta(m[3], p) << endl;
@@ -734,14 +774,13 @@ void FitTOF(string fileName, int p, bool logy = true) {
 	//    double pioff = 0.35;
 	double pioff = 0.;
 
-	// try the fit components results after the act2cut and w/o the cut
-	// the other try could be with the act3cut...to try?
+	// try the fit components results after the act cut and w/o the cut
 	double eff_mu = 0.;
 	if (Nmu > 0.)
-	  eff_mu = Nmu_act2cut /  (1.*Nmu);
+	  eff_mu = Nmu_act3cut /  (1.*Nmu);
 	double eff_pi = 0.;
 	if (Npi > 0.)
-	  eff_pi = Npi_act2cut / (1.*Npi);
+	  eff_pi = Npi_act3cut / (1.*Npi);
 
 	// Draw the ACT2 amplitude vs TOF arrival time, before and after cuts:
 	TString canname = asciiname.ReplaceAll("ascii", "ACTCuts").ReplaceAll(".txt", "").ReplaceAll("_output", "");

@@ -16,8 +16,8 @@ using namespace std;
 // ______________________________________________________________
 // ______________________________________________________________
 
-double GetBeta(double mass, double mom) {
-    double bg = mom/mass;
+double GetBeta(double mass, double momentum) {
+    double bg = momentum/mass;
     double beta = sqrt(bg*bg/(1+bg*bg));
     return beta;
 }
@@ -25,7 +25,7 @@ double GetBeta(double mass, double mom) {
 
 // ______________________________________________________________
 
-void MakeDataPlots(string fileName, int mom) {
+void MakeDataPlots(string fileName, int momentum) {
     vector<vector<double> > *peakVoltage = NULL;
     vector<vector<double> > *peakTime = NULL;
     vector<vector<double> > *signalTime = NULL;
@@ -203,7 +203,7 @@ void MakeDataPlots(string fileName, int mom) {
         bool pass = true;
         bool isEl = false;
 	
-        switch(mom)	  {
+        switch(momentum)	  {
 
 	  case 200: {
 	    if (act1v > 0.10)
@@ -345,7 +345,7 @@ void MakeDataPlots(string fileName, int mom) {
 	        
 	  default: {
 	    if (i < 10)
-	      cout << "WARNING: Using default settings for the " << mom << " MeV/c beam" << endl;
+	      cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
 	    if (act1v > 0.18)
 	      isEl = true;
 	    if (act2v > 0.025)
@@ -359,9 +359,7 @@ void MakeDataPlots(string fileName, int mom) {
 
         if (!pass) continue;
 	
-        hTOFAll.Fill(tof);
-        hTOFAllWide.Fill(tof);
-
+      
         if (isEl) {
 	  // electrons
 	  hTOFEl.Fill(tof);
@@ -382,34 +380,38 @@ void MakeDataPlots(string fileName, int mom) {
 	 
         } // non-electrons
 
+	if (act1v < 0.32) { // custom electron removal cut
+	
+	  hTOFAll.Fill(tof);
+	  hTOFAllWide.Fill(tof);
 
-	if (act2v > 0.0060) { // was: 0.0057, 0.0060, tried also 0.0055
-	  hTOFACT1V_act2cut.Fill(tof, act1v);
-	  hTOFACT2V_act2cut.Fill(tof, act2v);
-	  hTOFACT3V_act2cut.Fill(tof, act3v);
+	
+	  if (act2v > 0.0080) { // was: 0.0057, 0.0060, tried also 0.0055
+	    hTOFACT1V_act2cut.Fill(tof, act1v);
+	    hTOFACT2V_act2cut.Fill(tof, act2v);
+	    hTOFACT3V_act2cut.Fill(tof, act3v);
 	      
-	  hTOFACT1C_act2cut.Fill(tof, act1c);
-	  hTOFACT2C_act2cut.Fill(tof, act2c);
-	  hTOFACT3C_act2cut.Fill(tof, act3c);
+	    hTOFACT1C_act2cut.Fill(tof, act1c);
+	    hTOFACT2C_act2cut.Fill(tof, act2c);
+	    hTOFACT3C_act2cut.Fill(tof, act3c);
 
-	  hTOF_act2cut.Fill(tof);
-        }
+	    hTOF_act2cut.Fill(tof);
+	  } // act2 cuts
 
-	// TO VALIDATE the cut values!!!
-	  if (act3v > 0.0060) { // was: 0.0060
-	  hTOFACT1V_act3cut.Fill(tof, act1v);
-	  hTOFACT2V_act3cut.Fill(tof, act2v);
-	  hTOFACT3V_act3cut.Fill(tof, act3v);
+	  // TO VALIDATE the cut values!!!
+	  if (act3v > 0.0080) { // was: 0.0060
+	    hTOFACT1V_act3cut.Fill(tof, act1v);
+	    hTOFACT2V_act3cut.Fill(tof, act2v);
+	    hTOFACT3V_act3cut.Fill(tof, act3v);
 	      
-	  hTOFACT1C_act3cut.Fill(tof, act1c);
-	  hTOFACT2C_act3cut.Fill(tof, act2c);
-	  hTOFACT3C_act3cut.Fill(tof, act3c);
+	    hTOFACT1C_act3cut.Fill(tof, act1c);
+	    hTOFACT2C_act3cut.Fill(tof, act2c);
+	    hTOFACT3C_act3cut.Fill(tof, act3c);
 
-	  hTOF_act3cut.Fill(tof);
+	    hTOF_act3cut.Fill(tof);
+	  } // act3 cuts
 
-        }
-
-
+	} // custom electron removal cut
 
 
 	
