@@ -42,7 +42,7 @@ void AnalysisConfig::ReadConfig(){
 	contents.erase(remove(contents.begin(), contents.end(), '\n'), contents.end());
 	contents.erase(remove(contents.begin(), contents.end(), ' '), contents.end());
 	jsmn_parser p;
-	jsmntok_t t[256];
+	jsmntok_t t[256*2]; // modified by Jiri 2023 from 256 to 256*2
 
 
 	jsmn_init(&p);

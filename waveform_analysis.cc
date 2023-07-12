@@ -9,6 +9,8 @@
 #include "TH1D.h"
 #include "WaveformAnalysis.h"
 
+// Author: Matej Pavin 2022
+// modified for 32 channels in 2023 by Jiri Kvita
 
 using namespace std;
 
@@ -63,6 +65,7 @@ int main(int argc, char **argv){
     vector<TH1D*> waveforms;
     vector<WaveformAnalysis> waveAna;
 
+    // TO CHECK!
     int nChannels = 0;
     for(int i = 0; i < cfg.GetNumberOfChannels(); i++){
         waveforms.push_back(NULL);
@@ -86,45 +89,68 @@ int main(int argc, char **argv){
 
     //TH1D *waveforms[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     int timestamp;
+    uint64_t triggerTime0;
     uint64_t triggerTime1;
     uint64_t triggerTime2;
+    uint64_t triggerTime3;
     int serialnumber;
     int freqsetting;
 
-    TChain chain1("midas_data1");
-    TChain chain2("midas_data2");
+    const int nDigitizers = 4;
+    const int nTotChannels = 32;
+    
+    // new 2023 difgitized tree names
+    TChain chain0("midas_data_D300");
+    TChain chain1("midas_data_D301");
+    TChain chain2("midas_data_D302");
+    TChain chain3("midas_data_D303");
     for(auto i : fileNames){
+        chain0.Add(i.c_str());
         chain1.Add(i.c_str());
-        chain2.Add(i.c_str());
+	chain2.Add(i.c_str());
+	chain3.Add(i.c_str());
     }
     //chain.SetBranchAddress("timestamp",&timestamp);
     //chain.SetBranchAddress("dig1Time",&dig1Time);
     //chain.SetBranchAddress("dig2Time",&dig2Time);
     //chain.SetBranchAddress("serialnumber",&serialnumber);
+    chain0.SetBranchAddress("triggerTime",&triggerTime0);
     chain1.SetBranchAddress("triggerTime",&triggerTime1);
     chain2.SetBranchAddress("triggerTime",&triggerTime2);
+    chain3.SetBranchAddress("triggerTime",&triggerTime3);
     //chain.SetBranchAddress("freqsetting",&freqsetting);
 
 
-    for(int i=0; i<cfg.GetNumberOfChannels()/2; i++){
-        chain1.SetBranchAddress(Form("Channel%d",i),&(waveforms.at(i)));
+    int iglobalCh = 0;
+    for(int i=0; i<cfg.GetNumberOfChannels()/nDigitizers; i++){
+        chain0.SetBranchAddress(Form("Channel%d",i),&(waveforms.at(iglobalCh)));
+	iglobalCh++;
     }
-    for(int i=0; i<cfg.GetNumberOfChannels()/2; i++){
-        chain2.SetBranchAddress(Form("Channel%d",i),&(waveforms.at(i+cfg.GetNumberOfChannels()/2)));
+    for(int i=0; i<cfg.GetNumberOfChannels()/nDigitizers; i++){
+      chain1.SetBranchAddress(Form("Channel%d",i),&(waveforms.at(iglobalCh)));
+	iglobalCh++;
+    }
+    for(int i=0; i<cfg.GetNumberOfChannels()/nDigitizers; i++){
+      chain2.SetBranchAddress(Form("Channel%d",i),&(waveforms.at(iglobalCh)));
+	iglobalCh++;
+    }
+    for(int i=0; i<cfg.GetNumberOfChannels()/nDigitizers; i++){
+      chain3.SetBranchAddress(Form("Channel%d",i),&(waveforms.at(iglobalCh)));
+	iglobalCh++;
     }
 
 
 
 
 
-    int nent = chain1.GetEntries();
-    //nent = 81;
+    int nent = chain0.GetEntries();
+    // HACK nent = 81;
 
     TFile output(outFile.c_str(), "RECREATE");
     output.cd();
-    double pedestal[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    double pedestal[nTotChannels] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-    double pedestalSigma[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+    double pedestalSigma[nTotChannels] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
     
     //vector<double> pedestal;
     //vector<double> pedestalSigma;
@@ -138,8 +164,10 @@ int main(int argc, char **argv){
 
     
     ana_data->Branch("nChannels",&nChannels,"nChannels/I");
+    ana_data->Branch("triggerTime0",&triggerTime0,"triggerTime0/I");
     ana_data->Branch("triggerTime1",&triggerTime1,"triggerTime1/I");
     ana_data->Branch("triggerTime2",&triggerTime2,"triggerTime2/I");
+    ana_data->Branch("triggerTime3",&triggerTime3,"triggerTime3/I");
     ana_data->Branch("Pedestal",pedestal,"Pedestal[nChannels]/D");
     ana_data->Branch("PedestalSigma", pedestalSigma, "PedestalSigma[nChannels]/D"); 
     ana_data->Branch("PeakVoltage",&peakVoltage);
@@ -149,11 +177,19 @@ int main(int argc, char **argv){
 
     TCanvas *can = new TCanvas("waveforms");
 
+    // +--------------------------+
+    // |       Event loop!        |
+    // +--------------------------+
+    
     for(int i = 0; i < nent; i++){
+      
         //cout << "++++++++++++++++++++++++" << endl;
+        chain0.GetEntry(i);
         chain1.GetEntry(i);
         chain2.GetEntry(i);
-        if(!((i+1)%1000))
+        chain3.GetEntry(i);
+	
+        if (!((i+1) % 1000))
 	  cout << "\rProcessing event #: " << i+1 << " / " << nent << flush;
 
         peakVoltage.clear();
