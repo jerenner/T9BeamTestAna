@@ -11,6 +11,7 @@ using namespace std;
 
 // Matej Pavin 2022
 // modified by Jiri Kvita 2022
+// modified for 2023 32 channels July 2023
 
 // ______________________________________________________________
 // ______________________________________________________________
@@ -30,8 +31,10 @@ void MakeDataPlots(string fileName, int momentum) {
     vector<vector<double> > *peakTime = NULL;
     vector<vector<double> > *signalTime = NULL;
     vector<vector<double> > *intCharge = NULL;
-    double pedestal[16];
-    double pedestalSigma[16];
+
+    const int nChannels = 32;
+    double pedestal[nChannels];
+    double pedestalSigma[nChannels];
 
     
     TFile inFile(fileName.c_str(), "READ");
@@ -113,7 +116,7 @@ void MakeDataPlots(string fileName, int momentum) {
     TH2D hACT3CACT2C("hRef_ACT3CACT2C", "; ACT3 Charge; ACT2 Charge", 200, 0., 0.002, 200, 0., 0.002);
     TH2D hACT1CACT3C("hRef_ACT1CACT3C", "; ACT1 Charge; ACT3 Charge", 200, 0., 0.016, 200, 0., 0.002);
 
-    for(int i = 0; i < 16; i++) {
+    for(int i = 0; i < nChannels; i++) {
         string name1 = "hRef_Charge" + to_string(i);
         string name2 = "hRef_Voltage" + to_string(i);
         string name3 = "hRef_Hits" + to_string(i);
@@ -137,14 +140,17 @@ void MakeDataPlots(string fileName, int momentum) {
         hTime.push_back(temp5);
     }
 
-    // event loop
-    
+    // +-------------------------------+
+    // |         event loop            |
+    // +-------------------------------+
+
+    cout << "Event loop!" << endl;
     for(int i = 0; i < ent; i++) {
 
         tree->GetEntry(i);
-        vector<int> indices(16, 0);;
+        vector<int> indices(nChannels, 0);;
 
-        for(int j = 0; j < 16; j++) {
+        for(int j = 0; j < nChannels; j++) {
 
             int ind = std::max_element(peakVoltage->at(j).begin(),peakVoltage->at(j).end()) - peakVoltage->at(j).begin();
             indices.at(j) = ind;
@@ -205,75 +211,7 @@ void MakeDataPlots(string fileName, int momentum) {
 	
         switch(momentum)	  {
 
-	  case 200: {
-	    if (act1v > 0.10)
-	      isEl = true;
-	    if (act2v > 0.010)
-	      isEl = true; 
-	    if (act3v > 0.012)
-	      isEl = true;
-	    break;
-	  }
-            
-	  case -200: {
-	    if (act1v > 0.10)
-	      isEl = true;
-	    if (act2v > 0.010)
-	      isEl = true; 
-	    if (act3v > 0.012)
-	      isEl = true;
-	    break;
-	  }
-
-	  case 220: {
-
-	    /*double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.0014, 0.0014, 0.0016, 0.0014};
-	      for(int j = 0; j < 16; j++) {
-                
-	      if (pedestalSigma[j] > pedestalSigmaCut[j]) {
-	      pass = false;
-	      break;
-	      }
-	      }*/
-
-	    if (act1v > 0.12)
-	      isEl = true;
-	    if (act2v > 0.018)
-	      isEl = true; 
-	    if (act3v > 0.035)
-	      isEl = true;                       
-	    break;
-	  }
-            
-	  case -220: {
-	    /*double pedestalSigmaCut[16] = {0.0014, 0.0018, 0.0014, 0.0012, 0.0012, 0.0012, 0.0028, 0.0014, 0.0018, 0.0014, 0.0014, 0.0014, 0.005, 0.009, 0.006, 0.006};
-	      for(int j = 0; j < 16; j++) {
-                
-	      if (pedestalSigma[j] > pedestalSigmaCut[j]) {
-	      pass = false;
-	      break;
-	      }
-	      }*/
-                   
-	    if (act1v > 0.18)
-	      isEl = true;
-	    if (act2v > 0.025)
-	      isEl = true; 
-	    if (act3v > 0.022)
-	      isEl = true;
-	    break;
-	  }
-            
-	  case 300: { //; jk
-	    if (act1v > 0.18)
-	      isEl = true;
-	    if (act2v > 0.025)
-	      isEl = true; 
-	    if (act3v > 0.022)
-	      isEl = true;
-	    break;
-	  } // 300
-
+	  // just a code example from 2022
 	  case 320: { //; jk
 	    if (act1v > 0.18)
 	      isEl = true;
@@ -284,26 +222,8 @@ void MakeDataPlots(string fileName, int momentum) {
 	    break;
 	  } // 320
 
-	  case -300: { //; jk
-	    if (act1v > 0.18)
-	      isEl = true;
-	    if (act2v > 0.025)
-	      isEl = true; 
-	    if (act3v > 0.022)
-	      isEl = true;
-	    break;
-	  } // -300
-
-	  case -320: { //; jk
-	    if (act1v > 0.18)
-	      isEl = true;
-	    if (act2v > 0.025)
-	      isEl = true; 
-	    if (act3v > 0.022)
-	      isEl = true;
-	    break;
-	  } // -320
-
+	 
+	    /*
 	  case 400: {
 	    double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
 	    for(int j = 0; j < 16; j++) {
@@ -314,34 +234,7 @@ void MakeDataPlots(string fileName, int momentum) {
 	    }
 	    break;
 	  } // 400
-	  
-	  case 500: {
-	    for(int j = 8; j < 16; j++) {
-	      if (peakVoltage->at(j).at(indices.at(j)) >1.5) {
-		pass = false;
-		break;
-	      }
-	    }
-	    double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
-	    for(int j = 0; j < 16; j++) {
-	      if (peakVoltage->at(j).at(indices.at(j)) < voltageCut[j]) {
-		pass = false;
-		break;
-	      }
-	    }
-	    break;    
-	  } // 500
-
-	  case 1000: {
-	    double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
-	    for(int j = 0; j < 16; j++) {
-	      if (peakVoltage->at(j).at(indices.at(j)) < voltageCut[j]) {
-		pass = false;
-		break;
-	      }
-	    }
-	    break;   
-	  } // 1000
+	    */
 	        
 	  default: {
 	    if (i < 10)
@@ -416,6 +309,7 @@ void MakeDataPlots(string fileName, int momentum) {
 
 	
     } // entries
+    cout << "End of event loop!" << endl;
     
     string outFileName = fileName.substr(0, fileName.size()-5) + "_plots.root";
     

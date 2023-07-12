@@ -14,48 +14,60 @@
 
 using namespace std;
 
-int main(int argc, char **argv){
+// _______________________________________________________________________________
+
+void printUsage(char *scriptname) {
+       cerr << "USAGE: " << scriptname << "-i input_list_file -o output_root_file -c analysis_config.json" << endl;
+
+}
+// _______________________________________________________________________________
+
+
+
+// _______________________________________________________________________________
+// _______________________________________________________________________________
+// _______________________________________________________________________________
+
+
+int main(int argc, char **argv) {
 
     InputParser input(argc, argv);
 
-    if(input.cmdOptionExists("-h")) {
-        cerr << "USAGE: " << argv[0] << "-i input_list_file -o output_root_file -c analysis_config.json" << endl;
-        exit(EXIT_SUCCESS);
+    if (input.cmdOptionExists("-h")) {
+      printUsage(argv[0]);
+      exit(EXIT_SUCCESS);
     }
 
-
-
-    if(!input.cmdOptionExists("-i")) {
+    if (!input.cmdOptionExists("-i")) {
         cerr << "Input list file not provided!" << endl;
-        cerr << "USAGE: " << argv[0] << " -i input_list_file -o output_root_file -c analysis_config.json" << endl;
+        printUsage(argv[0]);
         exit(EXIT_FAILURE);
     }
 
     if(!input.cmdOptionExists("-o")) {
         cerr << "Output root file not provided!" << endl;
-        cerr << "USAGE: " << argv[0] << " -i input_list_file -o output_root_file -c analysis_config.json" << endl;
+	printUsage(argv[0]);
         exit(EXIT_FAILURE);
     }
-
 
     const std::string inputFile = input.getCmdOption("-i");
     if (inputFile.empty()) {
         cerr << "Input list file not provided!" << endl;
-        cerr << "USAGE: " << argv[0] << " -i input_list_file -o output_root_file -c analysis_config.json" << endl;
+	printUsage(argv[0]);
         exit(EXIT_FAILURE);
     }
 
     const std::string cfgFile = input.getCmdOption("-c");
     if (cfgFile.empty()) {
         cerr << "Analysis config file not provided!" << endl;
-        cerr << "USAGE: " << argv[0] << " -i input_list_file -o output_root_file -c analysis_config.json" << endl;
+     	printUsage(argv[0]);
         exit(EXIT_FAILURE);
     }
 
     const std::string outFile = input.getCmdOption("-o");
     if (outFile.empty()) {
         cerr << "Analysis config file not provided!" << endl;
-        cerr << "USAGE: " << argv[0] << " -i input_list_file -o output_root_file -c analysis_config.json" << endl;
+    	printUsage(argv[0]);
         exit(EXIT_FAILURE);
     }
 
@@ -89,10 +101,17 @@ int main(int argc, char **argv){
 
     //TH1D *waveforms[8] = {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL};
     int timestamp;
+    /*
     uint64_t triggerTime0;
     uint64_t triggerTime1;
     uint64_t triggerTime2;
     uint64_t triggerTime3;
+    */
+    Int_t           eventNumber0;
+    Int_t           eventNumber1;
+    Int_t           eventNumber2;
+    Int_t           eventNumber3;
+    
     int serialnumber;
     int freqsetting;
 
@@ -114,13 +133,20 @@ int main(int argc, char **argv){
     //chain.SetBranchAddress("dig1Time",&dig1Time);
     //chain.SetBranchAddress("dig2Time",&dig2Time);
     //chain.SetBranchAddress("serialnumber",&serialnumber);
+    /*
     chain0.SetBranchAddress("triggerTime",&triggerTime0);
     chain1.SetBranchAddress("triggerTime",&triggerTime1);
     chain2.SetBranchAddress("triggerTime",&triggerTime2);
     chain3.SetBranchAddress("triggerTime",&triggerTime3);
+    */
     //chain.SetBranchAddress("freqsetting",&freqsetting);
 
+   chain0.SetBranchAddress("eventNumber", &eventNumber0);
+   chain1.SetBranchAddress("eventNumber", &eventNumber1);
+   chain2.SetBranchAddress("eventNumber", &eventNumber2);
+   chain3.SetBranchAddress("eventNumber", &eventNumber3);
 
+    
     int iglobalCh = 0;
     for(int i=0; i<cfg.GetNumberOfChannels()/nDigitizers; i++){
         chain0.SetBranchAddress(Form("Channel%d",i),&(waveforms.at(iglobalCh)));
@@ -164,10 +190,12 @@ int main(int argc, char **argv){
 
     
     ana_data->Branch("nChannels",&nChannels,"nChannels/I");
+    /*
     ana_data->Branch("triggerTime0",&triggerTime0,"triggerTime0/I");
     ana_data->Branch("triggerTime1",&triggerTime1,"triggerTime1/I");
     ana_data->Branch("triggerTime2",&triggerTime2,"triggerTime2/I");
     ana_data->Branch("triggerTime3",&triggerTime3,"triggerTime3/I");
+    */
     ana_data->Branch("Pedestal",pedestal,"Pedestal[nChannels]/D");
     ana_data->Branch("PedestalSigma", pedestalSigma, "PedestalSigma[nChannels]/D"); 
     ana_data->Branch("PeakVoltage",&peakVoltage);
