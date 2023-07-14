@@ -131,8 +131,8 @@ void MakeDataPlots(string fileName, int momentum) {
         string title3 = "Channel " + to_string(i) + "; Hits per trigger; Triggers";
         string title4 = "Channel " + to_string(i) + "; #sigma_{ped} [V]; Triggers";
         string title5 = "Channel " + to_string(i) + "; Time [ns]; Triggers";
-        TH1D temp1(name1.c_str(), title1.c_str(), 200, 0., 0.08);
-        TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 0.8);
+        TH1D temp1(name1.c_str(), title1.c_str(), 200, 0., 5*0.08);
+        TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 15*0.8);
         TH1D temp3(name3.c_str(), title3.c_str(), 5, -0.5, 4.5);
         TH1D temp4(name4.c_str(), title4.c_str(), 200, 0., 0.01);
         TH1D temp5(name5.c_str(), title5.c_str(), 270, 50., 320);

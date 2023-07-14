@@ -19,7 +19,7 @@ print("===> ToF analysis, histogramming:")
 for xlistname  in os.popen('cd lists/ ; ls list*.txt'):
     listname = xlistname[:-1]
     base=listname.replace('.txt', '')
-    cmd='root -l "scripts/MakeDataPlots.C(\\"output/output_{}.root\\", {})"'.format(base,momentum)
+    cmd='root -l -b -q "scripts/MakeDataPlots.C(\\"output/output_{}.root\\", {})"'.format(base,momentum)
     print(cmd)
 
 

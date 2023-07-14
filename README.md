@@ -15,19 +15,25 @@ make
 Bin edges to compute pedestal and search for the peak are defined in
 config/config.json
 
+Make a link to the directory where you store your midas-to-root converted data locally:
+
 ln -s YOURDATAFOLDER data
+
+Create filelists:
 
 ./scripts/listFiles.sh
 
+Get commands what to run:
+
 ./python/run_wa_all.py
 
-choose what to run
+and choose what to run over
 
 e.g.
 
 ./bin/waveform_analysis.app -i lists/list_root_run_000222.txt -o output/output_list_root_run_000222.root -c config/config.json
 
-root -l "scripts/MakeDataPlots.C(\"output/output_list_root_run_000222.root\", 1000)"
+root -l -b -q  "scripts/MakeDataPlots.C(\"output/output_list_root_run_000222.root\", 1000)"
 
 
 see histos/ then and histograms therein like
@@ -38,15 +44,17 @@ hRef_PedestalSigma*
 
 Time to be debuged:)
 
-quick simple plotting:
+quick simple plotting 1D:
 ./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
+
+
 
 
 Jiri
 
 
 
-2022 specifc:
+2022 specific:
 
 To compile the code type **make** in the main directory.
 

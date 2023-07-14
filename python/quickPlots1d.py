@@ -75,11 +75,12 @@ def main(argv):
     #filename = 'output_300n_plots.root'
     filename = argv[1]
     rfile = ROOT.TFile(filename, 'read')
-    hbasenames = { 'hRef_Charge' : ROOT.kCyan,
-                   'hRef_Voltage' : ROOT.kMagenta,
-                   'hRef_Time' : ROOT.kGreen
-                  }
-
+    hbasenames = {
+        'hRef_Time' : ROOT.kGreen,
+        'hRef_Charge' : ROOT.kCyan,
+        'hRef_Voltage' : ROOT.kMagenta,
+    }
+    
     nChannels = 32
     Hs = []
     Txts = []
