@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     AnalysisConfig cfg(cfgFile);
     cfg.Print();
 
-    vector<TH1D*> waveforms;
+    vector<vector<double>*> waveforms;
     vector<WaveformAnalysis> waveAna;
 
     // TO CHECK!
@@ -128,6 +128,8 @@ int main(int argc, char **argv) {
 
     const int nDigitizers = 4;
     const int nTotChannels = 32;
+
+    const double nanosecsPerSample = 2;
     
     // new 2023 difgitized tree names
     TChain chain0("midas_data_D300");
@@ -235,9 +237,14 @@ int main(int argc, char **argv) {
         for(int j = 0; j < cfg.GetNumberOfChannels(); j++){
 
             if(cfg.IsActive(j)){
+                int nsamples = waveforms.at(j)->size();
+                TH1D *wavef = new TH1D("waveform","waveform",nsamples,0,nsamples*nanosecsPerSample);
+                wavef->SetDirectory(0);
+                for(int ib = 0; ib < nsamples; ib++){
+                    wavef->SetBinContent(ib+1, waveforms.at(j)->at(ib));
+                }
 
-
-                waveAna.at(j).SetHistogram(waveforms.at(j));
+                waveAna.at(j).SetHistogram(wavef);
                 waveAna.at(j).RunAnalysis();
 
                 pedestal[j] = waveAna.at(j).GetPedestal();
@@ -247,7 +254,6 @@ int main(int argc, char **argv) {
                 signalTime.push_back(waveAna.at(j).GetSignalTime());
                 intCharge.push_back(waveAna.at(j).GetIntegratedCharge());
 
-		TH1D* wavef = waveforms.at(j);
 		if (i % verbose_png == 0) {
 		  can -> cd();
 		  wavef -> Draw();
@@ -261,6 +267,7 @@ int main(int argc, char **argv) {
 		  //can -> Print(Form("png/evt_%i/waveform_%i_%i.png", i, i, j));
 		  can -> Print(Form("png/waveform_evt%i_%i_%i.png", i, idigi, ich));
 		}
+		delete wavef;
 
             }
         }
