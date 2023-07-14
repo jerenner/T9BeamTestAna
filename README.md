@@ -5,9 +5,14 @@ Analysis package for the T9 beam test
 2023
 ## Quick and dirty start:
 
+In essence the code runs in parallel over the four midas TTrees, where in every event each channel waveform is stored as TH1D; this is the first a C++ code to run a waveform analysis binary ./bin/waveform_analysis.app
+
+Then there is ROOT macro scripts/MakeDataPlots.C to plot the charges etc to a root file. Next are ToF fit scripts, not updated for 2023 yet.
+
+
 make
 
-bin edges to compute pedestal and search for the peak are defined in
+Bin edges to compute pedestal and search for the peak are defined in
 config/config.json
 
 ln -s YOURDATAFOLDER data
