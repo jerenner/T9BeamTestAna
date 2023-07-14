@@ -23,6 +23,13 @@ ln -s YOURDATAFOLDER data
 
 choose what to run
 
+e.g.
+
+./bin/waveform_analysis.app -i lists/list_root_run_000222.txt -o output/output_list_root_run_000222.root -c config/config.json
+
+root -l "scripts/MakeDataPlots.C(\"output/output_list_root_run_000222.root\", 1000)"
+
+
 see histos/ then and histograms therein like
 
 hRef_Voltage*
@@ -31,7 +38,9 @@ hRef_PedestalSigma*
 
 Time to be debuged:)
 
-plotting scripts to come;)
+quick simple plotting:
+./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
+
 
 Jiri
 
