@@ -11,7 +11,9 @@
 
 using namespace std;
 
-WaveformAnalysis::WaveformAnalysis(){
+// _______________________________________________________________________________
+
+WaveformAnalysis::WaveformAnalysis() {
 
     anaHist = NULL;
     fAnaWindowT0Bin=-1;
@@ -38,9 +40,14 @@ WaveformAnalysis::WaveformAnalysis(){
 
 }
 
+// _______________________________________________________________________________
+
 WaveformAnalysis::~WaveformAnalysis(){
 
 }
+
+
+// _______________________________________________________________________________
 
 void WaveformAnalysis::SetHistogram(TH1D *hist){
 
@@ -102,6 +109,8 @@ void WaveformAnalysis::SetHistogram(TH1D *hist){
 }
 
 
+// _______________________________________________________________________________
+
 void WaveformAnalysis::FindPeaks(){
 
     fPeakBins.clear();
@@ -159,6 +168,8 @@ void WaveformAnalysis::FindPeaks(){
 
 }
 
+// _______________________________________________________________________________
+
 void WaveformAnalysis::CalculateSignalTime(){
     fSignalTime.clear();
     double fraction = 0.4;
@@ -189,6 +200,8 @@ void WaveformAnalysis::CalculateSignalTime(){
         
     }
 }
+
+// _______________________________________________________________________________
 
 void WaveformAnalysis::IntegrateCharge(){
     fIntegratedCharge.clear();
@@ -224,6 +237,10 @@ void WaveformAnalysis::IntegrateCharge(){
     }
 
 }
+
+
+// _______________________________________________________________________________
+
 void WaveformAnalysis::RunAnalysis(){
     FindPeaks();
     CalculateSignalTime();
@@ -237,6 +254,8 @@ void WaveformAnalysis::RunAnalysis(){
     }
 
 }
+
+// _______________________________________________________________________________
 
 void WaveformAnalysis::SetAnalysisBinWindow(double t0, double t1){
 
@@ -264,6 +283,8 @@ void WaveformAnalysis::SetAnalysisBinWindow(double t0, double t1){
 
 }
 
+// _______________________________________________________________________________
+
 void WaveformAnalysis::SetPedestalBinWindow(double t0, double t1){
 
   fPedWindowT0 = t0;
@@ -290,3 +311,6 @@ void WaveformAnalysis::SetPedestalBinWindow(double t0, double t1){
 
 }
 
+// _______________________________________________________________________________
+// _______________________________________________________________________________
+// _______________________________________________________________________________

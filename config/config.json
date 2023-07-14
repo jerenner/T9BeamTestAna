@@ -10,7 +10,7 @@
 				    true, true, true, true, true, true, true, true,
 				    true, true, true, true, true, true, true, true,
 				    true, true, true, true, true, true, true, true],
-
+	    
         "comment"            : "Measure charge (integral of signal-pedestal in the analysis window)",
             "ChargeMeasurements" : [true, true, true, true, true, true, true, true,
 				    true, true, true, true, true, true, true, true,
@@ -18,10 +18,10 @@
 				    true, true, true, true, true, true, true, true],
 
         "comment"            : "Threshold w.r.t pedestal in V",
-            "Thresholds"         : [0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001,
-				    0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001,
-				    0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001,
-				    0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001, 0.001],
+            "Thresholds"         : [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+				    0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+				    0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
+				    0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
 
         "comment"            : "Measure time of the signal (only needed for TOF detectors)",
             "TimeMeasurements"   : [true, true, true, true, true, true, true, true,
@@ -40,20 +40,20 @@
 				    0, 0, 0, 0, 0, 0, 0, 0,
 				    0, 0, 0, 0, 0, 0, 0, 0,
 				    0, 0, 0, 0, 0, 0, 0, 0],
-            "PedestalWindowHigh" : [50, 50, 50, 50, 50, 50, 50, 50,
-				    50, 50, 50, 50, 50, 50, 50, 50,
-				    50, 50, 50, 50, 50, 50, 50, 50,
-				    50, 50, 50, 50, 50, 50, 50, 50],
-
-        "comment" : "Analysis is done on the data in the analysis bin window.",
-            "AnalysisWindowLow"  : [50, 50, 50, 50, 50, 50, 50, 50,
-				    50, 50, 50, 50, 50, 50, 50, 50,
-				    50, 50, 50, 50, 50, 50, 50, 50,
-				    50, 50, 50, 50, 50, 50, 50, 50],
-            "AnalysisWindowHigh" : [300, 300, 300, 300, 300, 300, 300, 300,
+            "PedestalWindowHigh" : [300, 300, 300, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300],
+
+        "comment" : "Analysis is done on the data in the analysis bin window.",
+            "AnalysisWindowLow"  : [300, 300, 300, 300, 300, 300, 300, 300,
+				    300, 300, 300, 300, 300, 300, 300, 300,
+				    300, 300, 300, 300, 300, 300, 300, 300,
+				    300, 300, 300, 300, 300, 300, 300, 300],
+            "AnalysisWindowHigh" : [600, 600, 600, 600, 600, 600, 600, 600,
+				    600, 600, 600, 600, 600, 600, 600, 600,
+				    600, 600, 600, 600, 600, 600, 600, 600,
+				    600, 600, 600, 600, 600, 600, 600, 600],
 	}
 }
 
