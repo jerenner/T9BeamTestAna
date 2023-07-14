@@ -35,7 +35,6 @@ e.g.
 
 root -l -b -q  "scripts/MakeDataPlots.C(\"output/output_list_root_run_000222.root\", 1000)"
 
-
 see histos/ then and histograms therein like
 
 hRef_Voltage*
@@ -45,7 +44,8 @@ hRef_PedestalSigma*
 Time to be debuged:)
 
 quick simple plotting 1D:
-./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
+python3 ./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
+# then close by File -> Quit ROOT in any of the Canvases that appear
 
 
 
