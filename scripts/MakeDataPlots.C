@@ -52,13 +52,16 @@ void MakeDataPlots(string fileName, int momentum) {
     //tree->SetBranchAddress("PassThreshold",&passThreshold);
     
     int ent = tree->GetEntries();
+
+    double tofmin = 10.;
+    double tofmax = 30.;
     
     TH1D hTOF("hRef_TOFAll", "", 250, -100, 150);
-    TH1D hTOFAll("hTOFAll", "", 120, 37.5, 43.5);
-    TH1D hTOFAllWide("hTOFAllWide", "", 720, 37.5, 73.5);
+    TH1D hTOFAll("hTOFAll", "", 120, tofmin, tofmax);
+    TH1D hTOFAllWide("hTOFAllWide", "", 720, tofmin, 2*tofmax);
 
-    TH1D hTOFEl("hTOFEl", "", 120, 37.5, 43.5);
-    TH1D hTOFOther("hTOFOther", "", 120, 37.5, 43.5);
+    TH1D hTOFEl("hTOFEl", "", 120, tofmin, tofmax);
+    TH1D hTOFOther("hTOFOther", "", 120, tofmin, tofmax);
     TH1D hT0("hRef_T0", "", 270, 50, 320);
     TH1D hT1("hRef_T1", "", 270, 50, 320);
 
@@ -75,44 +78,44 @@ void MakeDataPlots(string fileName, int momentum) {
     vector<TH1D> hTime;
     
     // no cuts
-    TH2D hTOFACT1V("hRef_TOFACT1V", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, 37.5, 43.5, 200, 0., 1.6);
-    TH2D hTOFACT2V("hRef_TOFACT2V", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
+    TH2D hTOFACT1V("hRef_TOFACT1V", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, tofmin, tofmax, 200, 0., 1.6);
+    TH2D hTOFACT2V("hRef_TOFACT2V", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
     TH2D hTOFACT3V("hRef_TOFACT3V", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
         
-    TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
-    TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
-    TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
+    TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
+    TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
 
     // electrons
-    TH2D hTOFACT1V_el("hRef_TOFACT1V_el", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, 37.5, 43.5, 200, 0., 1.6);
-    TH2D hTOFACT2V_el("hRef_TOFACT2V_el", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
+    TH2D hTOFACT1V_el("hRef_TOFACT1V_el", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, tofmin, tofmax, 200, 0., 1.6);
+    TH2D hTOFACT2V_el("hRef_TOFACT2V_el", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
     TH2D hTOFACT3V_el("hRef_TOFACT3V_el", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
     
-    TH2D hTOFACT1C_el("hRef_TOFACT1C_el", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
-    TH2D hTOFACT2C_el("hRef_TOFACT2C_el", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
-    TH2D hTOFACT3C_el("hRef_TOFACT3C_el", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT1C_el("hRef_TOFACT1C_el", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
+    TH2D hTOFACT2C_el("hRef_TOFACT2C_el", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
+    TH2D hTOFACT3C_el("hRef_TOFACT3C_el", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
 
     // ACT2cut
-    TH2D hTOFACT1V_act2cut("hRef_TOFACT1V_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, 37.5, 43.5, 200, 0., 1.6);
-    TH2D hTOFACT2V_act2cut("hRef_TOFACT2V_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
+    TH2D hTOFACT1V_act2cut("hRef_TOFACT1V_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, tofmin, tofmax, 200, 0., 1.6);
+    TH2D hTOFACT2V_act2cut("hRef_TOFACT2V_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
     TH2D hTOFACT3V_act2cut("hRef_TOFACT3V_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
     
-    TH2D hTOFACT1C_act2cut("hRef_TOFACT1C_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
-    TH2D hTOFACT2C_act2cut("hRef_TOFACT2C_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
-    TH2D hTOFACT3C_act2cut("hRef_TOFACT3C_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT1C_act2cut("hRef_TOFACT1C_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
+    TH2D hTOFACT2C_act2cut("hRef_TOFACT2C_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
+    TH2D hTOFACT3C_act2cut("hRef_TOFACT3C_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
 
-    TH1D hTOF_act2cut("hTOF_act2cut", "; t_{1}-t_{0} [ns];", 120, 37.5, 43.5);
+    TH1D hTOF_act2cut("hTOF_act2cut", "; t_{1}-t_{0} [ns];", 120, tofmin, tofmax);
 
     // ACT3cut
-    TH2D hTOFACT1V_act3cut("hRef_TOFACT1V_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, 37.5, 43.5, 200, 0., 1.6);
-    TH2D hTOFACT2V_act3cut("hRef_TOFACT2V_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, 37.5, 43.5, 200, 0., 0.1);
+    TH2D hTOFACT1V_act3cut("hRef_TOFACT1V_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, tofmin, tofmax, 200, 0., 1.6);
+    TH2D hTOFACT2V_act3cut("hRef_TOFACT2V_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
     TH2D hTOFACT3V_act3cut("hRef_TOFACT3V_act3cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
     
-    TH2D hTOFACT1C_act3cut("hRef_TOFACT1C_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, 37.5, 43.5, 200, 0., 0.016);
-    TH2D hTOFACT2C_act3cut("hRef_TOFACT2C_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
-    TH2D hTOFACT3C_act3cut("hRef_TOFACT3C_act3cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, 37.5, 43.5, 200, 0., 0.002);
+    TH2D hTOFACT1C_act3cut("hRef_TOFACT1C_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
+    TH2D hTOFACT2C_act3cut("hRef_TOFACT2C_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
+    TH2D hTOFACT3C_act3cut("hRef_TOFACT3C_act3cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
 
-    TH1D hTOF_act3cut("hTOF_act3cut", "; t_{1}-t_{0} [ns];", 120, 37.5, 43.5);
+    TH1D hTOF_act3cut("hTOF_act3cut", "; t_{1}-t_{0} [ns];", 120, tofmin, tofmax);
 
     // 2D ACT charges
     TH2D hACT2CACT1C("hRef_ACT2CACT1C", "; ACT2 Charge; ACT1 Charge", 200, 0., 0.002, 200, 0., 0.016);
