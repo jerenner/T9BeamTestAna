@@ -1,13 +1,18 @@
 #include <string>
 #include <iostream>
 #include <stdlib.h>
+
+#include "WaveformAnalysis.h"
 #include "InputParser.h"
 #include "AnalysisConfig.h"
 #include "Utility.h"
-#include <TChain.h>
+
+#include "TChain.h"
 #include "TCanvas.h"
 #include "TH1D.h"
-#include "WaveformAnalysis.h"
+#include "TSystem.h"
+
+
 
 // Author: Matej Pavin 2022
 // modified for 32 channels in 2023 by Jiri Kvita
@@ -31,6 +36,12 @@ void printUsage(char *scriptname) {
 
 int main(int argc, char **argv) {
 
+  int debug = 0; //1;
+    // for saving waveform pngs:
+    int verbose_png = 5000;
+    
+    gSystem->Exec("mkdir -p png");
+  
     InputParser input(argc, argv);
 
     if (input.cmdOptionExists("-h")) {
@@ -165,12 +176,9 @@ int main(int argc, char **argv) {
 	iglobalCh++;
     }
 
-
-
-
-
     int nent = chain0.GetEntries();
-    // HACK nent = 81;
+    // HACK
+    //    nent = 81;
 
     TFile output(outFile.c_str(), "RECREATE");
     output.cd();
@@ -240,10 +248,18 @@ int main(int argc, char **argv) {
                 intCharge.push_back(waveAna.at(j).GetIntegratedCharge());
 
 		TH1D* wavef = waveforms.at(j);
-		if (i % 10000 == 0) {
+		if (i % verbose_png == 0) {
 		  can -> cd();
 		  wavef -> Draw();
-		  can -> Print(Form("waveform_%i_%i.png", i, j));
+		  if (debug) {
+		    cout << "bins: " << wavef -> GetNbinsX() << endl;
+		  }
+		  int idigi = j / nDigitizers;
+		  int ich = j % nDigitizers;
+		  //wavef.SetMinimum(0.);
+		  //gSystem->Exec(Form("mkdir -p png/evt_%i", i));
+		  //can -> Print(Form("png/evt_%i/waveform_%i_%i.png", i, i, j));
+		  can -> Print(Form("png/waveform_evt%i_%i_%i.png", i, idigi, ich));
 		}
 
             }

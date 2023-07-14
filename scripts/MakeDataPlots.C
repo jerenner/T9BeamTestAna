@@ -2,6 +2,7 @@
 #include "TFile.h"
 #include "TH1D.h"
 #include "TH2D.h"
+#include "TSystem.h"
 
 #include <string>
 #include <vector>
@@ -32,6 +33,8 @@ void MakeDataPlots(string fileName, int momentum) {
     vector<vector<double> > *signalTime = NULL;
     vector<vector<double> > *intCharge = NULL;
 
+    gSystem->Exec("mkdir -p histos/");
+    
     const int nChannels = 32;
     double pedestal[nChannels];
     double pedestalSigma[nChannels];
@@ -310,10 +313,12 @@ void MakeDataPlots(string fileName, int momentum) {
 	
     } // entries
     cout << "End of event loop!" << endl;
+
     
-    string outFileName = fileName.substr(0, fileName.size()-5) + "_plots.root";
+    TString outFileName = fileName.substr(0, fileName.size()-5) + "_plots.root";
+    outFileName = outFileName.ReplaceAll("output/", "histos/");
     
-    TFile outFile(outFileName.c_str(), "RECREATE");
+    TFile outFile(outFileName.Data(), "RECREATE");
     outFile.cd();
     
 

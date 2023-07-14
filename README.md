@@ -2,6 +2,32 @@
 Analysis package for the T9 beam test
 
 
+2023
+## Quick and dirty start:
+
+make
+
+bin edges to compute pedestal and search for the peak are defined in
+config/config.json
+
+ln -s YOURDATAFOLDER data
+
+./scripts/listFiles.sh
+./python/run_wa_all.py
+choose what to run
+see histos/ then and histograms therein like
+hRef_Voltage*
+hRef_PedestalSigma*
+Time to be debuged:)
+
+plotting scripts to come;)
+
+Jiri
+
+
+
+2022 specifc:
+
 To compile the code type **make** in the main directory.
 
 ## Processing data
