@@ -84,6 +84,11 @@ def main(argv):
     nChannels = 32
     Hs = []
     Txts = []
+    ChNames =  {0: 'ACT-00', 1: 'ACT-01', 2: 'ACT-10', 3: 'ACT-11', 4: 'ACT-20', 5: 'ACT-21', 6: 'ACT-30', 7: 'ACT-31',
+                8: 'TOF-00', 9: 'TOF-01', 10: 'TOF-10', 11: 'TOF-11', 12: 'TOF-20', 13: 'TOF-21', 14: 'TOF-30', 15: 'TOF-31',
+                16: 'HC-00', 17: 'HC-10', 18: 'LG-00',
+                19: 'X', 20: 'X', 21: 'X', 22: 'X', 23: 'X',
+                24: 'X', 25: 'X', 26: 'X', 27: 'X', 28: 'X', 29: 'X', 30: 'X', 31: 'X' }
 
 
     ftag = filename.split('/')[-1].replace('output_','').replace('_plots.root','')
@@ -116,6 +121,7 @@ def main(argv):
             #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
             h.SetFillColor(hbasenames[hbasename])
             h.SetFillStyle(1111)
+            h.SetTitle(ChNames[hs.index(h)])
             h.Draw('hist')
             
             #txt= 'Ch {} {} p={} MeV/c'.format(hs.index(h)+1, basetag, ftag.replace('n','').replace('p',''))
