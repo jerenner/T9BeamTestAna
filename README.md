@@ -13,11 +13,17 @@ config/config.json
 ln -s YOURDATAFOLDER data
 
 ./scripts/listFiles.sh
+
 ./python/run_wa_all.py
+
 choose what to run
+
 see histos/ then and histograms therein like
+
 hRef_Voltage*
+
 hRef_PedestalSigma*
+
 Time to be debuged:)
 
 plotting scripts to come;)
