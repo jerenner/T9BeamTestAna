@@ -55,13 +55,17 @@ void MakeDataPlots(string fileName, int momentum) {
 
     double tofmin = 10.;
     double tofmax = 30.;
-    
-    TH1D hTOF("hRef_TOFAll", "", 250, -100, 150);
-    TH1D hTOFAll("hTOFAll", "", 120, tofmin, tofmax);
-    TH1D hTOFAllWide("hTOFAllWide", "", 720, tofmin, 2*tofmax);
+    int ntofbins = 100;
+    int ntofbins2d = 100;
 
-    TH1D hTOFEl("hTOFEl", "", 120, tofmin, tofmax);
-    TH1D hTOFOther("hTOFOther", "", 120, tofmin, tofmax);
+    double actChargeMax = 0.40;
+    double actAmplitudeMax =  10.;
+
+    TH1D hTOFAll("hTOFAll", ";t_{TOF}^{All} [ns]", 120, tofmin, tofmax);
+    TH1D hTOFAllWide("hTOFAllWide", ";t_{TOF}^{All} [ns]", 2*ntofbins, tofmin, 2*tofmax);
+    TH1D hTOFEl("hTOFEl", ";t_{TOF}^{e} [ns]", ntofbins, tofmin, tofmax);
+    TH1D hTOFOther("hTOFOther", ";t_{TOF}^{non-e} [ns]", ntofbins, tofmin, tofmax);
+
     TH1D hT0("hRef_T0", "", 270, 50, 320);
     TH1D hT1("hRef_T1", "", 270, 50, 320);
 
@@ -70,7 +74,18 @@ void MakeDataPlots(string fileName, int momentum) {
     TH1D hTimeReso1("hTimeReso1", "", 200, -100, 100);
     TH1D hTimeReso0_zoom("hTimeReso0_zoom", "", 160, 20, 30);
     TH1D hTimeReso1_zoom("hTimeReso1_zoom", "", 160, -5, 5);
+
+    // 2023 time offset analysis
+    TH1D hTimeDiffTOF01("hTimeDiffTOF01", "hTimeDiffTOF01", 100, -12.,12.);
+    TH1D hTimeDiffTOF02("hTimeDiffTOF02", "hTimeDiffTOF02", 100, -12.,12.);
+    TH1D hTimeDiffTOF03("hTimeDiffTOF03", "hTimeDiffTOF03", 100, -12.,12.);
     
+    TH1D hTimeDiffTOF11("hTimeDiffTOF11", "hTimeDiffTOF11", 100, -12.,12.);
+    TH1D hTimeDiffTOF12("hTimeDiffTOF12", "hTimeDiffTOF12", 100, -12.,12.);
+    TH1D hTimeDiffTOF13("hTimeDiffTOF13", "hTimeDiffTOF13", 100, -12.,12.);
+    
+
+    // standard
     vector<TH1D> hCharge;
     vector<TH1D> hVoltage;
     vector<TH1D> hHit;
@@ -78,49 +93,57 @@ void MakeDataPlots(string fileName, int momentum) {
     vector<TH1D> hTime;
     
     // no cuts
-    TH2D hTOFACT1V("hRef_TOFACT1V", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, tofmin, tofmax, 200, 0., 1.6);
-    TH2D hTOFACT2V("hRef_TOFACT2V", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
-    TH2D hTOFACT3V("hRef_TOFACT3V", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
+    TH2D hTOFACT0A("hRef_TOFACT0A", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT1A("hRef_TOFACT1A", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT2A("hRef_TOFACT2A", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT3A("hRef_TOFACT3A", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
         
-    TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
-    TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
-    TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
+    TH2D hTOFACT0C("hRef_TOFACT0C", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
 
     // electrons
-    TH2D hTOFACT1V_el("hRef_TOFACT1V_el", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", 200, tofmin, tofmax, 200, 0., 1.6);
-    TH2D hTOFACT2V_el("hRef_TOFACT2V_el", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
-    TH2D hTOFACT3V_el("hRef_TOFACT3V_el", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
-    
-    TH2D hTOFACT1C_el("hRef_TOFACT1C_el", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
-    TH2D hTOFACT2C_el("hRef_TOFACT2C_el", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
-    TH2D hTOFACT3C_el("hRef_TOFACT3C_el", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
+    TH2D hTOFACT0A_el("hRef_TOFACT0A_el", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT1A_el("hRef_TOFACT1A_el", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT2A_el("hRef_TOFACT2A_el", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT3A_el("hRef_TOFACT3A_el", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
 
-    // ACT2cut
-    TH2D hTOFACT1V_act2cut("hRef_TOFACT1V_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, tofmin, tofmax, 200, 0., 1.6);
-    TH2D hTOFACT2V_act2cut("hRef_TOFACT2V_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
-    TH2D hTOFACT3V_act2cut("hRef_TOFACT3V_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
-    
-    TH2D hTOFACT1C_act2cut("hRef_TOFACT1C_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
-    TH2D hTOFACT2C_act2cut("hRef_TOFACT2C_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
-    TH2D hTOFACT3C_act2cut("hRef_TOFACT3C_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
+    TH2D hTOFACT0C_el("hRef_TOFACT0C_el", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT1C_el("hRef_TOFACT1C_el", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT2C_el("hRef_TOFACT2C_el", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT3C_el("hRef_TOFACT3C_el", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+
+    // Act1cut
+    TH2D hTOFACT0A_act1cut("hRef_TOFACT0A_act1cut", "; t_{1}-t_{0} [ns]; ACT0 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT1A_act1cut("hRef_TOFACT1A_act1cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT2A_act1cut("hRef_TOFACT2A_act1cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT3A_act1cut("hRef_TOFACT3A_act1cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+
+    TH2D hTOFACT0C_act1cut("hRef_TOFACT0C_act1cut", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT1C_act1cut("hRef_TOFACT1C_act1cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT2C_act1cut("hRef_TOFACT2C_act1cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT3C_act1cut("hRef_TOFACT3C_act1cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+
+    TH1D hTOF_act1cut("hTOF_act1cut", "; t_{1}-t_{0} [ns];", ntofbins, tofmin, tofmax);
+
+    // Act2cut
+    TH2D hTOFACT0A_act2cut("hRef_TOFACT0A_act2cut", "; t_{1}-t_{0} [ns]; ACT0 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT1A_act2cut("hRef_TOFACT1A_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT2A_act2cut("hRef_TOFACT2A_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+    TH2D hTOFACT3A_act2cut("hRef_TOFACT3A_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+
+    TH2D hTOFACT0C_act2cut("hRef_TOFACT0C_act2cut", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT1C_act2cut("hRef_TOFACT1C_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT2C_act2cut("hRef_TOFACT2C_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+    TH2D hTOFACT3C_act2cut("hRef_TOFACT3C_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
 
     TH1D hTOF_act2cut("hTOF_act2cut", "; t_{1}-t_{0} [ns];", 120, tofmin, tofmax);
 
-    // ACT3cut
-    TH2D hTOFACT1V_act3cut("hRef_TOFACT1V_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", 200, tofmin, tofmax, 200, 0., 1.6);
-    TH2D hTOFACT2V_act3cut("hRef_TOFACT2V_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", 200, tofmin, tofmax, 200, 0., 0.1);
-    TH2D hTOFACT3V_act3cut("hRef_TOFACT3V_act3cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", 200, 37.5, 42.5, 200, 0., 0.1);
-    
-    TH2D hTOFACT1C_act3cut("hRef_TOFACT1C_act3cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", 200, tofmin, tofmax, 200, 0., 0.016);
-    TH2D hTOFACT2C_act3cut("hRef_TOFACT2C_act3cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
-    TH2D hTOFACT3C_act3cut("hRef_TOFACT3C_act3cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", 200, tofmin, tofmax, 200, 0., 0.002);
-
-    TH1D hTOF_act3cut("hTOF_act3cut", "; t_{1}-t_{0} [ns];", 120, tofmin, tofmax);
-
     // 2D ACT charges
-    TH2D hACT2CACT1C("hRef_ACT2CACT1C", "; ACT2 Charge; ACT1 Charge", 200, 0., 0.002, 200, 0., 0.016);
-    TH2D hACT3CACT2C("hRef_ACT3CACT2C", "; ACT3 Charge; ACT2 Charge", 200, 0., 0.002, 200, 0., 0.002);
-    TH2D hACT1CACT3C("hRef_ACT1CACT3C", "; ACT1 Charge; ACT3 Charge", 200, 0., 0.016, 200, 0., 0.002);
+    TH2D hACT2CACT1C("hRef_ACT2CACT1C", "; ACT2 Charge; ACT1 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
+    TH2D hACT3CACT2C("hRef_ACT3CACT2C", "; ACT3 Charge; ACT2 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
+    TH2D hACT1CACT3C("hRef_ACT1CACT3C", "; ACT1 Charge; ACT3 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
 
     for(int i = 0; i < nChannels; i++) {
         string name1 = "hRef_Charge" + to_string(i);
@@ -138,7 +161,7 @@ void MakeDataPlots(string fileName, int momentum) {
         TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 13*0.8);
         TH1D temp3(name3.c_str(), title3.c_str(), 5, -0.5, 4.5);
         TH1D temp4(name4.c_str(), title4.c_str(), 200, 0., 0.01);
-        TH1D temp5(name5.c_str(), title5.c_str(), 200, 250., 650);
+        TH1D temp5(name5.c_str(), title5.c_str(), 270, 0., 540.);
         hCharge.push_back(temp1);
         hVoltage.push_back(temp2);
         hHit.push_back(temp3);
@@ -185,51 +208,73 @@ void MakeDataPlots(string fileName, int momentum) {
 	hTimeReso1.Fill(t1diff);
 	hTimeReso0_zoom.Fill(t0diff);
 	hTimeReso1_zoom.Fill(t1diff);
-	  
-        double t0 = (signalTime->at(8).at(indices.at(8)) + signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)) + signalTime->at(11).at(indices.at(11)))/4.;
-        double t1 = (signalTime->at(12).at(indices.at(12)) + signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)) + signalTime->at(15).at(indices.at(15)))/4.;
+
+
+        double t00 = signalTime->at(8).at(indices.at(8));
+	double t01 = signalTime->at(9).at(indices.at(9));
+	double t02 = signalTime->at(10).at(indices.at(10));
+	double t03 = signalTime->at(11).at(indices.at(11));
+        hTimeDiffTOF01.Fill(t00 - t01);
+	hTimeDiffTOF02.Fill(t00 - t02);
+	hTimeDiffTOF03.Fill(t00 - t03);
+
+
+        double t10 = signalTime->at(12).at(indices.at(12));
+        double t11 = signalTime->at(13).at(indices.at(13));
+	double t12 = signalTime->at(14).at(indices.at(14));
+	double t13 = signalTime->at(15).at(indices.at(15));
+        hTimeDiffTOF11.Fill(t11 - t10);
+	hTimeDiffTOF12.Fill(t11 - t12);
+	hTimeDiffTOF13.Fill(t11 - t13);
+    	
+	double t0 = (signalTime->at(8).at(indices.at(8)) + signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)) + signalTime->at(11).at(indices.at(11)))/4.;
+	double t1 = (signalTime->at(12).at(indices.at(12)) + signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)) + signalTime->at(15).at(indices.at(15)))/4.;
 	double tof = t1-t0;
 
-	double act1v = peakVoltage->at(0).at(indices.at(0)) + peakVoltage->at(1).at(indices.at(1));
-	double act2v = peakVoltage->at(2).at(indices.at(2)) + peakVoltage->at(3).at(indices.at(3));
-	double act3v = peakVoltage->at(4).at(indices.at(4)) + peakVoltage->at(5).at(indices.at(5));
-        hTOFACT1V.Fill(tof, act1v);
-        hTOFACT2V.Fill(tof, act2v);
-        hTOFACT3V.Fill(tof, act3v);
+	double act0a = peakVoltage->at(0).at(indices.at(0)) + peakVoltage->at(1).at(indices.at(1));
+	double act1a = peakVoltage->at(2).at(indices.at(2)) + peakVoltage->at(3).at(indices.at(3));
+	double act2a = peakVoltage->at(4).at(indices.at(4)) + peakVoltage->at(5).at(indices.at(5));
+	double act3a = peakVoltage->at(6).at(indices.at(6)) + peakVoltage->at(7).at(indices.at(7));
 
-	double act1c = intCharge->at(0).at(indices.at(0)) + intCharge->at(1).at(indices.at(1));
-	double act2c = intCharge->at(2).at(indices.at(2)) + intCharge->at(3).at(indices.at(3));
-	double act3c = intCharge->at(4).at(indices.at(4)) + intCharge->at(5).at(indices.at(5));
-        hTOFACT1C.Fill(tof, act1c);
-        hTOFACT2C.Fill(tof, act2c);
-        hTOFACT3C.Fill(tof, act3c);
+	hTOFACT0A.Fill(tof, act0a);
+        hTOFACT1A.Fill(tof, act1a);
+        hTOFACT2A.Fill(tof, act2a);
+        hTOFACT3A.Fill(tof, act3a);
 
-        hACT1CACT3C.Fill(act1c, act3c);
-        hACT3CACT2C.Fill(act3c, act2c);
-        hACT2CACT1C.Fill(act2c, act1c); 
+	double act0c = intCharge->at(0).at(indices.at(0)) + intCharge->at(1).at(indices.at(1));
+	double act1c = intCharge->at(2).at(indices.at(2)) + intCharge->at(3).at(indices.at(3));
+	double act2c = intCharge->at(4).at(indices.at(4)) + intCharge->at(5).at(indices.at(5));
+	double act3c = intCharge->at(6).at(indices.at(6)) + intCharge->at(7).at(indices.at(7));
+
+	hTOFACT0C.Fill(tof, act0c);
+  hTOFACT1C.Fill(tof, act1c);
+  hTOFACT2C.Fill(tof, act2c);
+  hTOFACT3C.Fill(tof, act3c);
+
+  hACT1CACT3C.Fill(act1c, act3c);
+  hACT3CACT2C.Fill(act3c, act2c);
+  hACT2CACT1C.Fill(act2c, act1c); 
 	
-        hTOF.Fill(tof);
+        hTOFAll.Fill(tof);
         hT0.Fill(t0);
         hT1.Fill(t1);
 	
-        bool pass = true;
-        bool isEl = false;
+  bool pass = true;
+  bool isEl = false;
 	
+  bool passed_act1a_cuts = false;
+  bool passed_act2a_cuts = false;
+
         switch(momentum)	  {
 
-	  // just a code example from 2022
 	  case 320: { //; jk
-	    if (act1v > 0.18)
-	      isEl = true;
-	    if (act2v > 0.025)
-	      isEl = true; 
-	    if (act3v > 0.022)
-	      isEl = true;
+	   // placeholder for momentum dependent cuts
 	    break;
 	  } // 320
 
 	 
 	    /*
+      // placeholder
 	  case 400: {
 	    double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
 	    for(int j = 0; j < 16; j++) {
@@ -245,14 +290,19 @@ void MakeDataPlots(string fileName, int momentum) {
 	  default: {
 	    if (i < 10)
 	      cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
-	    if (act1v > 0.18)
-	      isEl = true;
-	    if (act2v > 0.025)
-	      isEl = true; 
-	    if (act3v > 0.025)
-	      isEl = true;
-	    break;
-	  }
+      if (act0a > 1.) {
+	      isEl = true;  
+      }
+	    if (act1a > 2.) {
+        passed_act1a_cuts = true;
+      }
+	    if (act2a > 2.) {
+	      passed_act1a_cuts = true; 
+      }
+      if (act3a > 1.) {
+	      isEl = true;  
+      }
+	  } // default
 	  
 	  } // case
 
@@ -263,9 +313,9 @@ void MakeDataPlots(string fileName, int momentum) {
 	  // electrons
 	  hTOFEl.Fill(tof);
 
-	  hTOFACT1V_el.Fill(tof, act1v);
-	  hTOFACT2V_el.Fill(tof, act2v);
-	  hTOFACT3V_el.Fill(tof, act3v);
+	  hTOFACT1A_el.Fill(tof, act1a);
+	  hTOFACT2A_el.Fill(tof, act2a);
+	  hTOFACT3A_el.Fill(tof, act3a);
 	      
 	  hTOFACT1C_el.Fill(tof, act1c);
 	  hTOFACT2C_el.Fill(tof, act2c);
@@ -279,36 +329,40 @@ void MakeDataPlots(string fileName, int momentum) {
 	 
         } // non-electrons
 
-	if (act1v < 0.32) { // custom electron removal cut
+	if (act1a < 1.) { // custom electron removal cut
 	
 	  hTOFAll.Fill(tof);
 	  hTOFAllWide.Fill(tof);
+	  
+	  // TO VALIDATE the cut values!!!
+	  if (passed_act1a_cuts) {
+	    hTOFACT0A_act1cut.Fill(tof, act0a);
+	    hTOFACT1A_act1cut.Fill(tof, act1a);
+	    hTOFACT2A_act1cut.Fill(tof, act2a);
+	    hTOFACT3A_act1cut.Fill(tof, act3a);
 
-	
-	  if (act2v > 0.0080) { // was: 0.0057, 0.0060, tried also 0.0055
-	    hTOFACT1V_act2cut.Fill(tof, act1v);
-	    hTOFACT2V_act2cut.Fill(tof, act2v);
-	    hTOFACT3V_act2cut.Fill(tof, act3v);
-	      
+	    hTOFACT0C_act1cut.Fill(tof, act0c);
+	    hTOFACT1C_act1cut.Fill(tof, act1c);
+	    hTOFACT2C_act1cut.Fill(tof, act2c);
+	    hTOFACT3C_act1cut.Fill(tof, act3c);
+
+	    hTOF_act1cut.Fill(tof);
+	  } // act1 cuts
+
+	  // TO VALIDATE the cut values!!!
+	  if (passed_act2a_cuts > 2.) { 
+	    hTOFACT0A_act2cut.Fill(tof, act0a);
+	    hTOFACT1A_act2cut.Fill(tof, act1a);
+	    hTOFACT2A_act2cut.Fill(tof, act2a);
+	    hTOFACT3A_act2cut.Fill(tof, act3a);
+
+	    hTOFACT0C_act2cut.Fill(tof, act0c);
 	    hTOFACT1C_act2cut.Fill(tof, act1c);
 	    hTOFACT2C_act2cut.Fill(tof, act2c);
 	    hTOFACT3C_act2cut.Fill(tof, act3c);
 
 	    hTOF_act2cut.Fill(tof);
 	  } // act2 cuts
-
-	  // TO VALIDATE the cut values!!!
-	  if (act3v > 0.0080) { // was: 0.0060
-	    hTOFACT1V_act3cut.Fill(tof, act1v);
-	    hTOFACT2V_act3cut.Fill(tof, act2v);
-	    hTOFACT3V_act3cut.Fill(tof, act3v);
-	      
-	    hTOFACT1C_act3cut.Fill(tof, act1c);
-	    hTOFACT2C_act3cut.Fill(tof, act2c);
-	    hTOFACT3C_act3cut.Fill(tof, act3c);
-
-	    hTOF_act3cut.Fill(tof);
-	  } // act3 cuts
 
 	} // custom electron removal cut
 
@@ -325,37 +379,35 @@ void MakeDataPlots(string fileName, int momentum) {
     outFile.cd();
     
 
-    hTOFACT1V.Write();
-    hTOFACT2V.Write();
-    hTOFACT3V.Write();
+    hTOFACT1A.Write();
+    hTOFACT2A.Write();
+    hTOFACT3A.Write();
     hTOFACT1C.Write();
     hTOFACT2C.Write();
     hTOFACT3C.Write();
 
-    hTOFACT1V_el.Write();
-    hTOFACT2V_el.Write();
-    hTOFACT3V_el.Write();
+    hTOFACT1A_el.Write();
+    hTOFACT2A_el.Write();
+    hTOFACT3A_el.Write();
     hTOFACT1C_el.Write();
     hTOFACT2C_el.Write();
     hTOFACT3C_el.Write();
     
-    hTOFACT1V_act2cut.Write();
-    hTOFACT2V_act2cut.Write();
-    hTOFACT3V_act2cut.Write();
+    hTOFACT1A_act1cut.Write();
+    hTOFACT2A_act1cut.Write();
+    hTOFACT3A_act1cut.Write();
+    hTOFACT1C_act1cut.Write();
+    hTOFACT2C_act1cut.Write();
+    hTOFACT3C_act1cut.Write();
+
+
+    hTOFACT1A_act2cut.Write();
+    hTOFACT2A_act2cut.Write();
+    hTOFACT3A_act2cut.Write();
     hTOFACT1C_act2cut.Write();
     hTOFACT2C_act2cut.Write();
     hTOFACT3C_act2cut.Write();
-
-
-    hTOFACT1V_act3cut.Write();
-    hTOFACT2V_act3cut.Write();
-    hTOFACT3V_act3cut.Write();
-    hTOFACT1C_act3cut.Write();
-    hTOFACT2C_act3cut.Write();
-    hTOFACT3C_act3cut.Write();
-    
-    
-    hTOF.Write();
+        
     hT0.Write();
     hT1.Write();
 
@@ -379,9 +431,17 @@ void MakeDataPlots(string fileName, int momentum) {
     hTOFEl.Write();
     hTOFOther.Write();
 
+    hTOF_act1cut.Write();
     hTOF_act2cut.Write();
-    hTOF_act3cut.Write();
 
+    hTimeDiffTOF01.Write();
+    hTimeDiffTOF02.Write();
+    hTimeDiffTOF03.Write();
+    hTimeDiffTOF11.Write();
+    hTimeDiffTOF12.Write();
+    hTimeDiffTOF13.Write();
+
+    
 
 }
 

@@ -77,8 +77,8 @@ def main(argv):
     rfile = ROOT.TFile(filename, 'read')
     hbasenames = {
         'hRef_Time' : ROOT.kGreen,
-        'hRef_Charge' : ROOT.kCyan,
-        'hRef_Voltage' : ROOT.kMagenta,
+        #'hRef_Charge' : ROOT.kCyan,
+        #'hRef_Voltage' : ROOT.kMagenta,
     }
     
     nChannels = 32
@@ -106,23 +106,71 @@ def main(argv):
 
         can = ROOT.TCanvas(canname, canname, 0, 0, 1600, 800)
         cans.append(can)
-        can.Divide(8,4)
+        #can.Divide(8,4)
+        can.Divide(4,2)
         
         for ich in range(0, nChannels):
+            if not ( ich >= 8 and ich <= 15):
+                continue
             hname = hbasename + str(ich)
             h = rfile.Get(hname)
             hs.append(h)
         Hs.append(hs)
         
         for h in hs:
-            can.cd(hs.index(h)+1)
+            ih = hs.index(h)
+            can.cd(ih+1)
             h.SetStats(0)
-            ROOT.gPad.SetLogy(1)
+            #ROOT.gPad.SetLogy(1)
             #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
             h.SetFillColor(hbasenames[hbasename])
             h.SetFillStyle(1111)
             h.SetTitle(ChNames[hs.index(h)])
-            h.Draw('hist')
+
+            gmeans = []
+            gsigmas = []
+            xmaxes = []
+            
+            if 'Time' in h.GetName():# and ih >= 8 and ih <= 15:
+                #print('*** fitting {}'.format(h.GetName()))
+                hname = h.GetName()
+                fname = 'fit{}'.format(ih)
+                fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', 0., 520.)
+                fit.SetParameters(h.GetMaximum()/6., 80., 5.)
+                h.Fit(fname, 'q', '')
+                mean = fit.GetParameter(1)
+                sigma = fit.GetParameter(2)
+                #print(f'1) {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
+                sf = 2.
+                h.Fit(fname, 'q', '', mean - sf*sigma, mean + sf*sigma)
+                mean = fit.GetParameter(1)
+                sigma = fit.GetParameter(2)
+                print(f'{hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
+                h.SetMaximum(1.2*h.GetMaximum())
+                h.Draw('hist')
+                h.GetXaxis().SetRangeUser(50, 120)
+                fit.Draw('same')
+                chi2 = fit.GetChisquare()
+                ndf = fit.GetNDF()
+                maxb = h.GetMaximumBin()
+                bw = h.GetBinWidth(maxb)
+                ymax = h.GetBinContent(maxb)
+                xmax = h.GetBinCenter(maxb)
+                print(f'  chi2/ndf={chi2/ndf:1.3f}, bw={bw} mean-ymax={mean-xmax:1.3f}')
+                stuff.append(fit)
+                gmeans.append(mean)
+                gsigmas.append(sigma)
+                xmaxes.append(xmax)
+            else:
+                h.Draw('hist')
+
+            print(gmeans)
+            print(gsigmas)
+            print(xmaxes)
+
+            #mean
+            
+            # todo: times subtractions 
             
             #txt= 'Ch {} {} p={} MeV/c'.format(hs.index(h)+1, basetag, ftag.replace('n','').replace('p',''))
             #if 'p' in ftag:
@@ -137,8 +185,46 @@ def main(argv):
             #txts.append(text)
 
 
+    # 2023 toch channels time diff analysis / calibration
+    htdiffnames = []
+    base = 'hTimeDiffTOF'
+    htofdiffs = {}
+    tofmeans = {}
+    for itof in range(0,2):
+        htofdiffs[itof] = []
+        tofmeans[itof] = []
+        for itch in range(1,4):
+            hname = base + str(itof) + str(itch)
+            htdiffnames.append(hname)
+            h = rfile.Get(hname)
+            htofdiffs[itof].append(h)
 
+            
+    canname = 'TofDiffs'        
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    can.Divide(3,2)
+    cans.append(can)
+    ic = 1
 
+    for itof,hs in htofdiffs.items():
+        ih = -1
+        for h in hs:
+            ih = ih + 1
+            can.cd(ic)
+            h.Draw('hist')
+            h.GetXaxis().SetRangeUser(-4,8.)
+            fname = 'fit_tofs_{}'.format(ic)
+            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
+            fit.SetParameters(h.GetMaximum()/6., h.GetMean(), h.GetStdDev())
+            h.Fit(fname, 'q', '', )
+            fit.Draw('same')
+            mean = fit.GetParameter(1)
+            sigma = fit.GetParameter(2)
+            print(f'tof fit {itof} {ih}: {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
+            stuff.append(fit)
+            ic = ic+1
+            tofmeans[itof].append(mean)
+    print(tofmeans)
     for can in cans:
         can.Update()
         can.Print('png/' + can.GetName() + '.png')

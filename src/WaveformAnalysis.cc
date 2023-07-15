@@ -188,7 +188,17 @@ void WaveformAnalysis::CalculateSignalTime(){
                     double y1 = fPedestal - fVoltScale*anaHist->GetBinContent(j+1);
                     double a = (y1-y0)/(x1-x0);
                     double b = y0 - a*x0;
-                    fSignalTime.push_back((fraction*fPeakVoltage.at(i)-b)/a);
+
+		    double uncalibt = (fraction*fPeakVoltage.at(i)-b)/a;
+		    double calibt = uncalibt;
+		    /*
+		    
+		    if (isToFChannel) {
+		      calibt -= ToF_channels_offset_calibration[][];
+		    }
+		    */
+		    
+                    fSignalTime.push_back(calibt);
                     set = true;
                     break;
                 }
