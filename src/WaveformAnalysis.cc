@@ -192,7 +192,9 @@ void WaveformAnalysis::CalculateSignalTime(){
 
 		    double uncalibt = (fraction*fPeakVoltage.at(i)-b)/a;
 		    double calibt = uncalibt;
-		    
+
+
+		    /*
 		    bool isToFChannel = (fGlobalChannelID >= 8 && fGlobalChannelID <= 15);
 		    if (isToFChannel) {
 		      int itof = (fGlobalChannelID - 8) / 4;
@@ -207,7 +209,7 @@ void WaveformAnalysis::CalculateSignalTime(){
 			calibt += ToF_channels_offset_calibration[itof][ktof];
 		      }
 		    }
-		    
+		    */
 		    
                     fSignalTime.push_back(calibt);
                     set = true;
