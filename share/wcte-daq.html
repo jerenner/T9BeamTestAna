@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" href="wcte-daq_files/midas.css"><script src="wcte-daq_files/controls.js"></script>
+<script src="wcte-daq_files/midas.js"></script>
+<script src="wcte-daq_files/mhttpd.js"></script>
+<meta http-equiv="refresh" content="60">
+ <style>
+table {
+    width:100%;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+ th, td {
+    padding: 5px;
+    text-align: left;
+}
+table#nicetable tr:nth-child(even) {
+    background-color: #eee;
+}
+table#t01 tr:nth-child(odd) {
+   background-color:#fff;
+}
+table#nicetable th{
+    background-color: black;
+    color: white;
+}
+</style>
+<style>
+   .dlgFrame {
+      font-family: verdana,tahoma,sans-serif;
+      border: 1px solid black;
+      box-shadow: 6px 6px 10px 4px rgba(0,0,0,0.2);
+      border-radius: 6px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      display: none; /* pre-hidden */
+   }
+   .dlgTitlebar {
+      user-select: none;
+      text-align: center;
+      background-color: #C0C0C0;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      font-size: 10pt;
+      padding: 2px;
+      padding-left: 30px;
+      padding-right: 30px;
+   }
+   .dlgTitlebar:hover {
+      cursor: pointer;
+   }
+   .dlgButton {
+      font-size: 10pt;
+      background-color: #F8F8F8;
+      border: 1px solid #808080;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin: 3px;
+   }
+   .dlgButtonDefault {
+      font-size: 10pt;
+      background-color: #4187F7;
+      color: #FFFFFF;
+      border: 1px solid #808080;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin: 3px;
+   }
+   .dlgButton:hover {
+      background-color: #F0F0F0;
+   }
+   .dlgPanel {
+      background-color: #F0F0F0;
+      text-align: center;
+      padding: 4px;
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
+   }
+   .dlgBlackout {
+      background: rgba(0,0,0,.5);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      z-index: 20;
+   }
+   .ctrlHSlider {
+      width: 200px;
+      height: 30px;
+      border-radius: 5px;
+      padding: 0;
+   }
+   .ctrlVSlider {
+      width: 20px;
+      height: 200px;
+      border-radius: 5px;
+      padding: 0;
+   }
+   .ctrlProgress {
+      border: 1px solid #A0A0A0;
+      border-radius: 5px;
+      width: 500px;
+      height: 5px;
+      background-color: #E0E0E0;
+      margin-left: 6px;
+      margin-top: 5px;
+   }
+   .ctrlProgressInd {
+      border-radius: 5px;
+      width: 0;
+     height: 5px;
+      background-color: #419bf9;
+      margin: 0;
+   }
+   </style></head>
+
+<body class="mcss" onload="mhttpd_init('Runlog');" style="font-size: 10pt;">
+<div id="mheader_error"></div><div id="mheader" style="display: flex;"><div style="display:inline-block; flex:none;"><span class="mmenuitem" style="padding: 10px;margin-right: 20px;" onclick="mhttpd_toggle_menu()">☰</span><span id="mheader_expt_name">wcte</span></div><div style="flex:auto;">  <div id="mheader_message"></div></div><div style="display: inline; flex:none;">  <div id="mheader_alarm" class="mgreen mbox"><a href="https://wcte-daq/?cmd=Alarms">Alarms: None</a></div>  <div style="display: inline; font-size: 75%; margin-right: 10px" id="mheader_last_updated">15 Jul 2023, 21:33:45 UTC+2</div></div></div>
+<div id="msidenav" style="top: 31px; width: 93px;"><div class="mmenuitem"><a href="https://wcte-daq/?cmd=Status" class="mmenulink">Status</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Transition" class="mmenulink">Transition</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=ODB" class="mmenulink">ODB</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=OldODB" class="mmenulink">OldODB</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Messages" class="mmenulink">Messages</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Chat" class="mmenulink">Chat</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Elog" class="mmenulink">Elog</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Alarms" class="mmenulink">Alarms</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Programs" class="mmenulink">Programs</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Buffers" class="mmenulink">Buffers</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=History" class="mmenulink">History</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=OldHistory" class="mmenulink">OldHistory</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=MSCB" class="mmenulink">MSCB</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Sequencer" class="mmenulink">Sequencer</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Event%20Dump" class="mmenulink">Event Dump</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Config" class="mmenulink">Config</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Help" class="mmenulink">Help</a></div>
+<div class="mseparator"></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=custom&amp;page=webdisplay" class="mmenulink">webdisplay</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=custom&amp;page=TRB3" class="mmenulink">TRB3</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=custom&amp;page=RunLog" class="mmenulink">RunLog</a></div>
+<div style="height: 64px;"></div>
+</div>
+<div id="mmain" style="padding-top: 31px; margin-left: 93px; opacity: 1;">
+<table id="nicetable" class="mtable">
+<tbody><tr> <td> Run # </td>  <td> Start </td> <td> End Time </td>
+<td> <pre> # TRB3 
+ events</pre> </td> 
+<td> Beam on? </td> 
+<td> Beam configuration </td> 
+<td> Beam momentum (GeV) </td> 
+<td> Beam Intensity </td> 
+<td> Aerogel 0 </td> 
+<td> Aerogel 1 </td> 
+<td> Comments </td>
+<td> Shift Takers </td>
+</tr><tr><td>283</td><td>Sat Jul 15 20:33:52 2023</td><td>Sat Jul 15 20:45:16 2023</td><td>2662</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>282</td><td>Sat Jul 15 19:37:29 2023</td><td>Sat Jul 15 20:28:00 2023</td><td>9045</td><td>True</td><td>momentum scan</td><td>0.34</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>281</td><td>Sat Jul 15 19:28:50 2023</td><td>Sat Jul 15 19:35:27 2023</td><td>1352</td><td>True</td><td>momentum scan</td><td>0.38</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>280</td><td>Sat Jul 15 19:19:42 2023</td><td>Sat Jul 15 19:26:16 2023</td><td>1380</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>301299990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>279</td><td>Sat Jul 15 19:10:52 2023</td><td>Sat Jul 15 19:17:21 2023</td><td>1292</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>301299990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>278</td><td>Sat Jul 15 19:01:51 2023</td><td>Sat Jul 15 19:07:41 2023</td><td>1226</td><td>True</td><td>momentum scan</td><td>0.5</td><td>297499980000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>277</td><td>Sat Jul 15 18:51:19 2023</td><td>Sat Jul 15 18:57:29 2023</td><td>1253</td><td>True</td><td>momentum scan</td><td>0.54000002</td><td>304199990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>276</td><td>Sat Jul 15 18:40:06 2023</td><td>Sat Jul 15 18:46:41 2023</td><td>1307</td><td>True</td><td>momentum scan</td><td>0.60000002</td><td>306299990000.0</td><td>1.006</td><td>1.047</td><td>Changed of aerogel boxes</td><td>Bruno</td></tr>
+<tr><td>275</td><td>Sat Jul 15 17:55:07 2023</td><td>Sat Jul 15 17:55:48 2023</td><td>0</td><td>True</td><td>momentum scan</td><td>0</td><td>0</td><td>1.006</td><td>1.015</td><td>checking to see if aerogel pmt's are off </td><td>Sirous, Mahnoor</td></tr>
+<tr><td>274</td><td>Sat Jul 15 17:30:39 2023</td><td>Sat Jul 15 17:37:40 2023</td><td>796</td><td>True</td><td>momentum scan</td><td>-0.66000003</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>273</td><td>Sat Jul 15 17:03:22 2023</td><td>Sat Jul 15 17:11:17 2023</td><td>858</td><td>True</td><td>momentum scan</td><td>-0.83999997</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>272</td><td>Sat Jul 15 16:50:53 2023</td><td>Sat Jul 15 16:59:02 2023</td><td>883</td><td>True</td><td>momentum scan</td><td>-0.60000002</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>271</td><td>Sat Jul 15 16:40:16 2023</td><td>Sat Jul 15 16:48:20 2023</td><td>860</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>270</td><td>Sat Jul 15 16:29:31 2023</td><td>Sat Jul 15 16:36:32 2023</td><td>723</td><td>True</td><td>momentum scan</td><td>-0.74000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>269</td><td>Sat Jul 15 16:28:05 2023</td><td>Sat Jul 15 16:28:46 2023</td><td>77</td><td>True</td><td>momentum scan</td><td>-0.74000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>268</td><td>Sat Jul 15 16:11:49 2023</td><td>Sat Jul 15 16:23:49 2023</td><td>1109</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>267</td><td>Sat Jul 15 16:01:22 2023</td><td>Sat Jul 15 16:09:39 2023</td><td>809</td><td>True</td><td>momentum scan</td><td>-0.86000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>266</td><td>Sat Jul 15 15:49:16 2023</td><td>Sat Jul 15 15:57:30 2023</td><td>910</td><td>True</td><td>momentum scan</td><td>-0.89999998</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>265</td><td>Sat Jul 15 15:39:18 2023</td><td>Sat Jul 15 15:47:09 2023</td><td>1827</td><td>True</td><td>momentum scan</td><td>-0.94</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>264</td><td>Sat Jul 15 15:31:33 2023</td><td>Sat Jul 15 15:37:58 2023</td><td>1339</td><td>True</td><td>momentum scan</td><td>1</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>263</td><td>Sat Jul 15 15:21:42 2023</td><td>Sat Jul 15 15:29:24 2023</td><td>1393</td><td>True</td><td>momentum scan</td><td>-1</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>262</td><td>Sat Jul 15 15:07:03 2023</td><td>Sat Jul 15 15:19:24 2023</td><td>7131</td><td>True</td><td>momentum scan</td><td>0.66000003</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>261</td><td>Sat Jul 15 14:57:05 2023</td><td>Sat Jul 15 15:05:40 2023</td><td>1800</td><td>True</td><td>momentum scan</td><td>0.83999997</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>260</td><td>Sat Jul 15 14:46:47 2023</td><td>Sat Jul 15 14:54:06 2023</td><td>1350</td><td>True</td><td>momentum scan</td><td>0.94</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>259</td><td>Sat Jul 15 14:16:03 2023</td><td>Sat Jul 15 14:43:33 2023</td><td>3290</td><td>True</td><td>momentum scan</td><td>0.89999998</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>258</td><td>Sat Jul 15 14:01:01 2023</td><td>Sat Jul 15 14:14:14 2023</td><td>6828</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>257</td><td>Sat Jul 15 13:50:28 2023</td><td>Sat Jul 15 13:58:27 2023</td><td>3207</td><td>True</td><td>momentum scan</td><td>0.74000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>256</td><td>Sat Jul 15 13:41:48 2023</td><td>Sat Jul 15 13:48:23 2023</td><td>1206</td><td>True</td><td>momentum scan</td><td>0.86000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>255</td><td>Sat Jul 15 13:26:51 2023</td><td>Sat Jul 15 13:39:05 2023</td><td>3464</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>254</td><td>Sat Jul 15 13:20:22 2023</td><td>Sat Jul 15 13:24:06 2023</td><td>728</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>253</td><td>Sat Jul 15 12:38:16 2023</td><td>Sat Jul 15 13:14:03 2023</td><td>7204</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>After beam tuning</td><td>Arturo</td></tr>
+<tr><td>252</td><td>Sat Jul 15 11:55:03 2023</td><td>Sat Jul 15 12:35:50 2023</td><td>7928</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam tunning</td><td>Arturo</td></tr>
+<tr><td>251</td><td>Sat Jul 15 10:46:10 2023</td><td>Sat Jul 15 11:54:51 2023</td><td>19058</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam tunning</td><td>Arturo</td></tr>
+<tr><td>250</td><td>Sat Jul 15 10:31:35 2023</td><td>Sat Jul 15 10:45:48 2023</td><td>9621</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers after second HV change</td><td>Arturo</td></tr>
+<tr><td>249</td><td>Sat Jul 15 10:10:45 2023</td><td>Sat Jul 15 10:12:15 2023</td><td>1118</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers after first HV change</td><td>Arturo</td></tr>
+<tr><td>248</td><td>Sat Jul 15 09:58:05 2023</td><td>Sat Jul 15 10:10:24 2023</td><td>9378</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers after HV change</td><td>Arturo</td></tr>
+<tr><td>247</td><td>Sat Jul 15 08:35:31 2023</td><td>Sat Jul 15 08:36:30 2023</td><td>226</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers before HV change</td><td>Arturo</td></tr>
+<tr><td>246</td><td>Sat Jul 15 07:58:20 2023</td><td>Sat Jul 15 08:34:45 2023</td><td>7183</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers to check online waveforms</td><td>Arturo</td></tr>
+<tr><td>245</td><td>Fri Jul 14 19:34:25 2023</td><td>Fri Jul 14 19:45:44 2023</td><td>1882</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>244</td><td>Fri Jul 14 19:31:02 2023</td><td>Fri Jul 14 19:34:17 2023</td><td>475</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>243</td><td>Fri Jul 14 19:26:51 2023</td><td>Fri Jul 14 19:30:54 2023</td><td>714</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>242</td><td>Fri Jul 14 19:23:52 2023</td><td>Fri Jul 14 19:26:43 2023</td><td>531</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>241</td><td>Fri Jul 14 19:20:55 2023</td><td>Fri Jul 14 19:23:43 2023</td><td>512</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>240</td><td>Fri Jul 14 19:18:37 2023</td><td>Fri Jul 14 19:20:30 2023</td><td>374</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post triiger percent for digitizer 0 to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>239</td><td>Fri Jul 14 18:59:22 2023</td><td>Fri Jul 14 19:17:57 2023</td><td>3534</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Testing hole counter veto</td><td>Arturo</td></tr>
+<tr><td>238</td><td>Fri Jul 14 18:55:52 2023</td><td>Fri Jul 14 18:58:31 2023</td><td>537</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Testing hole counter veto</td><td>Arturo</td></tr>
+<tr><td>237</td><td>Fri Jul 14 18:35:18 2023</td><td>Fri Jul 14 18:55:32 2023</td><td>3759</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Testing hole counter veto</td><td>Arturo</td></tr>
+<tr><td>236</td><td>Fri Jul 14 18:20:32 2023</td><td>Fri Jul 14 18:29:19 2023</td><td>1540</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>With hole counter for veto</td><td>Arturo</td></tr>
+<tr><td>235</td><td>Fri Jul 14 17:32:43 2023</td><td>Fri Jul 14 18:18:35 2023</td><td>8245</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Checking saturation (no hole counter for veto)</td><td>Thomas</td></tr>
+<tr><td>234</td><td>Fri Jul 14 15:56:08 2023</td><td>Fri Jul 14 17:31:25 2023</td><td>20715</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>233</td><td>Fri Jul 14 15:22:17 2023</td><td>Fri Jul 14 15:56:01 2023</td><td>6235</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>232</td><td>Fri Jul 14 15:21:53 2023</td><td>Fri Jul 14 15:22:06 2023</td><td>71</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>231</td><td>Fri Jul 14 15:18:25 2023</td><td>Fri Jul 14 15:21:36 2023</td><td>570</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>230</td><td>Fri Jul 14 15:14:33 2023</td><td>Fri Jul 14 15:18:18 2023</td><td>730</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>229</td><td>Fri Jul 14 15:12:34 2023</td><td>Fri Jul 14 15:14:21 2023</td><td>291</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>228</td><td>Fri Jul 14 15:05:03 2023</td><td>Fri Jul 14 15:12:18 2023</td><td>1862</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Reduced the number of sample for DT5730</td><td>Thomas</td></tr>
+<tr><td>227</td><td>Fri Jul 14 14:56:36 2023</td><td>Fri Jul 14 15:04:41 2023</td><td>1183</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>226</td><td>Fri Jul 14 14:31:19 2023</td><td>Fri Jul 14 14:56:30 2023</td><td>3074</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>225</td><td>Fri Jul 14 14:30:03 2023</td><td>Fri Jul 14 14:30:28 2023</td><td>49</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>224</td><td>Fri Jul 14 12:41:44 2023</td><td>Fri Jul 14 14:29:50 2023</td><td>27835</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>223</td><td>Fri Jul 14 11:52:39 2023</td><td>Fri Jul 14 12:41:33 2023</td><td>17307</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>222</td><td>Fri Jul 14 11:35:19 2023</td><td>Fri Jul 14 11:52:32 2023</td><td>761</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>221</td><td>Fri Jul 14 11:14:36 2023</td><td>Fri Jul 14 11:34:59 2023</td><td>979</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>220</td><td>Fri Jul 14 10:35:33 2023</td><td>Fri Jul 14 11:14:28 2023</td><td>3865</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>217</td><td>Fri Jul 14 09:47:49 2023</td><td>Fri Jul 14 09:48:26 2023</td><td>51</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>216</td><td>Fri Jul 14 09:45:40 2023</td><td>Fri Jul 14 09:47:30 2023</td><td>224</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>215</td><td>Fri Jul 14 09:38:19 2023</td><td>Fri Jul 14 09:45:33 2023</td><td>804</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>214</td><td>Fri Jul 14 09:33:11 2023</td><td>Fri Jul 14 09:38:11 2023</td><td>677</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>213</td><td>Fri Jul 14 09:24:49 2023</td><td>Fri Jul 14 09:32:21 2023</td><td>1048</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>212</td><td>Fri Jul 14 09:23:53 2023</td><td>Fri Jul 14 09:24:05 2023</td><td>47</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>211</td><td>Fri Jul 14 09:16:25 2023</td><td>Fri Jul 14 09:23:24 2023</td><td>222</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Thomas</td></tr>
+<tr><td>210</td><td>Fri Jul 14 09:08:01 2023</td><td>Fri Jul 14 09:15:57 2023</td><td>0</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Thomas</td></tr>
+<tr><td>209</td><td>Thu Jul 13 21:23:26 2023</td><td>Fri Jul 14 09:07:45 2023</td><td>5444</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>208</td><td>Thu Jul 13 21:15:38 2023</td><td>Thu Jul 13 21:23:16 2023</td><td>1830</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>207</td><td>Thu Jul 13 21:13:54 2023</td><td>Thu Jul 13 21:14:42 2023</td><td>10</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>206</td><td>Thu Jul 13 21:12:24 2023</td><td>Thu Jul 13 21:13:47 2023</td><td>27</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>205</td><td>Thu Jul 13 21:06:59 2023</td><td>Thu Jul 13 21:12:16 2023</td><td>1954</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>204</td><td>Thu Jul 13 21:05:03 2023</td><td>Thu Jul 13 21:06:52 2023</td><td>419</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>203</td><td>Thu Jul 13 21:00:26 2023</td><td>Thu Jul 13 21:04:56 2023</td><td>51</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>202</td><td>Thu Jul 13 20:57:13 2023</td><td>Thu Jul 13 21:00:20 2023</td><td>1576</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>201</td><td>Thu Jul 13 20:52:09 2023</td><td>Thu Jul 13 20:57:01 2023</td><td>1894</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>200</td><td>Thu Jul 13 20:41:30 2023</td><td>Thu Jul 13 20:52:00 2023</td><td>10600</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>199</td><td>Thu Jul 13 20:35:03 2023</td><td>Thu Jul 13 20:41:21 2023</td><td>3785</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>198</td><td>Thu Jul 13 20:21:13 2023</td><td>Thu Jul 13 20:34:56 2023</td><td>13710</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>197</td><td>Thu Jul 13 20:14:44 2023</td><td>Thu Jul 13 20:21:06 2023</td><td>5245</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>196</td><td>Thu Jul 13 20:14:07 2023</td><td>Thu Jul 13 20:14:37 2023</td><td>992</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>195</td><td>Thu Jul 13 18:07:31 2023</td><td>Thu Jul 13 20:13:39 2023</td><td>1022390</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>194</td><td>Thu Jul 13 18:03:14 2023</td><td>Thu Jul 13 18:07:24 2023</td><td>33284</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>193</td><td>Thu Jul 13 18:00:12 2023</td><td>Thu Jul 13 18:03:08 2023</td><td>38325</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>192</td><td>Thu Jul 13 17:54:33 2023</td><td>Thu Jul 13 18:00:01 2023</td><td>43833</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>191</td><td>Thu Jul 13 17:23:47 2023</td><td>Thu Jul 13 17:54:23 2023</td><td>8360</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>190</td><td>Thu Jul 13 17:19:17 2023</td><td>Thu Jul 13 17:23:30 2023</td><td>190688</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>189</td><td>Thu Jul 13 16:59:20 2023</td><td>Thu Jul 13 17:19:10 2023</td><td>1047546</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>188</td><td>Thu Jul 13 16:47:38 2023</td><td>Thu Jul 13 16:59:13 2023</td><td>606811</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>187</td><td>Thu Jul 13 16:47:22 2023</td><td>Thu Jul 13 16:47:31 2023</td><td>5592</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>186</td><td>Thu Jul 13 16:30:42 2023</td><td>Thu Jul 13 16:46:33 2023</td><td>803465</td><td>True</td><td>commissioning</td><td>0</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam might be started</td><td>Thomas</td></tr>
+<tr><td>185</td><td>Thu Jul 13 16:09:46 2023</td><td>Thu Jul 13 16:30:25 2023</td><td>1093505</td><td>False</td><td>commissioning</td><td>0</td><td>0</td><td></td><td></td><td>comissioning</td><td>Thomas</td></tr>
+<tr><td>184</td><td>Thu Jul 13 16:08:41 2023</td><td>Thu Jul 13 16:09:27 2023</td><td>24812</td><td>False</td><td>commissioning</td><td>0</td><td>0</td><td></td><td></td><td>comissioning</td><td>Thomas</td></tr>
+<tr><td>183</td><td>Thu Jul 13 15:48:42 2023</td><td>Thu Jul 13 16:08:33 2023</td><td>1044008</td><td>False</td><td>commissioning</td><td>0</td><td>0</td><td></td><td></td><td>comissioning</td><td>Thomas</td></tr>
+<tr><td>283</td><td>Sat Jul 15 20:33:52 2023</td><td>Sat Jul 15 20:28:00 2023</td><td>9045</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+</tbody></table>
+</div> 
+
+</body></html>

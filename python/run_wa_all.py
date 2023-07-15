@@ -1,6 +1,8 @@
 #!/usr/bin/python
 # jk
 
+from data_runs import *
+
 import os, sys
 
 os.system('mkdir -p output')
@@ -8,11 +10,11 @@ os.system('mkdir -p output')
 print("===> Waveforms analysis:")
 for xlistname in  os.popen('cd lists/ ; ls list*.txt'):
     print('######################################################')
-    # TBC
-    momentum="1000"
-
     listname = xlistname[:-1]
     base = listname.replace('.txt','')
+    #print('base: ', base)
+    srun = base.replace('list_root_run_000', '')
+    momentum = getMomentum(srun)
     cmd = "./bin/waveform_analysis.app -i lists/{} -o output/output_{}.root -c config/config.json".format(listname,base)
     print(cmd)
 

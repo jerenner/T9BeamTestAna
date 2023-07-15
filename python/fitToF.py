@@ -4,12 +4,17 @@
 
 #from __future__ import print_function
 
+from data_runs import *
+from tofUtil import *
+
 import ROOT
 from math import sqrt, pow, log, exp
 import os, sys, getopt
 
 cans = []
 stuff = []
+
+##########################################
 
 def PrintUsage(argv):
     print('Usage:')
@@ -22,11 +27,13 @@ def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
     fname = 'fit{}'.format(tag)
     hname = h.GetName()
     fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', t1, t2)
+    fit.SetLineColor(ROOT.kBlack)
+    fit.SetLineStyle(2)
     #ampl = h.GetMaximum() / peaksf
     ampl = h.GetBinContent(h.FindBin(ct)) / peaksf
     print('Amplitude initially ', ampl)
     fit.SetParameters(ampl, ct, w)
-    fit.SetParLimits(2, 0., 1.7)
+    fit.SetParLimits(2, 0., 0.8)
     for ip in range(0, fit.GetNpar()):
         print(fit.GetParameter(ip))
     #prefit = fit.DrawCopy('same')
@@ -36,7 +43,7 @@ def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
     sigma = fit.GetParameter(2)
     #print(f'1) {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
     sf = 2.
-    #h.Fit(fname, '', '', mean - sf*sigma, mean + sf*sigma)
+    h.Fit(fname, '', '', mean - sf*sigma, mean + sf*sigma)
     mean = fit.GetParameter(1)
     sigma = fit.GetParameter(2)
     print(f'{hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
@@ -50,13 +57,21 @@ def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
 
 
 
-
 ##########################################
+##########################################
+##########################################
+
 # https://www.tutorialspoint.com/python/python_command_line_arguments.htm
+
 def main(argv):
     #if len(sys.argv) > 1:
     #  foo = sys.argv[1]
 
+    pngdir = 'png_results/'
+    pdfdir = 'pdf_results/'
+    os.system(f'mkdir {pngdir}')
+    os.system(f'mkdir {pdfdir}')
+    
     ### https://www.tutorialspoint.com/python/python_command_line_arguments.htm
     ### https://pymotw.com/2/getopt/
     ### https://docs.python.org/3.1/library/getopt.html
@@ -100,9 +115,16 @@ def main(argv):
 
     fileName = argv[1]
     inFile = ROOT.TFile(fileName, "READ")
-        
-    hTOFAll = inFile.Get("hTOFAll")
-    hTOFEl = inFile.Get("hTOFEl")
+    srun = fileName.split('/')[-1].replace('output_list_root_run_000','').replace('_plots.root','')
+    momentum = getMomentum(srun)
+    print(f'Assuming run {srun} and momentum {momentum}')
+
+    suff = ''
+    if abs(momentum) < 500:
+        suff = 'Low'
+        print('Low momentum run, looking at zoomed version of tof histos!')
+    hTOFAll = inFile.Get("hTOFAll" + suff)
+    hTOFEl = inFile.Get("hTOFEl" + suff)
 
 
     canname = 'FitToF'
@@ -128,20 +150,41 @@ def main(argv):
         off = 3.
     width = 0.2
     fite = Fit(hTOFAll, '_el', 11.7 + off, width, 11. + off, 13. + off, 1.)
-    fitp = Fit(hTOFAll, '_p',  16. + off, width, 14 + off,  17.5 + off, 1.)
-    fitd = Fit(hTOFAll, '_d',  25. + off, 0.8, 24.3 + off, 25.7 + off, 0.8)
 
-    tdif_e_p = fitp.GetParameter(1) - fite.GetParameter(1)
-    tex = ROOT.TLatex(0.7, 0.8, 't_{p}-t_{e}=' + '{:1.2f}'.format(tdif_e_p))
-    tex.SetNDC()
-    tex.Draw()
-    stuff.append(tex)
+    tofDiff_e_mu = getTofDiff('e','mu',momentum)
+    tofDiff_e_pi = getTofDiff('e','pi',momentum)
+    tofDiff_e_p = getTofDiff('e','p',momentum)
+    tofDiff_e_d = getTofDiff('e','d',momentum)
 
-    tdif_e_d = fitd.GetParameter(1) - fite.GetParameter(1)
-    tex = ROOT.TLatex(0.7, 0.7, 't_{d}-t_{e}=' + '{:1.2f}'.format(tdif_e_d))
-    tex.SetNDC()
-    tex.Draw()
-    stuff.append(tex)
+    print(f'ToF diffs for momentum {momentum}: mu-e: {tofDiff_e_mu:2.2f}, pi-e: {tofDiff_e_pi:2.2f}, p-e: {tofDiff_e_p:2.2f}, d-e: {tofDiff_e_d:2.2f}')
+
+    if abs(momentum) < 330:
+        print('Assuming low momemtum run, will try to fit e/mu/pi')
+        fitmu = Fit(hTOFAll, '_mu', 11.7 + off + tofDiff_e_mu, width, 11. + off + tofDiff_e_mu, 13. + off + tofDiff_e_mu, 1.)
+        fitpi = Fit(hTOFAll, '_pi', 11.7 + off + tofDiff_e_pi, width, 11. + off + tofDiff_e_pi, 13. + off + tofDiff_e_pi, 1.)
+        stuff.append([fitmu, fitpi])
+
+    elif abs(momentum) < 700:
+        print('Assuming medium momemtum run, will try to fit e/mu+pi')
+        fitmupi = Fit(hTOFAll, '_mupi', 11.7 + off + tofDiff_e_mu, width, 11. + off + tofDiff_e_mu, 13. + off + tofDiff_e_mu, 1.)
+        stuff.append(fitmupi)
+    else:
+        print('Assuming low momemtum run, will try to fit e/p/d')
+        fitp = Fit(hTOFAll, '_p',  16. + off, width, 14 + off,  17.5 + off, 1.)
+        fitd = Fit(hTOFAll, '_d',  25. + off, 0.8, 24.3 + off, 25.7 + off, 0.8)
+        stuff.append([fitp, fitd])
+        
+        tdif_e_p = fitp.GetParameter(1) - fite.GetParameter(1)
+        tex = ROOT.TLatex(0.7, 0.8, 't_{p}-t_{e}=' + '{:1.2f}'.format(tdif_e_p))
+        tex.SetNDC()
+        tex.Draw()
+        stuff.append(tex)
+
+        #tdif_e_d = fitd.GetParameter(1) - fite.GetParameter(1)
+        #tex = ROOT.TLatex(0.7, 0.7, 't_{d}-t_{e}=' + '{:1.2f}'.format(tdif_e_d))
+        #tex.SetNDC()
+        #tex.Draw()
+        #stuff.append(tex)
 
 
     
@@ -151,6 +194,10 @@ def main(argv):
 
     ROOT.gPad.SetLogy(1)
     ROOT.gPad.Update()
+
+    for can in cans:
+        can.Print(pngdir + can.GetName() + '.png')
+        can.Print(pdfdir + can.GetName() + '.pdf')
     
     ROOT.gApplication.Run()
     return
