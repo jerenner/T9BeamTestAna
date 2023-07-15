@@ -14,6 +14,10 @@ import os, sys, getopt
 cans = []
 stuff = []
 
+# TODO:
+# JK
+# a multifit of 2-3 gaussians to low and medioum momenta!
+
 ##########################################
 
 def PrintUsage(argv):
@@ -158,7 +162,7 @@ def main(argv):
 
     print(f'ToF diffs for momentum {momentum}: mu-e: {tofDiff_e_mu:2.2f}, pi-e: {tofDiff_e_pi:2.2f}, p-e: {tofDiff_e_p:2.2f}, d-e: {tofDiff_e_d:2.2f}')
 
-    if abs(momentum) < 330:
+    if abs(momentum) < 280:
         print('Assuming low momemtum run, will try to fit e/mu/pi')
         fitmu = Fit(hTOFAll, '_mu', 11.7 + off + tofDiff_e_mu, width, 11. + off + tofDiff_e_mu, 13. + off + tofDiff_e_mu, 1.)
         fitpi = Fit(hTOFAll, '_pi', 11.7 + off + tofDiff_e_pi, width, 11. + off + tofDiff_e_pi, 13. + off + tofDiff_e_pi, 1.)

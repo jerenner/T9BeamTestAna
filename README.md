@@ -43,13 +43,12 @@ hRef_PedestalSigma*
 
 quick simple plotting 1D:
 python3 ./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
-# then close by File -> Quit ROOT in any of the Canvases that appear
-
+then close by File -> Quit ROOT in any of the Canvases that appear
 
 
 More detailed:
 
-save the https://wcte-daq/?cmd=custom&page=RunLog as html do Downlodaws on the daq proxy machine
+save the https://wcte-daq/?cmd=custom&page=RunLog as html do Downloads on the daq proxy machine
 then in your local analysis directory, get the file to share/:
 cd share/ ; ./get.sh ; cd ../
 Now you can run parse script to get run-momenta dictionary:
