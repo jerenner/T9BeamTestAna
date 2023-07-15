@@ -236,39 +236,58 @@ def main(argv):
 
 
     ######## absolute TOF measurement ##########
-    ihtdiffnames = []
+    htTOFnames = []
     base = 'hTimeTOF'
-    htofdiffs = {}
-    tofmeans = {}
-    for itof in range(0,2):
-        htofdiffs[itof] = []
-        tofmeans[itof] = []
-        for itch in range(1,4):
-            hname = base + str(itof) + str(itch)
-            htdiffnames.append(hname)
-            h = rfile.Get(hname)
-            htofdiffs[itof].append(h)
+    htofTOFs = {}
+    htofTOFs[0] = []
+    for itch in range(0,4):
+        hname = base + str(itch)
+        htTOFnames.append(hname)
+        h = rfile.Get(hname)
+        htofTOFs[0].append(h)
     
     canname = 'AbsoluteTof'
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
-    can.Divide(3,2)
+    can.Divide(2,2)
     cans.append(can)
     ic = 1
 
-    for itof,hs in htofdiffs.items():
+    for itof, hs in htofTOFs.items():
         ih = -1
         for h in hs:
             ih = ih + 1
             can.cd(ic)
+            ROOT.gPad.SetLogy(1);
+            print("ok")
             h.Draw('hist')
+            
             #h.GetXaxis().SetRangeUser(-4,8.)
             fname = 'fit_tofs_{}'.format(ic)
-            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
-            fit.SetParameters(h.GetMaximum()/6., h.GetMean(), h.GetStdDev())
+            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
+            fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev(), h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
+            #try to fiut the peaks one by one
+            #g1 = ROOT.TF1("g1", "gaus", 0, 15);
+            #g2 = ROOT.TF1("g2", "gaus", 12, 20);
+            #g3 = ROOT.TF1("g3", "gaus", 25, 30);
+
+            #h.Fit(g1, "R");
+            #h.Fit(g2, "R+");
+            #h.Fit(g3, "+", "", 0, 50);
+
+
+            #fit = g1 + g2 + g3 
             h.Fit(fname, 'q', '', )
             fit.Draw('same')
+            #g1.Draw('same')
+            #g2.Draw('same')
+            #g3.Draw('same')
             mean = fit.GetParameter(1)
             sigma = fit.GetParameter(2)
+            mean2 = fit.GetParameter(4)
+            sigma2 = fit.GetParameter(5)
+            mean3 = fit.GetParameter(6)
+            sigma3 = fit.GetParameter(7)
+            print("ok")
             print(f'tof fit {itof} {ih}: {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
             stuff.append(fit)
             ic = ic+1

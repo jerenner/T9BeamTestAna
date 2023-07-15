@@ -244,7 +244,6 @@ void MakeDataPlots(string fileName, int momentum) {
 	hTimeTOF1.Fill(t13 - t02);
 	hTimeTOF2.Fill(t10 - t01);
 	hTimeTOF3.Fill(t12 - t03);
-
     	
 	double t0 = (signalTime->at(8).at(indices.at(8)) + signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)) + signalTime->at(11).at(indices.at(11)))/4.;
 	double t1 = (signalTime->at(12).at(indices.at(12)) + signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)) + signalTime->at(15).at(indices.at(15)))/4.;
