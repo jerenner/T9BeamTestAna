@@ -230,9 +230,60 @@ def main(argv):
         can.Print('png/' + can.GetName() + '.png')
         can.Print('pdf/' + can.GetName() + '.pdf')
      
+   # if not gBatch:
+   #     ROOT.gApplication.Run()
+   # return
+
+
+    ######## absolute TOF measurement ##########
+    ihtdiffnames = []
+    base = 'hTimeTOF'
+    htofdiffs = {}
+    tofmeans = {}
+    for itof in range(0,2):
+        htofdiffs[itof] = []
+        tofmeans[itof] = []
+        for itch in range(1,4):
+            hname = base + str(itof) + str(itch)
+            htdiffnames.append(hname)
+            h = rfile.Get(hname)
+            htofdiffs[itof].append(h)
+    
+    canname = 'AbsoluteTof'
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    can.Divide(3,2)
+    cans.append(can)
+    ic = 1
+
+    for itof,hs in htofdiffs.items():
+        ih = -1
+        for h in hs:
+            ih = ih + 1
+            can.cd(ic)
+            h.Draw('hist')
+            #h.GetXaxis().SetRangeUser(-4,8.)
+            fname = 'fit_tofs_{}'.format(ic)
+            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
+            fit.SetParameters(h.GetMaximum()/6., h.GetMean(), h.GetStdDev())
+            h.Fit(fname, 'q', '', )
+            fit.Draw('same')
+            mean = fit.GetParameter(1)
+            sigma = fit.GetParameter(2)
+            print(f'tof fit {itof} {ih}: {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
+            stuff.append(fit)
+            ic = ic+1
+            tofmeans[itof].append(mean)
+    print(tofmeans)
+    for can in cans:
+        can.Update()
+        can.Print('png/' + can.GetName() + '.png')
+        can.Print('pdf/' + can.GetName() + '.pdf')
+
     if not gBatch:
         ROOT.gApplication.Run()
     return
+
+
 
 ###################################
 ###################################
