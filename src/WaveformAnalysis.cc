@@ -242,6 +242,7 @@ void WaveformAnalysis::IntegrateCharge(){
                 integratedCharge += voltage*period/impedance;
                 counter--; 
                 voltage = anaHist->GetBinContent(counter)*fVoltScale-fPedestal;  
+                if(fPolarity==0) voltage = -1.0*voltage;
             }
             
             voltage = anaHist->GetBinContent(fPeakBins.at(i)+1)*fVoltScale-fPedestal;
@@ -250,6 +251,7 @@ void WaveformAnalysis::IntegrateCharge(){
                 integratedCharge += voltage*period/impedance;
                 counter++; 
                 voltage = anaHist->GetBinContent(counter)*fVoltScale-fPedestal;  
+                if(fPolarity==0) voltage = -1.0*voltage;
             }  
             
             fIntegratedCharge.push_back(integratedCharge);
