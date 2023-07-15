@@ -6,7 +6,7 @@ class WaveformArray:
     This class holds an array of waveforms, for quickly doing waveform analysis on all waveforms
     """
 
-    def __init__(self, waveforms, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 240),
+    def __init__(self, waveforms, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
                  reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351):
 
         self.waveforms = np.array(waveforms)
