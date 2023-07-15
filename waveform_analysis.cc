@@ -260,7 +260,7 @@ int main(int argc, char **argv) {
                     wavef->SetBinContent(ib+1, waveforms.at(j)->at(ib));
                 }
 
-                waveAna.at(j).SetHistogram(wavef);
+                waveAna.at(j).SetHistogram(wavef, j);
                 waveAna.at(j).RunAnalysis();
 
                 pedestal[j] = waveAna.at(j).GetPedestal();

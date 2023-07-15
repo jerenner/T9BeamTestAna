@@ -35,9 +35,9 @@ all: MESSAGE $(TARGET) $(SOURCES) $(EXECUTABLE)
 
 MESSAGE:
 	@echo '**********************************************************************'
-	@echo '* Author:     Matej Pavin                                            *'
+	@echo '* Authors:    Matej Pavin, Jiri Kvita, Alie Craplet, Nick Prouse     *'
 	@echo '* Email       mpavin@triumf.ca                                       *'
-	@echo '* Date:       2022/07/14			                            *'
+	@echo '* Date:       2022/07/14, 2023		                            *'
 	@echo '* Water Cherenkov Test Experiment (WCTE)                             *'
 	@echo '**********************************************************************'	
 

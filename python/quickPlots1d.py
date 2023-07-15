@@ -212,7 +212,7 @@ def main(argv):
             ih = ih + 1
             can.cd(ic)
             h.Draw('hist')
-            h.GetXaxis().SetRangeUser(-4,8.)
+            #h.GetXaxis().SetRangeUser(-4,8.)
             fname = 'fit_tofs_{}'.format(ic)
             fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
             fit.SetParameters(h.GetMaximum()/6., h.GetMean(), h.GetStdDev())
