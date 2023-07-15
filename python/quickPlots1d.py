@@ -77,8 +77,8 @@ def main(argv):
     rfile = ROOT.TFile(filename, 'read')
     hbasenames = {
         'hRef_Time' : ROOT.kGreen,
-        #'hRef_Charge' : ROOT.kCyan,
-        #'hRef_Voltage' : ROOT.kMagenta,
+        'hRef_Charge' : ROOT.kCyan,
+        'hRef_Voltage' : ROOT.kMagenta,
     }
     
     nChannels = 32
@@ -106,14 +106,16 @@ def main(argv):
 
         can = ROOT.TCanvas(canname, canname, 0, 0, 1600, 800)
         cans.append(can)
-        #can.Divide(8,4)
-        can.Divide(4,2)
+        can.Divide(8,4)
+        #can.Divide(4,2)
         
         for ich in range(0, nChannels):
-            if not ( ich >= 8 and ich <= 15):
-                continue
+            # hack just for old tofs
+            #if not ( ich >= 8 and ich <= 15):
+            #    continue
             hname = hbasename + str(ich)
             h = rfile.Get(hname)
+            print('Pushing ', ich, hname)
             hs.append(h)
         Hs.append(hs)
         
@@ -121,7 +123,8 @@ def main(argv):
             ih = hs.index(h)
             can.cd(ih+1)
             h.SetStats(0)
-            #ROOT.gPad.SetLogy(1)
+            if not 'Time' in h.GetName():
+                ROOT.gPad.SetLogy(1)
             #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
             h.SetFillColor(hbasenames[hbasename])
             h.SetFillStyle(1111)
@@ -131,7 +134,7 @@ def main(argv):
             gsigmas = []
             xmaxes = []
             
-            if 'Time' in h.GetName():# and ih >= 8 and ih <= 15:
+            if 'Time' in h.GetName() and ih >= 8 and ih <= 15:
                 #print('*** fitting {}'.format(h.GetName()))
                 hname = h.GetName()
                 fname = 'fit{}'.format(ih)
@@ -156,7 +159,8 @@ def main(argv):
                 bw = h.GetBinWidth(maxb)
                 ymax = h.GetBinContent(maxb)
                 xmax = h.GetBinCenter(maxb)
-                print(f'  chi2/ndf={chi2/ndf:1.3f}, bw={bw} mean-ymax={mean-xmax:1.3f}')
+                if ndf > 0:
+                    print(f'  chi2/ndf={chi2/ndf:1.3f}, bw={bw} mean-ymax={mean-xmax:1.3f}')
                 stuff.append(fit)
                 gmeans.append(mean)
                 gsigmas.append(sigma)
@@ -200,7 +204,8 @@ def main(argv):
             htofdiffs[itof].append(h)
 
             
-    canname = 'TofDiffs'        
+    canname = 'TofDiffsWCTEJuly2023_Quick1D_{}_{}'.format(ftag, hbasename)
+    canname = canname.replace('_list_root','')
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     can.Divide(3,2)
     cans.append(can)
