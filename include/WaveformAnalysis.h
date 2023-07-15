@@ -11,13 +11,25 @@
 #include "TH1D.h"
 #include "TF1.h"
 
+// Alie and Jiri 15/07/2023:
+// obtain from fits of per-event tof channels differences
+// using top left corner as ref, so TOF00 and TOF11
+// see tof fit lines at the end of std output of
+// ./python/quickPlots1d.py histos/output_list_root_run_000250_plots.root
+
+static const double ToF_channels_offset_calibration[2][3] = { {4.747760543115298, -0.1234580870906623, 4.171101270711057},
+							      {-1.136279397422881, -0.5336003405241031, -0.29412106806623584}
+};
+
+
+
 class WaveformAnalysis {
 
   public :
 
    WaveformAnalysis();
    ~WaveformAnalysis();
-   void SetHistogram(TH1D *hist);
+   void SetHistogram(TH1D *hist, int chid);
    void RunAnalysis();
    void SetAnalysisBinWindow(double t0, double t1);
    void SetPedestalBinWindow(double t0, double t1);
@@ -51,7 +63,8 @@ class WaveformAnalysis {
    int fPedWindowT0Bin, fPedWindowT1Bin;
    double fThreshold;
    double fPolarity;
-   
+   int fGlobalChannelID;
+  
    std::vector<double> fIntegratedCharge;
    std::vector<double> fPeakVoltage;
    std::vector<double> fPeakTime;

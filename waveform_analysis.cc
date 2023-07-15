@@ -10,6 +10,7 @@
 #include "TChain.h"
 #include "TCanvas.h"
 #include "TH1D.h"
+#include "TH2D.h"
 #include "TSystem.h"
 
 
@@ -18,6 +19,18 @@
 // modified for 32 channels in 2023 by Jiri Kvita
 
 using namespace std;
+
+// _______________________________________________________________________________
+
+void AddToTH2D(TH2D *wavef2d, TH1D *wavef)
+{
+  for (int i = 1; i < wavef->GetXaxis()->GetNbins(); ++i) {
+    double valx = wavef -> GetBinCenter(i);
+    double valy = wavef -> GetBinContent(i);
+    wavef2d -> Fill(valx, valy, 1.);
+  }
+}
+
 
 // _______________________________________________________________________________
 
@@ -85,14 +98,17 @@ int main(int argc, char **argv) {
     AnalysisConfig cfg(cfgFile);
     cfg.Print();
 
-    vector<TH1D*> waveforms;
+    vector<vector<double>*> waveforms;
     vector<WaveformAnalysis> waveAna;
-
+    vector<TH2D*> wavef2d;
+    
+    
     // TO CHECK!
     int nChannels = 0;
     for(int i = 0; i < cfg.GetNumberOfChannels(); i++){
         waveforms.push_back(NULL);
-
+	TString name = Form("form2d_%i", i);
+	wavef2d.push_back(new TH2D(name, name, 100, 0, 600, 100, 12000, 16000));
         WaveformAnalysis temp;
         if(cfg.IsActive(i)){
             nChannels++;
@@ -128,6 +144,8 @@ int main(int argc, char **argv) {
 
     const int nDigitizers = 4;
     const int nTotChannels = 32;
+
+    const double nanosecsPerSample = 2;
     
     // new 2023 difgitized tree names
     TChain chain0("midas_data_D300");
@@ -178,7 +196,7 @@ int main(int argc, char **argv) {
 
     int nent = chain0.GetEntries();
     // HACK
-    //    nent = 81;
+    //    nent = 100;
 
     TFile output(outFile.c_str(), "RECREATE");
     output.cd();
@@ -235,9 +253,14 @@ int main(int argc, char **argv) {
         for(int j = 0; j < cfg.GetNumberOfChannels(); j++){
 
             if(cfg.IsActive(j)){
+                int nsamples = waveforms.at(j)->size();
+                TH1D *wavef = new TH1D("waveform","waveform",nsamples,0,nsamples*nanosecsPerSample);
+                wavef->SetDirectory(0);
+                for(int ib = 0; ib < nsamples; ib++){
+                    wavef->SetBinContent(ib+1, waveforms.at(j)->at(ib));
+                }
 
-
-                waveAna.at(j).SetHistogram(waveforms.at(j));
+                waveAna.at(j).SetHistogram(wavef, j);
                 waveAna.at(j).RunAnalysis();
 
                 pedestal[j] = waveAna.at(j).GetPedestal();
@@ -247,7 +270,10 @@ int main(int argc, char **argv) {
                 signalTime.push_back(waveAna.at(j).GetSignalTime());
                 intCharge.push_back(waveAna.at(j).GetIntegratedCharge());
 
-		TH1D* wavef = waveforms.at(j);
+
+		// add to 2D
+		AddToTH2D(wavef2d[j], wavef);
+		
 		if (i % verbose_png == 0) {
 		  can -> cd();
 		  wavef -> Draw();
@@ -261,6 +287,7 @@ int main(int argc, char **argv) {
 		  //can -> Print(Form("png/evt_%i/waveform_%i_%i.png", i, i, j));
 		  can -> Print(Form("png/waveform_evt%i_%i_%i.png", i, idigi, ich));
 		}
+		delete wavef;
 
             }
         }
@@ -268,6 +295,13 @@ int main(int argc, char **argv) {
 
         ana_data->Fill();
     }
+
+    for(int i = 0; i < cfg.GetNumberOfChannels(); i++) {
+      wavef2d[i] -> Scale(1.);
+      wavef2d[i] -> Write();
+    }
+
+    
     cout << endl << "Done! Processing event #: " << nent << " / " << nent << flush;    cout << endl;
     output.cd();
     ana_data->Write();

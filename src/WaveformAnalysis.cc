@@ -29,7 +29,8 @@ WaveformAnalysis::WaveformAnalysis() {
     fThreshold = -1.;
     fPolarity = 0; //negative polarity by default
 
-
+    fGlobalChannelID = -1;
+ 
     fPedestal = 0.;
 
     fVoltScale = 2.5/4096.;
@@ -49,8 +50,8 @@ WaveformAnalysis::~WaveformAnalysis(){
 
 // _______________________________________________________________________________
 
-void WaveformAnalysis::SetHistogram(TH1D *hist){
-
+void WaveformAnalysis::SetHistogram(TH1D *hist, int chid){
+  fGlobalChannelID =  chid;
   anaHist = hist;
   if(!anaHist){
     std::cout << "No histogram" << std::endl;
@@ -188,7 +189,27 @@ void WaveformAnalysis::CalculateSignalTime(){
                     double y1 = fPedestal - fVoltScale*anaHist->GetBinContent(j+1);
                     double a = (y1-y0)/(x1-x0);
                     double b = y0 - a*x0;
-                    fSignalTime.push_back((fraction*fPeakVoltage.at(i)-b)/a);
+
+		    double uncalibt = (fraction*fPeakVoltage.at(i)-b)/a;
+		    double calibt = uncalibt;
+		    
+		    bool isToFChannel = (fGlobalChannelID >= 8 && fGlobalChannelID <= 15);
+		    if (isToFChannel) {
+		      int itof = (fGlobalChannelID - 8) / 4;
+		      int jtof = (fGlobalChannelID - 8) % 4;
+		      if (itof == 0 && jtof != 0) {
+			int ktof = jtof - 1;
+			calibt += ToF_channels_offset_calibration[itof][ktof];
+		      } else if (itof == 1 && jtof != 1) {
+			int ktof = jtof;
+			if (ktof > 1)
+			  ktof -= 1;
+			calibt += ToF_channels_offset_calibration[itof][ktof];
+		      }
+		    }
+		    
+		    
+                    fSignalTime.push_back(calibt);
                     set = true;
                     break;
                 }
