@@ -18,10 +18,10 @@
 				    true, true, true, true, true, true, true, true],
 
         "comment"            : "Threshold w.r.t pedestal in V",
-            "Thresholds"         : [0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
-				    0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
-				    0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1,
-				    0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.1],
+            "Thresholds"         : [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+				    0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+				    0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+				    0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01],
 
         "comment"            : "Measure time of the signal (only needed for TOF detectors)",
             "TimeMeasurements"   : [true, true, true, true, true, true, true, true,
