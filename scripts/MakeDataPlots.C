@@ -85,6 +85,14 @@ void MakeDataPlots(string fileName, int momentum) {
     TH1D hTimeDiffTOF13("hTimeDiffTOF13", "hTimeDiffTOF13", 100, -12.,12.);
     
 
+    //acraplet TOF analysis
+    TH1D hTimeTOF0("hTimeTOF0", "hTimeTOF0", 100, 0.,50.);
+    TH1D hTimeTOF1("hTimeTOF1", "hTimeTOF1", 100, 0.,50.);
+    TH1D hTimeTOF2("hTimeTOF2", "hTimeTOF2", 100, 0.,50.);
+    TH1D hTimeTOF3("hTimeTOF3", "hTimeTOF3", 100, 0.,50.);
+    
+
+
     // standard
     vector<TH1D> hCharge;
     vector<TH1D> hVoltage;
@@ -214,10 +222,9 @@ void MakeDataPlots(string fileName, int momentum) {
 	double t01 = signalTime->at(9).at(indices.at(9));
 	double t02 = signalTime->at(10).at(indices.at(10));
 	double t03 = signalTime->at(11).at(indices.at(11));
-        hTimeDiffTOF01.Fill(t00 - t01);
-	hTimeDiffTOF02.Fill(t00 - t02);
-	hTimeDiffTOF03.Fill(t00 - t03);
-
+        hTimeDiffTOF01.Fill(t00 - t01); //carefull, this particular histogram is a difference of hit times,
+	hTimeDiffTOF02.Fill(t00 - t02); //not a TOF per say but instead the cable length difference 
+	hTimeDiffTOF03.Fill(t00 - t03); //plus the photon travel time though the panel
 
         double t10 = signalTime->at(12).at(indices.at(12));
         double t11 = signalTime->at(13).at(indices.at(13));
@@ -226,6 +233,18 @@ void MakeDataPlots(string fileName, int momentum) {
         hTimeDiffTOF11.Fill(t11 - t10);
 	hTimeDiffTOF12.Fill(t11 - t12);
 	hTimeDiffTOF13.Fill(t11 - t13);
+
+	//acraplet
+	//compare the hit times for the same event recorded by trigger PMTs on the same side (up/down, left/right)
+	//assumption: the light travel time trough the trigger counter to the PMT should be about the same (if the beam is well aligned)
+	//then we can check if the TOF is constant for a run
+	//idea: using tof dofference we can triangulate the position of a given pulse on the trigger! could be a fun thing to check
+	//this is after the calibration
+	hTimeTOF0.Fill(t11 - t00); //positive tof
+	hTimeTOF1.Fill(t13 - t02);
+	hTimeTOF2.Fill(t10 - t01);
+	hTimeTOF3.Fill(t12 - t03);
+
     	
 	double t0 = (signalTime->at(8).at(indices.at(8)) + signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)) + signalTime->at(11).at(indices.at(11)))/4.;
 	double t1 = (signalTime->at(12).at(indices.at(12)) + signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)) + signalTime->at(15).at(indices.at(15)))/4.;
@@ -247,23 +266,23 @@ void MakeDataPlots(string fileName, int momentum) {
 	double act3c = intCharge->at(6).at(indices.at(6)) + intCharge->at(7).at(indices.at(7));
 
 	hTOFACT0C.Fill(tof, act0c);
-  hTOFACT1C.Fill(tof, act1c);
-  hTOFACT2C.Fill(tof, act2c);
-  hTOFACT3C.Fill(tof, act3c);
+  	hTOFACT1C.Fill(tof, act1c);
+ 	hTOFACT2C.Fill(tof, act2c);
+  	hTOFACT3C.Fill(tof, act3c);
 
-  hACT1CACT3C.Fill(act1c, act3c);
-  hACT3CACT2C.Fill(act3c, act2c);
-  hACT2CACT1C.Fill(act2c, act1c); 
+  	hACT1CACT3C.Fill(act1c, act3c);
+  	hACT3CACT2C.Fill(act3c, act2c);
+  	hACT2CACT1C.Fill(act2c, act1c); 
 	
         hTOFAll.Fill(tof);
         hT0.Fill(t0);
         hT1.Fill(t1);
 	
-  bool pass = true;
-  bool isEl = false;
+  	bool pass = true;
+  	bool isEl = false;
 	
-  bool passed_act1a_cuts = false;
-  bool passed_act2a_cuts = false;
+  	bool passed_act1a_cuts = false;
+  	bool passed_act2a_cuts = false;
 
         switch(momentum)	  {
 
@@ -272,7 +291,6 @@ void MakeDataPlots(string fileName, int momentum) {
 	    break;
 	  } // 320
 
-	 
 	    /*
       // placeholder
 	  case 400: {
@@ -440,6 +458,12 @@ void MakeDataPlots(string fileName, int momentum) {
     hTimeDiffTOF11.Write();
     hTimeDiffTOF12.Write();
     hTimeDiffTOF13.Write();
+
+    //acraplet
+    hTimeTOF0.Write(); //positive tof
+    hTimeTOF1.Write();
+    hTimeTOF2.Write();
+    hTimeTOF3.Write();
 
     
 
