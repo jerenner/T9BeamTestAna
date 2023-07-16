@@ -34,7 +34,7 @@ void MakeDataPlots(string fileName, int momentum) {
   vector<vector<double> > *intCharge = NULL;
   gSystem->Exec("mkdir -p histos/");
 
-  const int nChannels = 32;
+  const int nChannels = 19;
   double pedestal[nChannels];
   double pedestalSigma[nChannels];
 
@@ -97,10 +97,10 @@ void MakeDataPlots(string fileName, int momentum) {
   TH1D hTimeTOF2("hTimeTOF2", "hTimeTOF2", 100, 0.,50.);
   TH1D hTimeTOF3("hTimeTOF3", "hTimeTOF3", 100, 0.,50.);
 
-  //lead glass vs act 2 and 3 - identify particles
-  TH2D hPbACT23A("hRef_pbA_act23A", "; Pg-glass Amplitude ; ACT2+ACT3 Amplitude", 200, 0., actAmplitudeMax, 200, 0., 5.);
+  //lead glass vs act 2 and 3 - identify particles`
+  TH2D hPbACT23A("hRef_pbA_act23A", "; Pg-glass Amplitude ; ACT2+ACT3 Amplitude", 200, 0., actAmplitudeMax/6., 200, 0., actAmplitudeMax);
 
-  TH2D hPbACT23C("hRef_pbC_act23C", "; Pg-glass Charge ; ACT2+ACT3 Charge", 200, 0., actChargeMax, 200, 0., 5.);
+  TH2D hPbACT23C("hRef_pbC_act23C", "; Pg-glass Charge ; ACT2+ACT3 Charge", 200, 0., actChargeMax/6., 200, 0., actChargeMax);
 
 
 
