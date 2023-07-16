@@ -58,7 +58,7 @@ def process_waveforms(argv):
                                              threshold=config["Thresholds"][i],
                                              analysis_window=(config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
                                              pedestal_window=(config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
-                                             reverse_polarity=config["Polarity"][i],
+                                             reverse_polarity=(config["Polarity"][i] == 0),
                                              voltage_scale=config["VoltageScale"])
         waveform_analysis.run_analysis()
         pedestals[:, i] = waveform_analysis.pedestals.squeeze()
