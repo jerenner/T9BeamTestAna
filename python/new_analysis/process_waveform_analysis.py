@@ -58,10 +58,11 @@ def process_file(root_filename, config, output_file):
         print(f"{channel} is {'active' if config['ActiveChannels'][c] else 'not active'}")
     events_per_channel = [run_file[c].num_entries for c in channels]
     if min(events_per_channel) != max(events_per_channel):
-        raise ValueError(
-            f"Channels have different numbers of events: {','.join([f'{c}:{n}' for c, n in zip(channels, events_per_channel)])}")
+        raise ValueError(f"Channels have different numbers of events: {','.join([f'{c}:{n}' for c, n in zip(channels, events_per_channel)])}")
     n_channels = len(channels)
     n_events = events_per_channel[0]
+    if n_events == 0:
+        print(f"WARNING: The channels in {root_filename} have zero events. Skipping this file.")
     print(f"All {n_channels} active channels have {n_events} events")
     pedestals = np.zeros((n_events, n_channels))
     pedestal_sigmas = np.zeros((n_events, n_channels))
