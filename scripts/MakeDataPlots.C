@@ -40,6 +40,7 @@ void MakeDataPlots(string fileName, int momentum) {
   Double_t pedestalSigma[nMaxChannels];
 
   gSystem->Exec("mkdir -p histos/");
+
   TFile inFile(fileName.c_str(), "READ");
   TTree *tree = (TTree*) inFile.Get("anaTree");
 
@@ -109,8 +110,8 @@ void MakeDataPlots(string fileName, int momentum) {
   TH1D hTimeTOF3("hTimeTOF3", "hTimeTOF3", 100, 0.,50.);
 
   //lead glass vs act 2 and 3 - identify particles
-  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 200, 0., actAmplitudeMax, 200, 0., 5.);
-  TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 200, 0., actChargeMax, 200, 0., 5.);
+  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 200, 0., actAmplitudeMax, 200, 0., actAmplitudeMax);
+  TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 200, 0., actChargeMax, 200, 0., actAmplitudeMax);
 
 
 

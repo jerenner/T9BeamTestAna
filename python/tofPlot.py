@@ -88,8 +88,14 @@ def TofSeparationToBeam(tofResolution = 0):
 diff_to_e, t_electron = GenerateTimes()
 print(diff_to_e['p'])
 
-tofDiff = np.array(diff_to_e['p'])
+#tofDiff = np.array(diff_to_e['p'])
+te=np.array([11.77,11.78,11.79])
+tp=np.array([30.37,27.59, 25.32])
+
+tofDiff = tp-te
+
 predMomentaMeV = TofSeparationToBeam()
+print(predMomentaMeV)
 #print(np.array(predMomentaMeV) - np.array(momentaMeV))
 
 momentaMeV = np.array(momentaMeV)

@@ -255,8 +255,8 @@ def main(argv):
         htTOFnames.append(hname)
         h = rfile.Get(hname)
         htofTOFs[0].append(h)
-    """
-    canname = 'AbsoluteTof'
+    
+    canname = 'AbsoluteTof_{}'.format(ftag[10:])
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     can.Divide(2,2)
     cans.append(can)
@@ -302,12 +302,48 @@ def main(argv):
             stuff.append(fit)
             ic = ic+1
             tofmeans[itof].append(mean)
+
+    
+##################################
+#   plot 2d hist act vs lead     #
+##################################
+
+    canname = 'ACT2+3vsLeadGlass_{}'.format(ftag[10:])
+    hname = 'hRef_pbA_act23A'
+    h = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    h.GetXaxis().SetRangeUser(0, 4)
+    h.GetYaxis().SetRangeUser(0, 30)
+    h.SetTitle('ACT2+3 vs Lead Glass {}'.format(ftag[10:]))
+    h.Draw("colz")
+
+
+    canname = 'TOFvsACT3_{}'.format(ftag[10:])
+    hname = 'hRef_TOFACT3A'
+    h = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    h.SetTitle('TOF vs ACT3 {}'.format(ftag[10:]))
+    h.GetXaxis().SetRangeUser(0, 4)
+    h.GetYaxis().SetRangeUser(0, 30)
+    h.Draw("colz")
+
+
+    #h.colz()
+
+##################################
+#       plots all the canvas     #
+##################################
+
     print(tofmeans)
     for can in cans:
         can.Update()
         can.Print(pngdir + can.GetName() + '.png')
         can.Print(pdfdir + can.GetName() + '.pdf')
-    """
+    
     if not gBatch:
         ROOT.gApplication.Run()
     return
