@@ -28,17 +28,18 @@ double GetBeta(double mass, double momentum) {
 // ______________________________________________________________
 
 void MakeDataPlots(string fileName, int momentum) {
-  vector<vector<double> > *peakVoltage = NULL;
-  vector<vector<double> > *peakTime = NULL;
-  vector<vector<double> > *signalTime = NULL;
-  vector<vector<double> > *intCharge = NULL;
-  gSystem->Exec("mkdir -p histos/");
 
+  const int nMaxChannels = 32;
   const int nChannels = 19; // UPDATE THIS FOR HODOSCOPE PMTs! to e.g. 32!
-  double pedestal[nChannels];
-  double pedestalSigma[nChannels];
 
+  Double_t peakVoltage[nMaxChannels][1];
+  Double_t peakTime[nMaxChannels][1];
+  Double_t signalTime[nMaxChannels][1];
+  Double_t intCharge[nMaxChannels][1];
+  Double_t pedestal[nMaxChannels][1];
+  Double_t pedestalSigma[nMaxChannels];
 
+  gSystem->Exec("mkdir -p histos/");
   TFile inFile(fileName.c_str(), "READ");
   TTree *tree = (TTree*) inFile.Get("anaTree");
 
@@ -193,7 +194,7 @@ void MakeDataPlots(string fileName, int momentum) {
     TH1D temp5(name5.c_str(), title5.c_str(), 270, 0., 540.);
     hCharge.push_back(temp1);
     hVoltage.push_back(temp2);
-    hHit.push_back(temp3);
+    //    hHit.push_back(temp3);
     hPedestalSigma.push_back(temp4);
     hTime.push_back(temp5);
   }
@@ -210,22 +211,28 @@ void MakeDataPlots(string fileName, int momentum) {
 
     for(int j = 0; j < nChannels; j++) {
 
+      /*
       int ind = std::max_element(peakVoltage->at(j).begin(),peakVoltage->at(j).end()) - peakVoltage->at(j).begin();
       indices.at(j) = ind;
-
       hCharge.at(j).Fill(intCharge->at(j).at(indices.at(j)));
       hVoltage.at(j).Fill(peakVoltage->at(j).at(indices.at(j)));
       hTime.at(j).Fill(signalTime->at(j).at(indices.at(j)));
       hHit.at(j).Fill(peakVoltage->at(j).size());
       hPedestalSigma.at(j).Fill(pedestalSigma[j]);
+      */
+      hCharge.at(j).Fill(intCharge[j][0]);
+      hVoltage.at(j).Fill(peakVoltage[j][0]);
+      hTime.at(j).Fill(signalTime[j][0]);
+      //      hHit.at(j).Fill(peakVoltage[j][0]);
+      hPedestalSigma.at(j).Fill(pedestalSigma[j]);
     }
 
 
     // JK's time resolution
-    double t0a = (signalTime->at(8).at(indices.at(8))   + signalTime->at(11).at(indices.at(11)))/2.;
-    double t0b = (signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)))/2.;
-    double t1a = (signalTime->at(12).at(indices.at(12)) + signalTime->at(15).at(indices.at(15)))/2.;
-    double t1b = (signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)))/2.;
+    double t0a = (signalTime[8][0]  + signalTime[11][0] ) / 2.;
+    double t0b = (signalTime[9][0]  + signalTime[10][0] ) / 2.;
+    double t1a = (signalTime[12][0] + signalTime[15][0] ) / 2.;
+    double t1b = (signalTime[13][0] + signalTime[14][0] ) / 2.;
 
     // time diffs for time resolution histogramme:
     double t0diff = t0a - t0b;
@@ -239,18 +246,18 @@ void MakeDataPlots(string fileName, int momentum) {
     hTimeReso1_zoom.Fill(t1diff);
 
 
-    double t00 = signalTime->at(8).at(indices.at(8));
-    double t01 = signalTime->at(9).at(indices.at(9));
-    double t02 = signalTime->at(10).at(indices.at(10));
-    double t03 = signalTime->at(11).at(indices.at(11));
+    double t00 = signalTime[8][0];
+    double t01 = signalTime[9][0];
+    double t02 = signalTime[10][0];
+    double t03 = signalTime[11][0];
     hTimeDiffTOF01.Fill(t00 - t01); //carefull, this particular histogram is a difference of hit times,
     hTimeDiffTOF02.Fill(t00 - t02); //not a TOF per say but instead the cable length difference
     hTimeDiffTOF03.Fill(t00 - t03); //plus the photon travel time though the panel
 
-    double t10 = signalTime->at(12).at(indices.at(12));
-    double t11 = signalTime->at(13).at(indices.at(13));
-    double t12 = signalTime->at(14).at(indices.at(14));
-    double t13 = signalTime->at(15).at(indices.at(15));
+    double t10 = signalTime[12][0];
+    double t11 = signalTime[13][0];
+    double t12 = signalTime[14][0];
+    double t13 = signalTime[15][0];
     hTimeDiffTOF11.Fill(t11 - t10);
     hTimeDiffTOF12.Fill(t11 - t12);
     hTimeDiffTOF13.Fill(t11 - t13);
@@ -266,18 +273,18 @@ void MakeDataPlots(string fileName, int momentum) {
     hTimeTOF2.Fill(t10 - t01);
     hTimeTOF3.Fill(t12 - t03);
 
-    double t0 = (signalTime->at(8).at(indices.at(8)) + signalTime->at(9).at(indices.at(9)) + signalTime->at(10).at(indices.at(10)) + signalTime->at(11).at(indices.at(11)))/4.;
-    double t1 = (signalTime->at(12).at(indices.at(12)) + signalTime->at(13).at(indices.at(13)) + signalTime->at(14).at(indices.at(14)) + signalTime->at(15).at(indices.at(15)))/4.;
+    double t0 = ( signalTime[8][0] +  signalTime[9][0] + signalTime[10][0] + signalTime[11][0]) / 4.;
+    double t1 = (signalTime[12][0] + signalTime[13][0] + signalTime[14][0] + signalTime[15][0]) / 4.;
     double tof = t1-t0;
 
-    double act0a = peakVoltage->at(0).at(indices.at(0)) + peakVoltage->at(1).at(indices.at(1));
-    double act1a = peakVoltage->at(2).at(indices.at(2)) + peakVoltage->at(3).at(indices.at(3));
-    double act2a = peakVoltage->at(4).at(indices.at(4)) + peakVoltage->at(5).at(indices.at(5));
-    double act3a = peakVoltage->at(6).at(indices.at(6)) + peakVoltage->at(7).at(indices.at(7));
+    double act0a = peakVoltage[0][0] + peakVoltage[1][0];
+    double act1a = peakVoltage[2][0] + peakVoltage[3][0];
+    double act2a = peakVoltage[4][0] + peakVoltage[5][0];
+    double act3a = peakVoltage[6][0] + peakVoltage[7][0];
 
-    double hc0a = peakVoltage->at(16).at(indices.at(16));
-    double hc1a = peakVoltage->at(17).at(indices.at(17));
-    double pba = peakVoltage->at(18).at(indices.at(18));
+    double hc0a = peakVoltage[16][0];
+    double hc1a = peakVoltage[17][0];
+    double pba = peakVoltage[18][0];
 
 
 
@@ -291,15 +298,15 @@ void MakeDataPlots(string fileName, int momentum) {
 
 
 
-    double act0c = intCharge->at(0).at(indices.at(0)) + intCharge->at(1).at(indices.at(1));
-    double act1c = intCharge->at(2).at(indices.at(2)) + intCharge->at(3).at(indices.at(3));
-    double act2c = intCharge->at(4).at(indices.at(4)) + intCharge->at(5).at(indices.at(5));
-    double act3c = intCharge->at(6).at(indices.at(6)) + intCharge->at(7).at(indices.at(7));
+    double act0c = intCharge[0][0] + intCharge[1][0];
+    double act1c = intCharge[2][0] + intCharge[3][0];
+    double act2c = intCharge[4][0] + intCharge[5][0];
+    double act3c = intCharge[6][0] + intCharge[7][0];
 
 
-    double hc0c = intCharge->at(16).at(indices.at(16));
-    double hc1c = intCharge->at(17).at(indices.at(17));
-    double pbc = intCharge->at(18).at(indices.at(18));
+    double hc0c = intCharge[16][0];
+    double hc1c = intCharge[17][0];
+    double pbc = intCharge[18][0];
 
     hTOFACT0C.Fill(tof, act0c);
     hTOFACT1C.Fill(tof, act1c);
@@ -338,7 +345,7 @@ void MakeDataPlots(string fileName, int momentum) {
        *	  case 400: {
        *	    double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
        *	    for(int j = 0; j < 16; j++) {
-       *	      if (peakVoltage->at(j).at(indices.at(j)) < voltageCut[j]) {
+       *	      if (peakVoltage[j][0] < voltageCut[j]) {
        *		pass = false;
        *		break;
     }
