@@ -44,10 +44,11 @@ class WaveformAnalysis:
             self.find_peaks()
         fraction = 0.4
         signal_times = []
-        for peak, loc, amp in zip(self.peak_voltages[:, 0], self.peak_locations[:, 0], self.amplitudes[:, self.analysis_bins]):
+        for peak, loc, amp in zip(self.peak_voltages[:, 0], self.peak_locations[:, 0], self.amplitudes):
             if loc == 0:
                 signal_times.append([0])
             else:
+                loc += self.analysis_bins[0]
                 threshold = fraction*peak
                 i = loc - np.argmax(amp[loc-1::-1] < threshold)  # location before peak where amplitude passes fraction*peak
                 time_range = [self.analysis_window[0]+(i-1)*self.ns_per_sample, self.analysis_window[0]+i*self.ns_per_sample]
@@ -60,10 +61,11 @@ class WaveformAnalysis:
             self.find_peaks()
         impedance = 50
         integrated_charges = []
-        for ped, loc, amp in zip(self.pedestal_sigmas[:, 0], self.peak_locations[:, 0], self.amplitudes[:, self.analysis_bins]):
+        for ped, loc, amp in zip(self.pedestal_sigmas[:, 0], self.peak_locations[:, 0], self.amplitudes):
             threshold = 3*ped
-            start = loc - np.argmax(amp[loc - 1::-1] < threshold) # location before peak where amplitude passes 3x pedestal sigma
-            stop = loc + np.argmax(amp[loc:] < threshold) # location after peak where amplitude passes 3x pedestal sigma
+            loc += self.analysis_bins[0]
+            start = loc - np.argmax(amp[loc - 1::-1] < threshold)  # location before peak where amplitude passes 3x pedestal sigma
+            stop = loc + np.argmax(amp[loc:] < threshold)  # location after peak where amplitude passes 3x pedestal sigma
             integrated_charges.append([np.sum(amp[start:stop]) * self.ns_per_sample / impedance])
         self.integrated_charges = np.array(integrated_charges)
 
