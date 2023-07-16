@@ -4,8 +4,10 @@ from math import sqrt, pow
 
 from collections import OrderedDict
 
+
+
 momentaMeV = [200 + i*20 for i in range(1,9)]
-momentaMeV.extend([500, 600, 700, 800, 900, 1000])
+momentaMeV.extend([500, 600, 700, 800, 900, 940, 1000])
 print(momentaMeV)
 
 ms = OrderedDict()
