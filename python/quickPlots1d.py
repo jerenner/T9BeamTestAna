@@ -28,6 +28,11 @@ def main(argv):
     #if len(sys.argv) > 1:
     #  foo = sys.argv[1]
 
+    pngdir = 'png_results/'
+    pdfdir = 'pdf_results/'
+    os.system(f'mkdir {pngdir}')
+    os.system(f'mkdir {pdfdir}')
+    
     ### https://www.tutorialspoint.com/python/python_command_line_arguments.htm
     ### https://pymotw.com/2/getopt/
     ### https://docs.python.org/3.1/library/getopt.html
@@ -300,8 +305,8 @@ def main(argv):
     print(tofmeans)
     for can in cans:
         can.Update()
-        can.Print('png/' + can.GetName() + '.png')
-        can.Print('pdf/' + can.GetName() + '.pdf')
+        can.Print(pngdir + can.GetName() + '.png')
+        can.Print(pdfdir + can.GetName() + '.pdf')
 
     if not gBatch:
         ROOT.gApplication.Run()

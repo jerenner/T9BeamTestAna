@@ -35,7 +35,7 @@ void MakeDataPlots(string fileName, int momentum) {
 
     gSystem->Exec("mkdir -p histos/");
     
-    const int nChannels = 32;
+    const int nChannels = 19; // UPDATE THIS FOR HODOSCOPE PMTs! to e.g. 32!
     double pedestal[nChannels];
     double pedestalSigma[nChannels];
 
@@ -53,10 +53,17 @@ void MakeDataPlots(string fileName, int momentum) {
     
     int ent = tree->GetEntries();
 
-    double tofmin = 10.;
+
+    TString outFileName = fileName.substr(0, fileName.size()-5) + "_plots.root";
+    outFileName = outFileName.ReplaceAll("output/", "histos/");
+    TFile outFile(outFileName.Data(), "RECREATE");
+    outFile.cd();
+    
+    double tofmin = 8.;
     double tofmax = 30.;
-    int ntofbins = 100;
-    int ntofbins2d = 100;
+    double tofmaxlow = 20.;
+    int ntofbins = 110;
+    int ntofbins2d = 120;
 
     double actChargeMax = 0.40;
     double actAmplitudeMax =  10.;
@@ -65,6 +72,11 @@ void MakeDataPlots(string fileName, int momentum) {
     TH1D hTOFAllWide("hTOFAllWide", ";t_{TOF}^{All} [ns]", 2*ntofbins, tofmin, 2*tofmax);
     TH1D hTOFEl("hTOFEl", ";t_{TOF}^{e} [ns]", ntofbins, tofmin, tofmax);
     TH1D hTOFOther("hTOFOther", ";t_{TOF}^{non-e} [ns]", ntofbins, tofmin, tofmax);
+
+    TH1D hTOFAllLow("hTOFAllLow", ";t_{TOF}^{All} [ns]", 120, tofmin, tofmaxlow);
+    TH1D hTOFElLow("hTOFElLow", ";t_{TOF}^{e} [ns]", ntofbins, tofmin, tofmax);
+    TH1D hTOFOtherLow("hTOFOtherLow", ";t_{TOF}^{non-e} [ns]", ntofbins, tofmin, tofmax);
+
 
     TH1D hT0("hRef_T0", "", 270, 50, 320);
     TH1D hT1("hRef_T1", "", 270, 50, 320);
@@ -277,6 +289,8 @@ void MakeDataPlots(string fileName, int momentum) {
 	
 		
         hTOFAll.Fill(tof);
+	hTOFAllLow.Fill(tof);
+	
         hT0.Fill(t0);
         hT1.Fill(t1);
 	
@@ -288,43 +302,43 @@ void MakeDataPlots(string fileName, int momentum) {
 
         switch(momentum)	  {
 
-	  case 320: { //; jk
-	   // placeholder for momentum dependent cuts
-	    break;
-	  } // 320
+	case 320: { //; jk
+	  // placeholder for momentum dependent cuts
+	  break;
+	} // 320
 
-	    /*
-      // placeholder
+	  /*
+	  // placeholder
 	  case 400: {
-	    double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
-	    for(int j = 0; j < 16; j++) {
-	      if (peakVoltage->at(j).at(indices.at(j)) < voltageCut[j]) {
-		pass = false;
-		break;
-	      }
-	    }
-	    break;
+	  double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
+	  for(int j = 0; j < 16; j++) {
+	  if (peakVoltage->at(j).at(indices.at(j)) < voltageCut[j]) {
+	  pass = false;
+	  break;
+	  }
+	  }
+	  break;
 	  } // 400
-	    */
+	  */
 	        
-	  default: {
-	    if (i < 10)
-	      cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
-      if (act0a > 1.) {
-	      isEl = true;  
-      }
-	    if (act1a > 2.) {
-        passed_act1a_cuts = true;
-      }
-	    if (act2a > 2.) {
-	      passed_act1a_cuts = true; 
-      }
-      if (act3a > 1.) {
-	      isEl = true;  
-      }
-	  } // default
+	default: {
+	  if (i < 10)
+	    cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
+	  if (act0a > 1.) {
+	    isEl = true;  
+	  }
+	  if (act1a > 2.) {
+	    passed_act1a_cuts = true;
+	  }
+	  if (act2a > 2.) {
+	    passed_act1a_cuts = true; 
+	  }
+	  if (act3a > 1.) {
+	    isEl = true;  
+	  }
+	} // default
 	  
-	  } // case
+	} // case
 
         if (!pass) continue;
 	
@@ -332,6 +346,7 @@ void MakeDataPlots(string fileName, int momentum) {
         if (isEl) {
 	  // electrons
 	  hTOFEl.Fill(tof);
+	  hTOFElLow.Fill(tof);
 
 	  hTOFACT1A_el.Fill(tof, act1a);
 	  hTOFACT2A_el.Fill(tof, act2a);
@@ -345,6 +360,7 @@ void MakeDataPlots(string fileName, int momentum) {
 
 	  // non-electrons
 	  hTOFOther.Fill(tof);
+	  hTOFOtherLow.Fill(tof);
 	
 	 
         } // non-electrons
@@ -390,85 +406,9 @@ void MakeDataPlots(string fileName, int momentum) {
 	
     } // entries
     cout << "End of event loop!" << endl;
-
-    
-    TString outFileName = fileName.substr(0, fileName.size()-5) + "_plots.root";
-    outFileName = outFileName.ReplaceAll("output/", "histos/");
-    
-    TFile outFile(outFileName.Data(), "RECREATE");
-    outFile.cd();
-    
-
-    hTOFACT1A.Write();
-    hTOFACT2A.Write();
-    hTOFACT3A.Write();
-    hTOFACT1C.Write();
-    hTOFACT2C.Write();
-    hTOFACT3C.Write();
-
-    hTOFACT1A_el.Write();
-    hTOFACT2A_el.Write();
-    hTOFACT3A_el.Write();
-    hTOFACT1C_el.Write();
-    hTOFACT2C_el.Write();
-    hTOFACT3C_el.Write();
-    
-    hTOFACT1A_act1cut.Write();
-    hTOFACT2A_act1cut.Write();
-    hTOFACT3A_act1cut.Write();
-    hTOFACT1C_act1cut.Write();
-    hTOFACT2C_act1cut.Write();
-    hTOFACT3C_act1cut.Write();
-
-
-    hTOFACT1A_act2cut.Write();
-    hTOFACT2A_act2cut.Write();
-    hTOFACT3A_act2cut.Write();
-    hTOFACT1C_act2cut.Write();
-    hTOFACT2C_act2cut.Write();
-    hTOFACT3C_act2cut.Write();
-        
-    hT0.Write();
-    hT1.Write();
-
-    hTimeReso0.Write();
-    hTimeReso1.Write();
-    hTimeReso0_zoom.Write();
-    hTimeReso1_zoom.Write();
-
-    for (auto hist: hVoltage) hist.Write();
-    for (auto hist: hCharge) hist.Write();
-    for (auto hist: hHit) hist.Write();
-    for (auto hist: hPedestalSigma) hist.Write();
-    for (auto hist: hTime) hist.Write();
-
-    hACT1CACT3C.Write();
-    hACT3CACT2C.Write();
-    hACT2CACT1C.Write();
-
-    hTOFAll.Write();
-    hTOFAllWide.Write();
-    hTOFEl.Write();
-    hTOFOther.Write();
-
-    hTOF_act1cut.Write();
-    hTOF_act2cut.Write();
-
-    hTimeDiffTOF01.Write();
-    hTimeDiffTOF02.Write();
-    hTimeDiffTOF03.Write();
-    hTimeDiffTOF11.Write();
-    hTimeDiffTOF12.Write();
-    hTimeDiffTOF13.Write();
-
-    //acraplet
-    hTimeTOF0.Write(); //positive tof
-    hTimeTOF1.Write();
-    hTimeTOF2.Write();
-    hTimeTOF3.Write();
-
-    
-
+    cout << "Writing histograms to the output file..." << endl;
+    outFile.Write();
+    cout << "DONE!" << endl;
 }
 
 

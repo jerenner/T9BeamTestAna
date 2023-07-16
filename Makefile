@@ -37,7 +37,7 @@ MESSAGE:
 	@echo '**********************************************************************'
 	@echo '* Authors:    Matej Pavin, Jiri Kvita, Alie Craplet, Nick Prouse     *'
 	@echo '* Email       mpavin@triumf.ca                                       *'
-	@echo '* Date:       2022/07/14, 2023		                            *'
+	@echo '* Date:       2022/07/14, 2023                                       *'
 	@echo '* Water Cherenkov Test Experiment (WCTE)                             *'
 	@echo '**********************************************************************'	
 

@@ -146,6 +146,8 @@ int main(int argc, char **argv) {
     const int nTotChannels = 32;
 
     const double nanosecsPerSample = 2;
+
+    cout << "Setting up reading the midas TTrees..." << endl;
     
     // new 2023 difgitized tree names
     TChain chain0("midas_data_D300");
@@ -234,6 +236,8 @@ int main(int argc, char **argv) {
     // +--------------------------+
     // |       Event loop!        |
     // +--------------------------+
+
+    cout << "Event loop!" << endl;
     
     for(int i = 0; i < nent; i++){
       

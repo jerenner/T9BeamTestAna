@@ -51,42 +51,44 @@ WaveformAnalysis::~WaveformAnalysis(){
 // _______________________________________________________________________________
 
 void WaveformAnalysis::SetHistogram(TH1D *hist, int chid){
-  fGlobalChannelID =  chid;
+  fGlobalChannelID = chid;
   anaHist = hist;
   if(!anaHist){
-    std::cout << "No histogram" << std::endl;
+    std::cout << "WaveformAnalysis::SetHistogram: No histogram" << std::endl;
     return;
   }
 
   //Calculate the analysis and pedestal windows if not already
   //
+  int maxbin = anaHist->GetNbinsX();
+   double lowt = lowt;
+   double hight = anaHist->GetXaxis()->GetBinUpEdge(maxbin);
+  
     if(fAnaWindowT0>=0. && fAnaWindowT1>0.){
         int maxbin = anaHist->GetNbinsX();
-        if( fAnaWindowT0<anaHist->GetXaxis()->GetBinLowEdge(1) ||
-            fAnaWindowT0>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-            std::cout << "Analysis window T0 is out of range, setting to first bin" << std::endl;
+        if( fAnaWindowT0<lowt ||fAnaWindowT0>hight ) {
+	  if (fGlobalChannelID >= 0) std::cout << "Channel " << fGlobalChannelID << " Analysis window T0 " << fAnaWindowT0 << " is out of range " << lowt << "," << hight << " , setting to first bin" << std::endl;
             fAnaWindowT0Bin = 1;
         }
-        if( fAnaWindowT1<anaHist->GetXaxis()->GetBinLowEdge(1) ||
-            fAnaWindowT1>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-            std::cout << "Analysis window T1 is out of range, setting to last bin" << std::endl;
-            fAnaWindowT1Bin = maxbin;
+        if( fAnaWindowT1<lowt || fAnaWindowT1>hight ) {
+	  if (fGlobalChannelID >= 0) std::cout << "Channel " << fGlobalChannelID << " Analysis window T1 " << fAnaWindowT1 << " is out of range " << lowt << "," << hight << " , setting to last bin" << std::endl;
+	  fAnaWindowT1Bin = maxbin;
         }
         fAnaWindowT0Bin = anaHist->GetXaxis()->FindBin(fAnaWindowT0);
         fAnaWindowT1Bin = anaHist->GetXaxis()->FindBin(fAnaWindowT1);
     }
 
     if(fPedWindowT0>=0. && fPedWindowT1>0.){
-        int maxbin = anaHist->GetNbinsX();
-        if( fPedWindowT0<anaHist->GetXaxis()->GetBinLowEdge(1) ||
-            fPedWindowT0>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-            std::cout << "Pedestal window T0 is out of range, setting to first bin" << std::endl;
+//        int maxbin = anaHist->GetNbinsX();
+        if( fPedWindowT0<lowt ||
+            fPedWindowT0>hight ) {
+	  if (fGlobalChannelID >= 0) std::cout << "Channel " << fGlobalChannelID << " Pedestal window T0 " << fAnaWindowT0 << " is out of range " << lowt << "," << hight << " , setting to first bin" << std::endl;
             fPedWindowT0Bin = 1;
         }
-        if( fPedWindowT1<anaHist->GetXaxis()->GetBinLowEdge(1) ||
-            fPedWindowT1>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-           // std::cout<< fPedWindowT1 << " " << anaHist->GetXaxis()->GetBinLowEdge(1) << " " << anaHist->GetXaxis()->GetBinUpEdge(maxbin)<< std::endl;
-            std::cout << "Pedestal window T1 is out of range, setting to 1/3 of range" << std::endl;
+        if( fPedWindowT1<lowt ||
+            fPedWindowT1>hight ) {
+           // std::cout<< fPedWindowT1 << " " << lowt << " " << hight<< std::endl;
+	  if (fGlobalChannelID >= 0) std::cout << "Channel " << fGlobalChannelID << " Pedestal window T1 " << fAnaWindowT1 << " is out of range " << lowt << "," << hight << " , setting to 1/3 range" << std::endl;
             fPedWindowT1Bin = maxbin/3;
         }
         fPedWindowT0Bin = anaHist->GetXaxis()->FindBin(fPedWindowT0);
@@ -240,6 +242,7 @@ void WaveformAnalysis::IntegrateCharge(){
                 integratedCharge += voltage*period/impedance;
                 counter--; 
                 voltage = anaHist->GetBinContent(counter)*fVoltScale-fPedestal;  
+                if(fPolarity==0) voltage = -1.0*voltage;
             }
             
             voltage = anaHist->GetBinContent(fPeakBins.at(i)+1)*fVoltScale-fPedestal;
@@ -248,6 +251,7 @@ void WaveformAnalysis::IntegrateCharge(){
                 integratedCharge += voltage*period/impedance;
                 counter++; 
                 voltage = anaHist->GetBinContent(counter)*fVoltScale-fPedestal;  
+                if(fPolarity==0) voltage = -1.0*voltage;
             }  
             
             fIntegratedCharge.push_back(integratedCharge);
@@ -286,18 +290,18 @@ void WaveformAnalysis::SetAnalysisBinWindow(double t0, double t1){
     int maxbin = anaHist->GetNbinsX();
     if( fAnaWindowT0<anaHist->GetXaxis()->GetBinLowEdge(1) ||
         fAnaWindowT0>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-        std::cout << "Analysis window T0 is out of range, setting to first bin" << std::endl;
+      if (fGlobalChannelID >= 0) std::cout << "Channel " << fGlobalChannelID << " Analysis window T0 is out of range, setting to first bin" << std::endl;
         fAnaWindowT0Bin = 1;
     }
     if( fAnaWindowT1<anaHist->GetXaxis()->GetBinLowEdge(1) ||
         fAnaWindowT1>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-        std::cout << "Analysis window T1 is out of range, setting to last bin" << std::endl;
+      if (fGlobalChannelID >= 0) std::cout << "Channel " << fGlobalChannelID << " Analysis window T1 is out of range, setting to last bin" << std::endl;
         fAnaWindowT1Bin = maxbin;
     }
     fAnaWindowT0Bin = anaHist->GetXaxis()->FindBin(fAnaWindowT0);
     fAnaWindowT1Bin = anaHist->GetXaxis()->FindBin(fAnaWindowT1);
   } else {
-    std::cout << "No histogram, so bin range will be set when histogram is loaded" << std::endl;
+    if (fGlobalChannelID >= 0) std::cout << "WaveformAnalysis::SetAnalysisBinWindow: Channel " << fGlobalChannelID << " No histogram, so bin range will be set when histogram is loaded" << std::endl;
   }
 
 
@@ -314,18 +318,18 @@ void WaveformAnalysis::SetPedestalBinWindow(double t0, double t1){
     int maxbin = anaHist->GetNbinsX();
     if( fPedWindowT0<anaHist->GetXaxis()->GetBinLowEdge(1) ||
         fPedWindowT0>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-        std::cout << "Pedestal window T0 is out of range, setting to first bin" << std::endl;
+      if (fGlobalChannelID >= 0) std::cout << "Channel " << fGlobalChannelID << " Pedestal window T0 is out of range, setting to first bin" << std::endl;
         fPedWindowT0Bin = 1;
     }
     if( fPedWindowT1<anaHist->GetXaxis()->GetBinLowEdge(1) ||
         fPedWindowT1>anaHist->GetXaxis()->GetBinUpEdge(maxbin) ) {
-        std::cout << "Pedestal window T1 is out of range, setting to 1/3 of range" << std::endl;
+      if (fGlobalChannelID >= 0)  std::cout << "Channel " << fGlobalChannelID << " Pedestal window T1 is out of range, setting to 1/3 of range" << std::endl;
         fPedWindowT1Bin = maxbin/3;
     }
     fPedWindowT0Bin = anaHist->GetXaxis()->FindBin(fPedWindowT0);
     fPedWindowT1Bin = anaHist->GetXaxis()->FindBin(fPedWindowT1);
   } else {
-    std::cout << "No histogram, so bin range will be set when histogram is loaded" << std::endl;
+    if (fGlobalChannelID >= 0) std::cout << "WaveformAnalysis::SetPedestalBinWindow: Channel " << fGlobalChannelID << " No histogram, so bin range will be set when histogram is loaded" << std::endl;
   }
 
 
