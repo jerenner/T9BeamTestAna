@@ -86,7 +86,7 @@ def main(argv):
         'hRef_Voltage' : ROOT.kMagenta,
     }
     
-    nChannels = 32
+    nChannels = 19 # 32
     Hs = []
     Txts = []
     ChNames =  {0: 'ACT-00', 1: 'ACT-01', 2: 'ACT-10', 3: 'ACT-11', 4: 'ACT-20', 5: 'ACT-21', 6: 'ACT-30', 7: 'ACT-31',
@@ -255,7 +255,7 @@ def main(argv):
         htTOFnames.append(hname)
         h = rfile.Get(hname)
         htofTOFs[0].append(h)
-    
+    """
     canname = 'AbsoluteTof'
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     can.Divide(2,2)
@@ -307,7 +307,7 @@ def main(argv):
         can.Update()
         can.Print(pngdir + can.GetName() + '.png')
         can.Print(pdfdir + can.GetName() + '.pdf')
-
+    """
     if not gBatch:
         ROOT.gApplication.Run()
     return

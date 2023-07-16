@@ -32,7 +32,6 @@ void MakeDataPlots(string fileName, int momentum) {
   vector<vector<double> > *peakTime = NULL;
   vector<vector<double> > *signalTime = NULL;
   vector<vector<double> > *intCharge = NULL;
-
   gSystem->Exec("mkdir -p histos/");
 
   const int nChannels = 32;
