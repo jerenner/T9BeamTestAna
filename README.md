@@ -51,10 +51,8 @@ More detailed:
 save the https://wcte-daq/?cmd=custom&page=RunLog as html do Downloads on the daq proxy machine
 then in your local analysis directory, get the file to share/:
 cd share/ ; ./get.sh ; cd ../
-Now you can run parse script to get run-momenta dictionary:
-./python/parseWcteDaqRunsHtml.py
-and manually port the dictionaries to
-python/data_runs.py
+Now you can run parse script to get/update run-momenta dictionary:
+./python/parseWcteDaqRunsHtml.py > python/data_runs_dicts.py 
 
 Expected TOF times can be computed using utils in
 python/tofUtil.py

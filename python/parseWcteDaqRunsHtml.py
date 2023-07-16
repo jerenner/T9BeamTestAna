@@ -26,7 +26,7 @@ for xline in infile.readlines():
     if abs(momentum) < 50:
         continue
 
-    print(run, momentum)
+    #print(run, momentum)
 
     try:
         n = len(momentasDict[momentum])
@@ -36,7 +36,9 @@ for xline in infile.readlines():
         momentasDict[momentum].append(run)
         runsDict[run] = momentum
 
-print('momentaDict = ')
-print(momentasDict)
-print('runsDict = ')
-print(runsDict)
+
+print('#!/usr/bin/python')
+print('momentaDict = ', momentasDict)
+print('runsDict = ', runsDict)
+
+
