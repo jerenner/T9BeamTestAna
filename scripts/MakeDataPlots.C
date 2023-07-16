@@ -7,7 +7,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-
+// new
 using namespace std;
 
 // Matej Pavin 2022
@@ -34,7 +34,7 @@ void MakeDataPlots(string fileName, int momentum) {
   vector<vector<double> > *intCharge = NULL;
   gSystem->Exec("mkdir -p histos/");
 
-  const int nChannels = 19; //32;
+  const int nChannels = 19; // UPDATE THIS FOR HODOSCOPE PMTs! to e.g. 32!
   double pedestal[nChannels];
   double pedestalSigma[nChannels];
 
@@ -53,8 +53,13 @@ void MakeDataPlots(string fileName, int momentum) {
   int ent = tree->GetEntries();
 
   double tofmin = 10.;
-  double tofmax = 30.;
-  int ntofbins = 100;
+  double tofmax = 60.;
+  int ntofbins = 200;
+
+  double tofminlow = 10.;
+  double tofmaxlow = 20.;
+  int ntofbinslow = 100;
+
   int ntofbins2d = 100;
 
   double actChargeMax = 1.0;
@@ -71,6 +76,11 @@ void MakeDataPlots(string fileName, int momentum) {
   TH1D hTOFAllWide("hTOFAllWide", ";t_{TOF}^{All} [ns]", 2*ntofbins, tofmin, 2*tofmax);
   TH1D hTOFEl("hTOFEl", ";t_{TOF}^{e} [ns]", ntofbins, tofmin, tofmax);
   TH1D hTOFOther("hTOFOther", ";t_{TOF}^{non-e} [ns]", ntofbins, tofmin, tofmax);
+
+
+  TH1D hTOFAllLow("hTOFAllLow", ";t_{TOF}^{All} [ns]", ntofbinslow, tofminlow, tofmaxlow);
+  TH1D hTOFElLow("hTOFElLow", ";t_{TOF}^{e} [ns]", ntofbinslow, tofminlow, tofmaxlow);
+  TH1D hTOFOtherLow("hTOFOtherLow", ";t_{TOF}^{non-e} [ns]", ntofbinslow, tofminlow, tofmaxlow);
 
   TH1D hT0("hRef_T0", "", 270, 50, 320);
   TH1D hT1("hRef_T1", "", 270, 50, 320);
@@ -98,9 +108,8 @@ void MakeDataPlots(string fileName, int momentum) {
   TH1D hTimeTOF3("hTimeTOF3", "hTimeTOF3", 100, 0.,50.);
 
   //lead glass vs act 2 and 3 - identify particles
-  TH2D hPbACT23A("hRef_pbA_act23A", "; Pg-glass Amplitude ; ACT2+ACT3 Amplitude", 200, 0., actAmplitudeMax, 200, 0., 5.);
-
-  TH2D hPbACT23C("hRef_pbC_act23C", "; Pg-glass Charge ; ACT2+ACT3 Charge", 200, 0., actChargeMax, 200, 0., 5.);
+  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 200, 0., actAmplitudeMax, 200, 0., 5.);
+  TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 200, 0., actChargeMax, 200, 0., 5.);
 
 
 
@@ -122,6 +131,8 @@ void MakeDataPlots(string fileName, int momentum) {
   TH2D hTOFACT2C("hRef_TOFACT2C", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
   TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
 
+sadjkcgasdkch
+  
   // electrons
   TH2D hTOFACT0A_el("hRef_TOFACT0A_el", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
   TH2D hTOFACT1A_el("hRef_TOFACT1A_el", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
@@ -277,7 +288,7 @@ void MakeDataPlots(string fileName, int momentum) {
     hTOFACT3A.Fill(tof, act3a);
 
 
-    hPbACT23A.Fill(pba, act2a+act3a);
+    hPbACT23A.Fill(pba, (act2a+act3a) / 2.);
 
 
 
@@ -297,7 +308,7 @@ void MakeDataPlots(string fileName, int momentum) {
     hTOFACT3C.Fill(tof, act3c);
 
 
-    hPbACT23C.Fill(pbc, act2c+act3c);
+    hPbACT23C.Fill(pbc, (act2c+act3c) / 2.);
 
     hACT1CACT3C.Fill(act1c, act3c);
     hACT3CACT2C.Fill(act3c, act2c);
@@ -305,6 +316,8 @@ void MakeDataPlots(string fileName, int momentum) {
 
     //acraplet
     hTOFAll.Fill(tof);
+    hTOFAllLow.Fill(tof);
+    
     hT0.Fill(t0);
     hT1.Fill(t1);
 
@@ -360,7 +373,8 @@ void MakeDataPlots(string fileName, int momentum) {
     if (isEl) {
       // electrons
       hTOFEl.Fill(tof);
-
+      hTOFElLow.Fill(tof);
+	  
       hTOFACT1A_el.Fill(tof, act1a);
       hTOFACT2A_el.Fill(tof, act2a);
       hTOFACT3A_el.Fill(tof, act3a);
@@ -373,7 +387,7 @@ void MakeDataPlots(string fileName, int momentum) {
 
       // non-electrons
       hTOFOther.Fill(tof);
-
+      hTOFOtherLow.Fill(tof);
 
     } // non-electrons
 
