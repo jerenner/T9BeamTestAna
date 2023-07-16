@@ -63,6 +63,7 @@ def process_file(root_filename, config, output_file):
     n_events = events_per_channel[0]
     if n_events == 0:
         print(f"WARNING: The channels in {root_filename} have zero events. Skipping this file.")
+        return
     print(f"All {n_channels} active channels have {n_events} events")
     pedestals = np.zeros((n_events, n_channels))
     pedestal_sigmas = np.zeros((n_events, n_channels))
