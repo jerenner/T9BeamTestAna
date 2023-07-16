@@ -19,10 +19,6 @@ Make a link to the directory where you store your midas-to-root converted data l
 
 ln -s YOURDATAFOLDER data
 
-Create filelists:
-
-./scripts/listFiles.sh
-
 Get commands what to run:
 
 ./python/run_wa_all.py

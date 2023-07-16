@@ -19,16 +19,30 @@ if not dryrun:
 
 print("===> Waveforms analysis:")
 
-for xlistname in  os.popen('cd lists/ ; ls list*.txt'):
+#for xlistname in  os.popen('cd lists/ ; ls list*.txt'):
+for xlistname in  os.popen('cd data/ ; ls root_run_*.root'):
     
     print('######################################################')
-    listname = xlistname[:-1]
-    base = listname.replace('.txt','')
+
+    # c++ version:
+    #listname = xlistname[:-1]
+    #base = listname.replace('.txt','')
+    ##print('base: ', base)
+    #srun = base.replace('list_root_run_000', '')
+
+    rfilename = xlistname[:-1]
+    base = rfilename.replace('.root','')
     #print('base: ', base)
-    srun = base.replace('list_root_run_000', '')
+    srun = base.replace('root_run_000', '')
+
     momentum = getMomentum(srun)
+
+    # C++ verision depricated:
+    #cmd = "./bin/waveform_analysis.app -i lists/{} -o output/output_{}.root -c config/config.json".format(rfilename,base)
+
+    # python version by Nick:
+    cmd = 'python ./python/new_analysis/process_waveform_analysis.py data/{} config/config.json output/output_{}.root'.format(rfilename, base)
     
-    cmd = "./bin/waveform_analysis.app -i lists/{} -o output/output_{}.root -c config/config.json".format(listname,base)
     print(cmd)
     if not dryrun:
         os.system(cmd)

@@ -12,8 +12,20 @@ import ROOT
 from math import sqrt, pow, log, exp
 import os, sys, getopt
 
+from labelTools import *
+
 cans = []
 stuff = []
+lines = []
+
+
+def makeLine(x1, x2, y1, y2):
+    line = ROOT.TLine(x1, y1, x2, y2)
+    line.SetLineColor(ROOT.kGreen)
+    line.SetLineWidth(2)
+    line.Draw()
+    return line
+
 
 def PrintUsage(argv):
     print('Usage:')
@@ -36,6 +48,7 @@ def main(argv):
     ### https://www.tutorialspoint.com/python/python_command_line_arguments.htm
     ### https://pymotw.com/2/getopt/
     ### https://docs.python.org/3.1/library/getopt.html
+    #gBatch = True
     gBatch = False
     gTag=''
     print(argv[1:])
@@ -128,8 +141,8 @@ def main(argv):
             ih = hs.index(h)
             can.cd(ih+1)
             h.SetStats(0)
-            if not 'Time' in h.GetName():
-                ROOT.gPad.SetLogy(1)
+            #if not 'Time' in h.GetName():
+            #    ROOT.gPad.SetLogy(1)
             #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
             h.SetFillColor(hbasenames[hbasename])
             h.SetFillStyle(1111)
@@ -304,7 +317,7 @@ def main(argv):
             tofmeans[itof].append(mean)
 
     
-##################################
+##################################s
 #   plot 2d hist act vs lead     #
 ##################################
 
@@ -314,10 +327,34 @@ def main(argv):
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     cans.append(can)
     can.cd()
-    h.GetXaxis().SetRangeUser(0, 4)
+    integral_full = h.Integral()
+    h.GetXaxis().SetRangeUser(0, 8)
     h.GetYaxis().SetRangeUser(0, 30)
+    x1, x2, y1, y2 = 0.2, 1.3, 1.5, 4.5
+    bx1 = h.GetXaxis().FindBin(x1)
+    bx2 = h.GetXaxis().FindBin(x2)
+    by1 = h.GetYaxis().FindBin(y1)
+    by2 = h.GetYaxis().FindBin(y2)
+    integral_zoom = h.Integral(bx1, bx2, by1, by2)
+    print(f'integral: ful={integral_full}, zoom={integral_zoom}')
     h.SetTitle('ACT2+3 vs Lead Glass {}'.format(ftag[10:]))
     h.Draw("colz")
+    adjustStats(h)
+    
+    if False:
+        line = makeLine(x1, x2, y1, y1)
+        lines.append(line)
+        line = makeLine(x1, x2, y2, y2)
+        lines.append(line)
+        line = makeLine(x1, x1, y1, y2)
+        lines.append(line)
+        line = makeLine(x2, x2, y1, y2)
+        lines.append(line)
+        txt = ROOT.TLatex(0.14, 0.8, f'box: {integral_zoom/1000:1.2f}k evts, full: {integral_full/1000:1.2f}k evts')
+        txt.SetTextSize(0.04)
+        txt.SetNDC()
+        txt.Draw()
+        stuff.append(txt)
 
 
     canname = 'TOFvsACT3_{}'.format(ftag[10:])
@@ -330,7 +367,7 @@ def main(argv):
     h.GetXaxis().SetRangeUser(0, 4)
     h.GetYaxis().SetRangeUser(0, 30)
     h.Draw("colz")
-
+    adjustStats(h)
 
     #h.colz()
 
@@ -339,7 +376,15 @@ def main(argv):
 ##################################
 
     print(tofmeans)
+
+    srun = filename.split('_')[3].replace('000','')
+    pnote = makeMomentumLabel(srun)
+    stuff.append(pnote)
+    
     for can in cans:
+        can.cd()
+        if 'vs' in can.GetName():
+            pnote.Draw()
         can.Update()
         can.Print(pngdir + can.GetName() + '.png')
         can.Print(pdfdir + can.GetName() + '.pdf')
