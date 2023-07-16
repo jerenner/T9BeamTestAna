@@ -1,7 +1,7 @@
 import numpy as np
 
 
-class WaveformArray:
+class WaveformAnalysis:
     """
     This class holds an array of waveforms, for quickly doing waveform analysis on all waveforms
     """
@@ -18,6 +18,8 @@ class WaveformArray:
         self.pedestal_window = pedestal_window
         self.analysis_bins = range(analysis_window[0]//ns_per_sample, analysis_window[1]//ns_per_sample)
         self.pedestal_bins = range(pedestal_window[0]//ns_per_sample, pedestal_window[1]//ns_per_sample)
+        self.peak_locations = None
+        self.amplitudes = None
 
     def find_pedestals(self):
         """Finds the pedestal of each waveform by taking the mean in the pedestal window. Also finds the standard deviation"""
@@ -34,7 +36,7 @@ class WaveformArray:
             self.find_pedestals()
         self.peak_locations = np.argmax(self.amplitudes[:, self.analysis_bins], axis=1, keepdims=True)
         self.peak_times = (self.peak_locations + 0.5) * self.ns_per_sample
-        self.peak_voltages = np.take_along_axis(self.amplitudes, self.peak_locations, axis=1)
+        self.peak_voltages = np.take_along_axis(self.amplitudes, self.peak_locations, axis=1).reshape(self.peak_locations.shape)
 
     def calculate_signal_times(self):
         """Finds the signal time of each waveform as the interpolated time before the peak where the voltage reaches 0.4*[peak voltage]"""
@@ -44,12 +46,12 @@ class WaveformArray:
         signal_times = []
         for peak, loc, amp in zip(self.peak_voltages[:, 0], self.peak_locations[:, 0], self.amplitudes):
             if loc==0:
-                signal_times.append(0)
+                signal_times.append([0])
             else:
                 threshold = fraction*peak
                 i = loc - np.argmax(amp[self.analysis_bins][loc-1::-1] < threshold)  # location before peak where amplitude passes fraction*peak
                 time_range = [self.analysis_window[0]+(i-1)*self.ns_per_sample, self.analysis_window[0]+i*self.ns_per_sample]
-                signal_times.append(np.interp(threshold, amp[self.analysis_bins][i-1:i+1], time_range))
+                signal_times.append([np.interp(threshold, amp[self.analysis_bins][i-1:i+1], time_range)])
         self.signal_times = np.array(signal_times)
 
     def integrate_charges(self):
@@ -60,9 +62,10 @@ class WaveformArray:
         integrated_charges = []
         for peak, loc, ped, amp in zip(self.peak_voltages[:, 0], self.peak_locations[:, 0], self.pedestal_sigmas[:, 0], self.amplitudes):
             threshold = 3*ped
-            start = loc - np.argmax(amp[self.analysis_bins][loc - 1::-1] < threshold) # location before peak where amplitude passes 3x pedestal sigma
-            stop = loc - np.argmax(amp[self.analysis_bins][loc:] < threshold) # location after peak where amplitude passes 3x pedestal sigma
-            integrated_charges.append(np.sum(amp[self.analysis_bins][start:stop])*self.ns_per_sample/impedance)
+            start = loc - np.argmax(amp[self.analysis_bins][loc-1::-1] < threshold) # location before peak where amplitude passes 3x pedestal sigma
+            stop = loc + np.argmax(amp[self.analysis_bins][loc:] < threshold) # location after peak where amplitude passes 3x pedestal sigma
+            integrated_charges.append([np.sum(amp[self.analysis_bins][start:stop])*self.ns_per_sample/impedance])
+        self.integrated_charges = np.array(integrated_charges)
 
     def run_analysis(self):
         """Finds each waveform peak, calculates the time, integrates the charge, and checks if it is over threshold"""

@@ -138,6 +138,12 @@ int main(int argc, char **argv) {
     Int_t           eventNumber1;
     Int_t           eventNumber2;
     Int_t           eventNumber3;
+
+    Int_t           spillNumber0;
+    Int_t           spillNumber1;
+    Int_t           spillNumber2;
+    Int_t           spillNumber3;
+
     
     int serialnumber;
     int freqsetting;
@@ -176,6 +182,11 @@ int main(int argc, char **argv) {
    chain1.SetBranchAddress("eventNumber", &eventNumber1);
    chain2.SetBranchAddress("eventNumber", &eventNumber2);
    chain3.SetBranchAddress("eventNumber", &eventNumber3);
+
+   chain0.SetBranchAddress("spillNumber", &spillNumber0);
+   chain1.SetBranchAddress("spillNumber", &spillNumber1);
+   chain2.SetBranchAddress("spillNumber", &spillNumber2);
+   chain3.SetBranchAddress("spillNumber", &spillNumber3);
 
     
     int iglobalCh = 0;
@@ -250,6 +261,16 @@ int main(int argc, char **argv) {
         if (!((i+1) % 1000))
 	  cout << "\rProcessing event #: " << i+1 << " / " << nent << flush;
 
+	if (spillNumber0 != spillNumber1 || spillNumber0 != spillNumber2 ||  spillNumber0 != spillNumber3 ||
+	    spillNumber1 != spillNumber2 || spillNumber1 != spillNumber3 || spillNumber2 != spillNumber3) {
+	  cout << "ERROR, non-equal spill numbers in digitizers! " << spillNumber0 << " " << spillNumber1 << " "  << spillNumber2 << " "  << spillNumber3 << endl;
+	}
+	if (eventNumber0 != eventNumber1 || eventNumber0 != eventNumber2 || eventNumber0 != eventNumber3 ||
+	    eventNumber1 != eventNumber2 || eventNumber1 != eventNumber3 || eventNumber2 != eventNumber3) {
+	  cout << "ERROR, non-equal event numbers in digitizers! " << eventNumber0 << " " << eventNumber1 << " "  << eventNumber2 << " "  << eventNumber3 << endl;
+	}
+
+	
         peakVoltage.clear();
         peakTime.clear();
         signalTime.clear();
