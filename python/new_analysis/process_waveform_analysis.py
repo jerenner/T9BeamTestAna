@@ -77,13 +77,11 @@ def process_file(root_filename, config, output_file):
         waveforms = run_file[c].array()
         waveform_analysis = WaveformAnalysis(waveforms,
                                              threshold=config["Thresholds"][i],
-                                             analysis_window=(
-                                             config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
-                                             pedestal_window=(
-                                             config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
+                                             analysis_window=(config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
+                                             pedestal_window=(config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
                                              reverse_polarity=(config["Polarity"][i] == 0),
                                              voltage_scale=config["VoltageScale"],
-                                             time_offset=config["TimeOffset"])
+                                             time_offset=config["TimeOffset"][i])
         waveform_analysis.run_analysis()
         pedestals[:, i] = waveform_analysis.pedestals.squeeze()
         pedestal_sigmas[:, i] = waveform_analysis.pedestal_sigmas.squeeze()
