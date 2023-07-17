@@ -60,14 +60,13 @@ class WaveformAnalysis:
         if self.peak_locations is None:
             self.find_peaks()
         impedance = 50
-        integrated_charges = []
-        for ped, loc, amp in zip(self.pedestal_sigmas[:, 0], self.peak_locations[:, 0], self.amplitudes):
-            threshold = 3*ped
-            loc += self.analysis_bins[0]
-            start = loc - np.argmax(amp[loc - 1::-1] < threshold)  # location before peak where amplitude passes 3x pedestal sigma
-            stop = loc + np.argmax(amp[loc:] < threshold)  # location after peak where amplitude passes 3x pedestal sigma
-            integrated_charges.append([np.sum(amp[start:stop]) * self.ns_per_sample / impedance])
-        self.integrated_charges = np.array(integrated_charges)
+        below_threshold = self.amplitudes < (3*self.pedestal_sigmas)
+        indices = np.arange(self.amplitudes.shape[1])
+        peak_indices = self.peak_locations + self.analysis_bins[0]
+        before_peak_fall = np.cumsum((indices > peak_indices) & below_threshold, axis=1) == 0
+        after_peak_rise = np.cumsum(((indices < peak_indices) & below_threshold)[:, ::-1], axis=1)[:, ::-1] == 0
+        self.integrated_charges = np.sum(self.amplitudes*(before_peak_fall & after_peak_rise), axis=1, keepdims=True)
+        self.integrated_charges *= self.ns_per_sample / impedance
 
     def run_analysis(self):
         """Finds each waveform peak, calculates the time, integrates the charge, and checks if it is over threshold"""
