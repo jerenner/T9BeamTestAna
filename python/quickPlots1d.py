@@ -377,7 +377,11 @@ def main(argv):
 
     print(tofmeans)
 
-    srun = filename.split('_')[3].replace('000','')
+    srun = ''
+    tokens = filename.split('_')
+    for token in tokens:
+        if '00' in token:
+            srun = token.replace('000','')
     pnote = makeMomentumLabel(srun)
     stuff.append(pnote)
     

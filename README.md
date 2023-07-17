@@ -42,6 +42,23 @@ python3 ./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
 then close by File -> Quit ROOT in any of the Canvases that appear
 
 
+July 17th 2023:
+
+New default way will be: instead of getting the midas-to-ROOT converted files, for those not interested in waveforms, get the already waveform-analyzed ntuples with the anaTree from the wctePC:
+
+cd output/ ; ./get.sh; cd ../
+
+./python/run_mkplots.py
+
+and choose what to run, e.g.
+
+./python/run_mkplots.py | egrep "310|318"
+
+./python/run_mkplots.py | grep "Make"
+
+./python/run_mkplots.py | grep "quick"
+
+
 More detailed:
 
 save the https://wcte-daq/?cmd=custom&page=RunLog as html do Downloads on the daq proxy machine
@@ -55,7 +72,7 @@ python/tofUtil.py
 and example can be run as
 python/tofCompute.py
 
-The momentum is determoined for each run automaticaly by the 
+The momentum is determined for each run automatically by the 
 ./python/run_wa_all.py
 script now, too.
 
@@ -117,7 +134,7 @@ Running the waveform analysis, plotting and fitting for all momenta: done by **.
 
 One has to specify whether really run (0/1), or just print the commands to choose from, or optionally not run but just fit by '0f'. Momentum range low/high/p must be specified, so e.g.:
 
- - python ./python/run_momenta.py 1 low    # run everytging: waveforms analyis, make histos, fit the TOF; for low momenta
+ - python ./python/run_momenta.py 1 low    # run everything: waveforms analysis, make histos, fit the TOF; for low momenta
  - python ./python/run_momenta.py 1 high   # same as above; for high momenta
  - python ./python/run_momenta.py 0f low   # do not run the waveform analysis, just fit, higher momenta
  - python ./python/run_momenta.py 0m low   # do not run the waveform analysis, but run making the histograms and cuts
@@ -129,7 +146,7 @@ Output are png's, pdf's; and mainly ascii files with fitted numbers of e, mu, pi
 
 ## Plotting the mu and pi yields scaled to per day rates
 
- The yields scalling is based on interval between spills of 40s; as function of the momentum.
+ The yields scaling is based on interval between spills of 40s; as function of the momentum.
  
  This is done by **python/plotFromAscii.py** for which one needs to choose the negative or positive beam p/n and the momenta range (low, high, or 'p' for protons).
 
