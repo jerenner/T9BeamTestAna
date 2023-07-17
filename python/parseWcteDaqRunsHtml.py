@@ -47,3 +47,11 @@ print('runsDict = ', runsDict)
 print()
 print()
 
+# Save data to csv
+import numpy  as np
+import pandas as pd
+
+df = pd.DataFrame(columns=["Run", "Momentum", "Charge"]) # TO-DO: Add refraction indexes info
+for (run, momentum) in runsDict.items(): df.loc[len(df)] = (run, abs(momentum), np.sign(momentum))
+df.to_csv("run_info_db.csv", index=False)
+
