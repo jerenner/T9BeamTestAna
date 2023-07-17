@@ -54,8 +54,9 @@ for xlistname in  os.popen('cd data/ ; ls root_run_*.root'):
         
     cmd='./python/quickPlots1d.py histos/output_{}_plots.root'.format(base)
     print(cmd)
-    #if not dryrun:
-    #    os.system(cmd)
+    if not dryrun:
+        cmd = cmd + ' -b'
+        os.system(cmd)
         
 
 

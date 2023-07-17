@@ -54,7 +54,7 @@ def main(argv):
     print(argv[1:])
     try:
         # options that require an argument should be followed by a colon (:).
-        opts, args = getopt.getopt(argv[3:], 'hbt:', ['help','batch','tag='])
+        opts, args = getopt.getopt(argv[2:], 'hbt:', ['help','batch','tag='])
         print('Got options:')
         print(opts)
         print(args)
