@@ -50,9 +50,9 @@ class WaveformAnalysis:
         indices = np.arange(self.amplitudes.shape[1])
         after_peak_rise = np.cumsum(((indices < self.peak_locations) & below_threshold)[:, ::-1], axis=1)[:, ::-1] == 0
         peak_rise_location = np.sum(after_peak_rise == 0, axis=1, keepdims=True)  # count how many samples are before the peak rise
-        amp_range = np.take_along_axis(wfa.amplitudes, np.column_stack([peak_rise_location-1, peak_rise_location]), axis=1)
-        self.signal_times = peak_rise_location - (amp_range[:,[1]] - thresholds)/np.diff(amp_range)  # interpolate
-        self.signal_times = self.signal_times2*self.ns_per_sample + self.time_offset
+        amp_range = np.take_along_axis(self.amplitudes, np.column_stack([peak_rise_location-1, peak_rise_location]), axis=1)
+        self.signal_times = peak_rise_location - (amp_range[:, [1]] - thresholds)/np.diff(amp_range)  # interpolate
+        self.signal_times = self.signal_times*self.ns_per_sample + self.time_offset
 
     def integrate_charges(self):
         """Calculates the integrated charge of each waveform's range around the peak that is more than 3x the standard deviation of the pedestal"""
