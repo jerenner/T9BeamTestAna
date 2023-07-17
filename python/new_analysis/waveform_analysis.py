@@ -9,7 +9,7 @@ class WaveformAnalysis:
     impedance = 50  # for calculating integrated charge
 
     def __init__(self, waveforms, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
-                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351):
+                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0):
 
         self.waveforms = np.array(waveforms)
         self.threshold = threshold
@@ -20,6 +20,7 @@ class WaveformAnalysis:
         self.pedestal_window = pedestal_window
         self.analysis_bins = range(analysis_window[0]//ns_per_sample, analysis_window[1]//ns_per_sample)
         self.pedestal_bins = range(pedestal_window[0]//ns_per_sample, pedestal_window[1]//ns_per_sample)
+        self.time_offset = time_offset
         self.peak_locations = None
         self.amplitudes = None
 
@@ -52,9 +53,9 @@ class WaveformAnalysis:
                 loc += self.analysis_bins[0]
                 threshold = self.peak_rise_time_fraction*peak
                 i = loc - np.argmax(amp[loc-1::-1] < threshold)  # location before peak where amplitude passes fraction*peak
-                time_range = [self.analysis_window[0]+(i-1)*self.ns_per_sample, self.analysis_window[0]+i*self.ns_per_sample]
+                time_range = [self.analysis_window[0]+(i-1), self.analysis_window[0]+i]
                 signal_times.append([np.interp(threshold, amp[i-1:i+1], time_range)])
-        self.signal_times = np.array(signal_times)
+        self.signal_times = np.array(signal_times)*self.ns_per_sample + self.time_offset
 
     def integrate_charges(self):
         """Calculates the integrated charge of each waveform's range around the peak that is more than 3x the standard deviation of the pedestal"""

@@ -82,7 +82,8 @@ def process_file(root_filename, config, output_file):
                                              pedestal_window=(
                                              config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
                                              reverse_polarity=(config["Polarity"][i] == 0),
-                                             voltage_scale=config["VoltageScale"])
+                                             voltage_scale=config["VoltageScale"],
+                                             time_offset=config["TimeOffset"])
         waveform_analysis.run_analysis()
         pedestals[:, i] = waveform_analysis.pedestals.squeeze()
         pedestal_sigmas[:, i] = waveform_analysis.pedestal_sigmas.squeeze()
