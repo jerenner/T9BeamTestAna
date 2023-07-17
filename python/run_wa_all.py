@@ -3,6 +3,8 @@
 
 from data_runs import *
 
+from data_badruns import *
+
 import os, sys
 
 os.system('mkdir -p output')
@@ -35,6 +37,15 @@ for xlistname in  os.popen('cd data/ ; ls root_run_*.root'):
     #print('base: ', base)
     srun = base.replace('root_run_000', '')
 
+    run = -1
+    try:
+        run = int(srun)
+    except:
+        print('# ERROR getting run number from the file name!')
+    if run > 0:
+        if run in badruns:
+            print('# SKIPPING bad run {}'.format(run))
+            continue
     momentum = getMomentum(srun)
 
     # C++ verision depricated:
