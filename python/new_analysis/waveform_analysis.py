@@ -1,12 +1,19 @@
 import numpy as np
 
 
+def find_mode(values, n_bins, range_width):
+    """Finds the mode of a distribution using a histogram centered around the median"""
+    hist, bin_edges = np.histogram(values, bins=n_bins, range=np.median(values) + [-range_width, range_width])
+    max_bin = np.argmax(hist)
+    return np.mean(bin_edges[max_bin:max_bin + 2])
+
 class WaveformAnalysis:
     """
     This class holds an array of waveforms, for quickly doing waveform analysis on all waveforms
     """
     peak_rise_time_fraction = 0.4  # signal time is when before the peak the waveform passes this fraction of the peak amplitude
     impedance = 50  # for calculating integrated charge
+    use_global_pedestal = True  # assume pedestal is stable and use one value for all waveforms for the channel
 
     def __init__(self, waveforms, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
                  reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0):
@@ -29,7 +36,13 @@ class WaveformAnalysis:
         self.amplitudes = self.waveforms * self.voltage_scale
         self.pedestals = np.mean(self.amplitudes[:, self.pedestal_bins], axis=1, keepdims=True)
         self.pedestal_sigmas = np.std(self.amplitudes[:, self.pedestal_bins], axis=1, keepdims=True)
-        self.amplitudes -= self.pedestals
+        if self.use_global_pedestal:  # use the pedestal distribution's mode to ignore outliers from unusual waveforms
+            self.my_pedestals = find_mode(self.pedestals, n_bins=100, range_width=100*self.voltage_scale)
+            self.my_pedestal_sigmas = find_mode(self.pedestal_sigmas, n_bins=100, range_width=100*self.voltage_scale)
+        else:
+            self.my_pedestals = self.pedestals
+            self.my_pedestal_sigmas = self.pedestal_sigmas
+        self.amplitudes -= self.my_pedestals
         if self.reverse_polarity:
             self.amplitudes *= -1
 
@@ -58,7 +71,7 @@ class WaveformAnalysis:
         """Calculates the integrated charge of each waveform's range around the peak that is more than 3x the standard deviation of the pedestal"""
         if self.peak_locations is None:
             self.find_peaks()
-        below_threshold = self.amplitudes < (3*self.pedestal_sigmas)
+        below_threshold = self.amplitudes < (3*self.my_pedestal_sigmas)
         indices = np.arange(self.amplitudes.shape[1])
         before_peak_fall = np.cumsum((indices > self.peak_locations) & below_threshold, axis=1) == 0
         after_peak_rise = np.cumsum(((indices < self.peak_locations) & below_threshold)[:, ::-1], axis=1)[:, ::-1] == 0
