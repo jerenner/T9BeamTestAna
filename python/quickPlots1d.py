@@ -328,8 +328,8 @@ def main(argv):
     cans.append(can)
     can.cd()
     integral_full = h.Integral()
-    h.GetXaxis().SetRangeUser(0, 8)
-    h.GetYaxis().SetRangeUser(0, 30)
+    h.GetXaxis().SetRangeUser(0, 4)
+    h.GetYaxis().SetRangeUser(0, 15)
     x1, x2, y1, y2 = 0.2, 1.3, 1.5, 4.5
     bx1 = h.GetXaxis().FindBin(x1)
     bx2 = h.GetXaxis().FindBin(x2)
@@ -338,7 +338,7 @@ def main(argv):
     integral_zoom = h.Integral(bx1, bx2, by1, by2)
     print(f'integral: ful={integral_full}, zoom={integral_zoom}')
     h.SetTitle('ACT2+3 vs Lead Glass {}'.format(ftag[10:]))
-    h.Draw("colz")
+    h.Draw("")
     adjustStats(h)
     
     if False:
@@ -364,10 +364,57 @@ def main(argv):
     cans.append(can)
     can.cd()
     h.SetTitle('TOF vs ACT3 {}'.format(ftag[10:]))
-    h.GetXaxis().SetRangeUser(0, 4)
-    h.GetYaxis().SetRangeUser(0, 30)
-    h.Draw("colz")
+    h.GetYaxis().SetRangeUser(0, 15.)
+    h.GetXaxis().SetRangeUser(13.5, 16.0)
+    h.Draw("")
     adjustStats(h)
+
+
+    canname = 'TOFvsACT23_{}'.format(ftag[10:])
+    hname = 'hRef_TOFACT23A'
+    h = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    h.SetTitle('TOF vs ACT23 {}'.format(ftag[10:]))
+    h.GetXaxis().SetRangeUser(13.5, 16.0)
+    h.GetYaxis().SetRangeUser(0, 15)
+    h.Draw("")
+    adjustStats(h)
+
+
+    canname = 'PbvsTOF_{}'.format(ftag[10:])
+    hname = 'hRef_PbATOF'
+    h = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    h.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
+    h.GetXaxis().SetRangeUser(0., 4.)
+    h.GetYaxis().SetRangeUser(13.5, 16.0)
+    h.Draw("")
+    adjustStats(h)
+
+
+
+    canname = 'TOF(all)_{}'.format(ftag[10:])
+    hname = 'hTOFAll'
+    h = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    h.SetTitle('TOF(all) {}'.format(ftag[10:]))
+    h.GetXaxis().SetRangeUser(10., 50.)
+    fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
+    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
+    h.Fit(fname, 'q', '', )
+    h.Draw("hist")
+    fit.Draw('same')
+
+
+
+    ROOT.gPad.SetLogy(1);
+
 
     #h.colz()
 

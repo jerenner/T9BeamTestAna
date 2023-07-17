@@ -55,17 +55,17 @@ void MakeDataPlots(string fileName, int momentum) {
   int ent = tree->GetEntries();
 
   double tofmin = 10.;
-  double tofmax = 60.;
+  double tofmax = 40.;
   int ntofbins = 200;
 
   double tofminlow = 10.;
   double tofmaxlow = 20.;
   int ntofbinslow = 100;
 
-  int ntofbins2d = 100;
+  int ntofbins2d = 400;
 
   double actChargeMax = 1.0;
-  double actAmplitudeMax =  30.;
+  double actAmplitudeMax =  20.;
 
 
   TString outFileName = fileName.substr(0, fileName.size()-5) + "_plots.root";
@@ -104,14 +104,30 @@ void MakeDataPlots(string fileName, int momentum) {
 
 
   //acraplet TOF analysis
-  TH1D hTimeTOF0("hTimeTOF0", "hTimeTOF0", 100, 0.,50.);
-  TH1D hTimeTOF1("hTimeTOF1", "hTimeTOF1", 100, 0.,50.);
-  TH1D hTimeTOF2("hTimeTOF2", "hTimeTOF2", 100, 0.,50.);
-  TH1D hTimeTOF3("hTimeTOF3", "hTimeTOF3", 100, 0.,50.);
+  TH1D hTimeTOF0("hTimeTOF0", "; hTimeTOF0", 100, 0.,50.);
+  TH1D hTimeTOF1("hTimeTOF1", "; hTimeTOF1", 100, 0.,50.);
+  TH1D hTimeTOF2("hTimeTOF2", "; hTimeTOF2", 100, 0.,50.);
+  TH1D hTimeTOF3("hTimeTOF3", "; hTimeTOF3", 100, 0.,50.);
 
   //lead glass vs act 2 and 3 - identify particles
-  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 200, 0., actAmplitudeMax, 200, 0., actAmplitudeMax);
-  TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 200, 0., actChargeMax, 200, 0., actAmplitudeMax);
+  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 400, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
+  TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 400, 0., actChargeMax, 400, 0., actAmplitudeMax);
+
+
+  //ACT2+ACT3/2 vs TOF plots
+  TH2D hTOFACT23A("hRef_TOFACT23A", "; t_{1}-t_{0} [ns]; (ACT2+ACT3)/2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+  TH2D hTOFACT23C("hRef_TOFACT23C", "; t_{1}-t_{0} [ns]; (ACT2+ACT3)/2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+
+
+  //TOF vs Pb-glass plots
+  TH2D hPbATOF("hRef_PbATOF", "; Pb-glass Amplitude; t_{1}-t_{0} [ns]", 400, 0., actAmplitudeMax/2, ntofbins2d, tofmin, tofmax);
+  TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 400, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
+
+  //acraplet - investigate "weird electrons"
+  //TH2D hHC0HC1("hweirdE_HC0HC1", "; Hole Counter Amp")
+
+
+
 
 
 
@@ -296,6 +312,8 @@ void MakeDataPlots(string fileName, int momentum) {
 
 
     hPbACT23A.Fill(pba, (act2a+act3a) / 2.);
+    hTOFACT23A.Fill(tof, (act2a+act3a) / 2.);
+    hPbATOF.Fill(pba, tof);
 
 
 
@@ -316,6 +334,8 @@ void MakeDataPlots(string fileName, int momentum) {
 
 
     hPbACT23C.Fill(pbc, (act2c+act3c) / 2.);
+    hTOFACT23C.Fill(tof, (act2c+act3c) / 2.);
+    hPbCTOF.Fill(pbc, tof);
 
     hACT1CACT3C.Fill(act1c, act3c);
     hACT3CACT2C.Fill(act3c, act2c);
