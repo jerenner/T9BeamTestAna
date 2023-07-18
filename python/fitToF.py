@@ -254,11 +254,11 @@ def main(argv):
 
     print(f'ToF diffs for momentum {momentum}: mu-e: {tofDiff_e_mu:2.2f}, pi-e: {tofDiff_e_pi:2.2f}, p-e: {tofDiff_e_p:2.2f}, d-e: {tofDiff_e_d:2.2f}')
 
-    if abs(momentum) < 280:
+    if abs(momentum) < 300:
         print('Assuming low momentum run, will try to fit e/mu/pi')
         tcs = [11.7, 11.7 + off + tofDiff_e_mu, 11.7 + off + tofDiff_e_pi]
         ws = [0.25, 0.3, 0.35]
-        sfs = [1., 5., 7.]
+        sfs = [1., 10., 25.]
         fits = MultiFit(hTOFAll, '_mupi', momentum, tcs, ws, 11., 14., sfs)
         stuff.append(fits)
     elif abs(momentum) < 700:
