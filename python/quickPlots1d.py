@@ -44,6 +44,8 @@ def main(argv):
     pdfdir = 'pdf_results/'
     os.system(f'mkdir {pngdir}')
     os.system(f'mkdir {pdfdir}')
+
+    opt2d = 'colz'
     
     ### https://www.tutorialspoint.com/python/python_command_line_arguments.htm
     ### https://pymotw.com/2/getopt/
@@ -364,9 +366,9 @@ def main(argv):
     cans.append(can)
     can.cd()
     h.SetTitle('TOF vs ACT3 {}'.format(ftag[10:]))
-    h.GetYaxis().SetRangeUser(0, 15.)
-    h.GetXaxis().SetRangeUser(13.5, 16.0)
-    h.Draw("")
+    #h.GetYaxis().SetRangeUser(0, 15.)
+    #h.GetXaxis().SetRangeUser(13.5, 16.0)
+    h.Draw(opt2d)
     adjustStats(h)
 
 
@@ -377,9 +379,9 @@ def main(argv):
     cans.append(can)
     can.cd()
     h.SetTitle('TOF vs ACT23 {}'.format(ftag[10:]))
-    h.GetXaxis().SetRangeUser(13.5, 16.0)
+    h.GetXaxis().SetRangeUser(0., 16.0)
     h.GetYaxis().SetRangeUser(0, 15)
-    h.Draw("")
+    h.Draw(opt2d)
     adjustStats(h)
 
 
@@ -391,8 +393,8 @@ def main(argv):
     can.cd()
     h.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
     h.GetXaxis().SetRangeUser(0., 4.)
-    h.GetYaxis().SetRangeUser(13.5, 16.0)
-    h.Draw("")
+    h.GetYaxis().SetRangeUser(0., 16.0)
+    h.Draw(opt2d)
     adjustStats(h)
 
 
@@ -408,7 +410,7 @@ def main(argv):
     fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
     fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
     h.Fit(fname, 'q', '', )
-    h.Draw("hist")
+    h.Draw(opt2d)
     fit.Draw('same')
 
 

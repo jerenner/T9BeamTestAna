@@ -220,7 +220,7 @@ def main(argv):
     if abs(momentum) < 500:
         suff = 'Low'
         print('Low momentum run, looking at zoomed version of tof histos!')
-    hTOFAll = inFile.Get("hTOFAll" + suff)
+    hTOFAll = inFile.Get("hTOFOther" + suff)
     hTOFEl = inFile.Get("hTOFEl" + suff)
 
 
