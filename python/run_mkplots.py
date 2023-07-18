@@ -2,6 +2,7 @@
 # jk
 
 from data_runs import *
+from data_badruns import *
 
 import os, sys
 

@@ -6,6 +6,7 @@
 
 from data_runs import *
 from tofUtil import *
+from labelTools import *
 
 import ROOT
 from math import sqrt, pow, log, exp
@@ -14,10 +15,6 @@ import os, sys, getopt
 cans = []
 stuff = []
 
-# TODO:
-# JK
-# a multifit of 2-3 gaussians to low and medioum momenta!
-
 ##########################################
 
 def PrintUsage(argv):
@@ -25,9 +22,34 @@ def PrintUsage(argv):
     print('{} histos/output_list_root_run_XYZ_plots.root [-b]'.format(argv[0]))
     return
 
-##########################################
 
-def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
+##########################################
+def makeLines(h, eoff, parts, momentum):
+    lines = []
+    #y1 = h.GetYaxis().GetXmin()
+    #y2 = h.GetYaxis().GetXmax()
+    y1 = h.GetMaximum()
+    y2 = h.GetMinimum()
+    te = getTof(ms['e'], momentum) + eoff
+    for part in parts:
+        dt = getTofDiff('e', part, momentum)
+        print(f'makeLines {part}: dt={dt} ns')
+        print('line coors: ', te + dt, y1, te + dt, y2)
+        line = ROOT.TLine(te + dt, y1, te + dt, y2)
+        line.SetLineStyle(2)
+        line.SetLineWidth(2)
+        line.SetLineColor(pcols[part])
+        line.Draw()
+        lines.append(line)
+    return lines
+
+
+##########################################
+# cts     ...  central peak time of assumed gauss
+# w       ... width
+# t1, t2: ... fit window
+
+def Fit(h, tag, momentum, ct, w, t1, t2, peaksf = 1.):
     fname = 'fit{}'.format(tag)
     hname = h.GetName()
     fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', t1, t2)
@@ -42,7 +64,7 @@ def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
         print(fit.GetParameter(ip))
     #prefit = fit.DrawCopy('same')
     #stuff.append(prefit)
-    h.Fit(fname, '', '')
+    h.Fit(fname, '', '', t1, t2)
     mean = fit.GetParameter(1)
     sigma = fit.GetParameter(2)
     #print(f'1) {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
@@ -54,10 +76,76 @@ def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
     fit.SetLineColor(h.GetLineColor())
     fit.SetLineStyle(2)
     fit.Draw('same')
+
+    te = getTof(ms['e'], momentum)
+    eoff = fit.GetParameter(1) - te
+    
+    parts = ['p', 'd']
+    lines = makeLines(h, eoff, parts, momentum)
+    stuff.append(lines)    
+    
     return fit
 
 
 ##########################################
+# cts    ... central peak time of assuemd gauss
+# w      ... widths
+# t1, t2 ... full fit window
+
+def MultiFit(h, tag, momentum, cts, ws, t1, t2, peaksfs = [1., 1., 1.]):
+    fname = 'fit{}'.format(tag)
+    hname = h.GetName()
+    fitform = ''
+    ngpars = 3
+    # possible future issue: same sigma of pi and mu?
+    # fragile change to make...
+    
+    for ifit in range(0,len(cts)):
+        fitform = fitform + '[{}]*exp(-(x-[{}])^2/(2*[{}]^2))'.format(ifit*ngpars, ifit*ngpars + 1, ifit*ngpars + 2 )
+        if ifit < len(cts)-1:
+            fitform = fitform + ' + '
+    print('Fit formula: ', fitform)
+    fit = ROOT.TF1(fname, fitform, t1, t2)
+    ampl = h.GetBinContent(h.FindBin(cts[0]))
+    for ifit in range(0,len(cts)):
+        fit.SetParameter(ifit*ngpars+1, ampl / peaksfs[ifit])
+        fit.SetParameter(ifit*ngpars+1, cts[ifit])
+        fit.SetParameter(ifit*ngpars+2, ws[ifit])
+    for ipar in range(0,fit.GetNpar()):
+        print('par{} initially {:1.2f}'.format(ipar, fit.GetParameter(ipar)))
+    print('*** Fitting!')
+    h.Fit(fname, '', '' , t1, t2)
+    fit.SetLineColor(ROOT.kBlack)
+    fit.SetLineStyle(2)
+    #fit.SetLineColor(h.GetLineColor())
+    fit.SetLineStyle(2)
+    fit.Draw('same')
+
+    eoff = fit.GetParameter(1)
+
+    fits = [fit]
+    for ifit in range(0,len(cts)):
+        sfname = fname + str(ifit)
+        fitform = '[{}]*exp(-(x-[{}])^2/(2*[{}]^2))'.format(0, 1, 2)
+        single_fit = ROOT.TF1(sfname, fitform, t1, t2)
+        for ip in range(0, ngpars):
+            single_fit.SetParameter(ip, fit.GetParameter(ifit*ngpars + ip) )
+        fits.append(single_fit)
+    for sfit in fits[1:]:
+        sfit.SetLineStyle(2)
+        sfit.SetLineColor(ROOT.kBlue)
+        sfit.Draw('same')
+
+
+    te = getTof(ms['e'], momentum)
+    eoff = fit.GetParameter(1) - te
+
+    parts = ['e', 'mu', 'pi']
+    lines = makeLines(h, eoff, parts, momentum)
+    stuff.append(lines)
+    
+    return fits
+
 
 
 
@@ -119,7 +207,12 @@ def main(argv):
 
     fileName = argv[1]
     inFile = ROOT.TFile(fileName, "READ")
-    srun = fileName.split('/')[-1].replace('output_list_root_run_000','').replace('_plots.root','')
+    srun = ''
+    tokens = fileName.split('/')[-1].split('_')
+    for token in tokens:
+        if '00' in token:
+            srun = token.replace('000','')
+        
     momentum = getMomentum(srun)
     print(f'Assuming run {srun} and momentum {momentum}')
 
@@ -153,7 +246,6 @@ def main(argv):
     if 'uncalibrated' in inFile.GetName():
         off = 3.
     width = 0.2
-    fite = Fit(hTOFAll, '_el', 11.7 + off, width, 11. + off, 13. + off, 1.)
 
     tofDiff_e_mu = getTofDiff('e','mu',momentum)
     tofDiff_e_pi = getTofDiff('e','pi',momentum)
@@ -163,19 +255,25 @@ def main(argv):
     print(f'ToF diffs for momentum {momentum}: mu-e: {tofDiff_e_mu:2.2f}, pi-e: {tofDiff_e_pi:2.2f}, p-e: {tofDiff_e_p:2.2f}, d-e: {tofDiff_e_d:2.2f}')
 
     if abs(momentum) < 280:
-        print('Assuming low momemtum run, will try to fit e/mu/pi')
-        fitmu = Fit(hTOFAll, '_mu', 11.7 + off + tofDiff_e_mu, width, 11. + off + tofDiff_e_mu, 13. + off + tofDiff_e_mu, 1.)
-        fitpi = Fit(hTOFAll, '_pi', 11.7 + off + tofDiff_e_pi, width, 11. + off + tofDiff_e_pi, 13. + off + tofDiff_e_pi, 1.)
-        stuff.append([fitmu, fitpi])
-
+        print('Assuming low momentum run, will try to fit e/mu/pi')
+        tcs = [11.7, 11.7 + off + tofDiff_e_mu, 11.7 + off + tofDiff_e_pi]
+        ws = [0.25, 0.3, 0.35]
+        sfs = [1., 5., 7.]
+        fits = MultiFit(hTOFAll, '_mupi', momentum, tcs, ws, 11., 14., sfs)
+        stuff.append(fits)
     elif abs(momentum) < 700:
-        print('Assuming medium momemtum run, will try to fit e/mu+pi')
-        fitmupi = Fit(hTOFAll, '_mupi', 11.7 + off + tofDiff_e_mu, width, 11. + off + tofDiff_e_mu, 13. + off + tofDiff_e_mu, 1.)
-        stuff.append(fitmupi)
+        print('Assuming medium momentum run, will try to fit e/mu+pi')
+        tcs = [11.7, 11.7 + off + tofDiff_e_mu]
+        ws = [0.25, 0.3]
+        sfs = [1., 5.]
+        fits = MultiFit(hTOFAll, '_mupi', momentum, tcs, ws, 11., 14., sfs)
+        stuff.append(fits)
     else:
-        print('Assuming low momemtum run, will try to fit e/p/d')
-        fitp = Fit(hTOFAll, '_p',  16. + off, width, 14 + off,  17.5 + off, 1.)
-        fitd = Fit(hTOFAll, '_d',  25. + off, 0.8, 24.3 + off, 25.7 + off, 0.8)
+        print('Assuming high momentum run, will try to fit e/p/d')
+        fite = Fit(hTOFAll, '_el', momentum, 11.7 + off, width, 11. + off, 13. + off, 1.)
+        
+        fitp = Fit(hTOFAll, '_p', momentum,  16. + off, width, 14 + off,  17.5 + off, 1.)
+        fitd = Fit(hTOFAll, '_d', momentum,  25. + off, 0.8, 24.3 + off, 25.7 + off, 0.8)
         stuff.append([fitp, fitd])
         
         tdif_e_p = fitp.GetParameter(1) - fite.GetParameter(1)
@@ -199,7 +297,11 @@ def main(argv):
     ROOT.gPad.SetLogy(1)
     ROOT.gPad.Update()
 
+    pnote = makeMomentumLabel(srun, 0.14, 0.92)
+    stuff.append(pnote)
     for can in cans:
+        can.cd()
+        pnote.Draw()
         can.Print(pngdir + can.GetName() + '.png')
         can.Print(pdfdir + can.GetName() + '.pdf')
     

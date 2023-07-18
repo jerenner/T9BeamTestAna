@@ -48,8 +48,8 @@ def main(argv):
     ### https://www.tutorialspoint.com/python/python_command_line_arguments.htm
     ### https://pymotw.com/2/getopt/
     ### https://docs.python.org/3.1/library/getopt.html
-    #gBatch = True
-    gBatch = False
+    gBatch = True
+    #gBatch = False
     gTag=''
     print(argv[1:])
     try:
