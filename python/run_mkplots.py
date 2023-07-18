@@ -54,6 +54,12 @@ for xlistname in  os.popen('cd output/ ; ls ntuple_*.root'):
         cmd = cmd + ' -b'
         os.system(cmd)
         
+    cmd='./python/fitToF.py histos/{}'.format(hfilename)
+    print(cmd)
+    if not dryrun:
+        cmd = cmd + ' -b'
+        os.system(cmd)
+        
 
 
 

@@ -167,7 +167,8 @@ def main(argv):
     ### https://www.tutorialspoint.com/python/python_command_line_arguments.htm
     ### https://pymotw.com/2/getopt/
     ### https://docs.python.org/3.1/library/getopt.html
-    gBatch = False
+    gBatch = True
+    #gBatch = False
     gTag=''
     print(argv[1:])
     try:
@@ -224,7 +225,12 @@ def main(argv):
     hTOFEl = inFile.Get("hTOFEl" + suff)
 
 
-    canname = 'FitToF'
+    signedmomentum = str(abs(momentum))
+    if momentum > 0:
+        signedmomentum = signedmomentum + 'Pos'
+    else:
+        signedmomentum = signedmomentum + 'Neg'
+    canname = 'FitToF_run{}_{}'.format(srun, signedmomentum)
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     cans.append(can)
 
@@ -294,7 +300,6 @@ def main(argv):
     #hTOFEl.SetLineWidth(2)
     #hTOFEl.Draw('hist same')
 
-    ROOT.gPad.SetLogy(1)
     ROOT.gPad.Update()
 
     pnote = makeMomentumLabel(srun, 0.14, 0.92)
@@ -302,10 +307,14 @@ def main(argv):
     for can in cans:
         can.cd()
         pnote.Draw()
-        can.Print(pngdir + can.GetName() + '.png')
-        can.Print(pdfdir + can.GetName() + '.pdf')
-    
-    ROOT.gApplication.Run()
+        can.Print(pngdir + can.GetName() + '_liny.png')
+        can.Print(pdfdir + can.GetName() + '_liny.pdf')
+        ROOT.gPad.SetLogy(1)
+        can.Print(pngdir + can.GetName() + '_logy.png')
+        can.Print(pdfdir + can.GetName() + '_logy.pdf')
+
+    if not gBatch:
+        ROOT.gApplication.Run()
     return
 
 ###################################
