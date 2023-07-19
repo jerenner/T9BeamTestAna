@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/env python3
 #
 # Process waveform analysis of root file
 # Usage:
@@ -72,6 +72,7 @@ def process_file(root_filename, config, output_file):
     peak_times = np.zeros((n_events, n_channels, n_peaks))
     signal_times = np.zeros((n_events, n_channels, n_peaks))
     integrated_charges = np.zeros((n_events, n_channels, n_peaks))
+    n_peaks = np.zeros((n_events, n_channels))
     for i, c in enumerate(channels):
         print(f"Processing {c}")
         waveforms = run_file[c].array()
@@ -89,6 +90,7 @@ def process_file(root_filename, config, output_file):
         peak_times[:, i] = waveform_analysis.peak_times
         signal_times[:, i] = waveform_analysis.signal_times
         integrated_charges[:, i] = waveform_analysis.integrated_charges
+        n_peaks[:, i] = waveform_analysis.n_peaks
     run_file.close()
 
     print(f"Writing to {output_file.file_path}")
@@ -96,6 +98,7 @@ def process_file(root_filename, config, output_file):
             "nChannels": np.repeat(n_channels, n_events),
             "Pedestal": pedestals,
             "PedestalSigma": pedestal_sigmas,
+            "nPeaks": n_peaks,
             "PeakVoltage": peak_voltages,
             "PeakTime": peak_times,
             "SignalTime": signal_times,
