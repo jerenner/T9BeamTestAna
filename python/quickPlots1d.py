@@ -104,12 +104,7 @@ def main(argv):
     nChannels = 19 # 32
     Hs = []
     Txts = []
-    ChNames =  {0: 'ACT-00', 1: 'ACT-01', 2: 'ACT-10', 3: 'ACT-11', 4: 'ACT-20', 5: 'ACT-21', 6: 'ACT-30', 7: 'ACT-31',
-                8: 'TOF-00', 9: 'TOF-01', 10: 'TOF-10', 11: 'TOF-11', 12: 'TOF-20', 13: 'TOF-21', 14: 'TOF-30', 15: 'TOF-31',
-                16: 'HC-00', 17: 'HC-10', 18: 'LG-00',
-                19: 'X', 20: 'X', 21: 'X', 22: 'X', 23: 'X',
-                24: 'X', 25: 'X', 26: 'X', 27: 'X', 28: 'X', 29: 'X', 30: 'X', 31: 'X' }
-
+  
 
     ftag = filename.split('/')[-1].replace('output_','').replace('_plots.root','')
 
@@ -119,16 +114,7 @@ def main(argv):
 
         hs = []
         txts = []
-
-
-        canname = 'WCTEJuly2023_Quick1D_{}_{}'.format(ftag, hbasename)
-        canname = canname.replace('_list_root','')
-
-        can = ROOT.TCanvas(canname, canname, 0, 0, 1600, 800)
-        cans.append(can)
-        can.Divide(8,4)
-        #can.Divide(4,2)
-        
+           
         for ich in range(0, nChannels):
             # hack just for old tofs
             #if not ( ich >= 8 and ich <= 15):
@@ -138,10 +124,32 @@ def main(argv):
             print('Pushing ', ich, hname)
             hs.append(h)
         Hs.append(hs)
-        
+
+        canname = 'WCTEJuly2023_Quick1D_{}_{}'.format(ftag, hbasename)
+        canname = canname.replace('_list_root','').replace('_ntuple','')
+        #can = ROOT.TCanvas(canname, canname, 0, 0, 1600, 800)
+        #cans.append(can)
+        #can.Divide(8,4)
         for h in hs:
-            ih = hs.index(h)
-            can.cd(ih+1)
+            ich = hs.index(h)
+
+            if ich % 8 == 0:
+                idigi = ich / 8
+                off = 60
+                cw = 4*400 + 4*off
+                ch = 2*400
+                if idigi > 1:
+                    cw = 2*400 + 2*off
+                    ch = 400
+                can = ROOT.TCanvas(canname + f'_digi{idigi}', canname + f'_digi{idigi}', 0, 0, cw, ch)
+                if idigi < 2:
+                    can.Divide(4,2)
+                else:
+                    can.Divide(3,1)
+                cans.append(can)
+
+            
+            can.cd(ich % 8 + 1)
             h.SetStats(0)
             #if not 'Time' in h.GetName():
             #    ROOT.gPad.SetLogy(1)
@@ -154,10 +162,10 @@ def main(argv):
             gsigmas = []
             xmaxes = []
             
-            if 'Time' in h.GetName() and ih >= 8 and ih <= 15:
+            if 'Time' in h.GetName() and ich >= 8 and ich <= 15:
                 #print('*** fitting {}'.format(h.GetName()))
                 hname = h.GetName()
-                fname = 'fit{}'.format(ih)
+                fname = 'fit{}'.format(ich)
                 fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))', 0., 520.)
                 fit.SetParameters(h.GetMaximum()/6., 80., 5.)
                 h.Fit(fname, 'q', '')
@@ -232,9 +240,9 @@ def main(argv):
     ic = 1
 
     for itof,hs in htofdiffs.items():
-        ih = -1
+        ich = -1
         for h in hs:
-            ih = ih + 1
+            ich = ich + 1
             can.cd(ic)
             h.Draw('hist')
             #h.GetXaxis().SetRangeUser(-4,8.)
@@ -245,7 +253,7 @@ def main(argv):
             fit.Draw('same')
             mean = fit.GetParameter(1)
             sigma = fit.GetParameter(2)
-            print(f'tof fit {itof} {ih}: {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
+            print(f'tof fit {itof} {ich}: {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
             stuff.append(fit)
             ic = ic+1
             tofmeans[itof].append(mean)
@@ -278,9 +286,9 @@ def main(argv):
     ic = 1
 
     for itof, hs in htofTOFs.items():
-        ih = -1
+        ich = -1
         for h in hs:
-            ih = ih + 1
+            ich = ich + 1
             can.cd(ic)
             ROOT.gPad.SetLogy(1);
             print("ok")
@@ -313,7 +321,7 @@ def main(argv):
             mean3 = fit.GetParameter(6)
             sigma3 = fit.GetParameter(7)
             print("ok")
-            print(f'tof fit {itof} {ih}: {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
+            print(f'tof fit {itof} {ich}: {hname } mean={mean:1.3f} ns; sigma={sigma:1.3f} ns')
             stuff.append(fit)
             ic = ic+1
             tofmeans[itof].append(mean)
@@ -340,7 +348,7 @@ def main(argv):
     integral_zoom = h.Integral(bx1, bx2, by1, by2)
     print(f'integral: ful={integral_full}, zoom={integral_zoom}')
     h.SetTitle('ACT2+3 vs Lead Glass {}'.format(ftag[10:]))
-    h.Draw("")
+    h.Draw(opt2d)
     adjustStats(h)
     
     if False:
@@ -399,7 +407,7 @@ def main(argv):
 
 
 
-    canname = 'TOF(all)_{}'.format(ftag[10:])
+    canname = 'TOFall_{}'.format(ftag[10:])
     hname = 'hTOFAll'
     h = rfile.Get(hname)
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
