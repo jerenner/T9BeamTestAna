@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
             temp.SetAnalysisBinWindow(cfg.GetAnalysisBinLow(i), cfg.GetAnalysisBinHigh(i));
             temp.SetChargeMeasurement(cfg.MeasureCharge(i));
             temp.SetTimeMeasurement(cfg.MeasureTime(i));
+
         }
         waveAna.push_back(temp);
     }
@@ -143,6 +144,7 @@ int main(int argc, char **argv) {
     Int_t           spillNumber1;
     Int_t           spillNumber2;
     Int_t           spillNumber3;
+
 
     
     int serialnumber;
@@ -188,6 +190,9 @@ int main(int argc, char **argv) {
    chain2.SetBranchAddress("spillNumber", &spillNumber2);
    chain3.SetBranchAddress("spillNumber", &spillNumber3);
 
+
+
+
     
     int iglobalCh = 0;
     for(int i=0; i<cfg.GetNumberOfChannels()/nDigitizers; i++){
@@ -223,6 +228,9 @@ int main(int argc, char **argv) {
     vector<vector<double>> peakTime;
     vector<vector<double>> signalTime;
     vector<vector<double>> intCharge;
+    //vector<vector<int>> nbPeaks;
+
+    int nbPeaks[nTotChannels] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
  
     
     TTree *ana_data = new TTree("anaTree", "");
@@ -241,6 +249,7 @@ int main(int argc, char **argv) {
     ana_data->Branch("PeakTime",&peakTime);
     ana_data->Branch("SignalTime",&signalTime);
     ana_data->Branch("IntCharge",&intCharge);
+    ana_data->Branch("NbPeaks" ,&nbPeaks, "Pedestal[nChannels]/I");
 
     TCanvas *can = new TCanvas("waveforms");
 
@@ -275,6 +284,7 @@ int main(int argc, char **argv) {
         peakTime.clear();
         signalTime.clear();
         intCharge.clear();
+        //nbPeaks.clear();
         for(int j = 0; j < cfg.GetNumberOfChannels(); j++){
 
             if(cfg.IsActive(j)){
@@ -294,6 +304,9 @@ int main(int argc, char **argv) {
                 peakTime.push_back(waveAna.at(j).GetPeakTime());
                 signalTime.push_back(waveAna.at(j).GetSignalTime());
                 intCharge.push_back(waveAna.at(j).GetIntegratedCharge());
+                nbPeaks[j] = waveAna.at(j).GetNbPeaks();
+                std::cout << waveAna.at(j).GetNbPeaks() << std::endl;
+                //std::cout << waveAna.at(j).GetIntegratedCharge().at(0) << std::endl;
 
 
 		// add to 2D
@@ -318,6 +331,7 @@ int main(int argc, char **argv) {
         }
 
 
+        //std::cout << "              After loop filling in in waveform_analysis.cc " << nbPeaks.at(0) << std::endl;
         ana_data->Fill();
     }
 

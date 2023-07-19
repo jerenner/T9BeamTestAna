@@ -43,6 +43,8 @@ class WaveformAnalysis {
    std::vector<double>& GetPeakVoltage(){return fPeakVoltage;};
    std::vector<double>& GetPeakTime(){return fPeakTime;};
    std::vector<double>& GetSignalTime(){return fSignalTime;};
+   //get nb peaks
+   int & GetNbPeaks(){return fNbPeaks;};
    double GetPedestal(){return fPedestal;}
    double GetPedestalSigma(){return fPedestalSigma;}
    std::vector<bool>& GetThresholdStatus(){return fIsOverThreshold;}
@@ -63,13 +65,15 @@ class WaveformAnalysis {
    int fPedWindowT0Bin, fPedWindowT1Bin;
    double fThreshold;
    double fPolarity;
+   //int fNbPeaks; //find the number of peaks in the waveform
    int fGlobalChannelID;
   
    std::vector<double> fIntegratedCharge;
    std::vector<double> fPeakVoltage;
    std::vector<double> fPeakTime;
    std::vector<double> fSignalTime;
-   std::vector<bool> fIsOverThreshold;
+   int fNbPeaks;
+   std::vector<bool>   fIsOverThreshold;
    
    double fVoltScale;
    double fPedestal;

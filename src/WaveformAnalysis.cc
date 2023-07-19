@@ -96,7 +96,7 @@ void WaveformAnalysis::SetHistogram(TH1D *hist, int chid){
     }
 
     fPedestal = 0.;
-    fPedestalSigma=0;
+    fPedestalSigma = 0;
     //cout << "++++++++++++++++++++++++++++++" << endl;
     //cout << anaHist->GetNbinsX() << endl;
     //cout << fPedWindowT0 << " " << fPedWindowT1 << " " << fPedWindowT0Bin << " " << fPedWindowT1Bin << endl;
@@ -119,6 +119,9 @@ void WaveformAnalysis::FindPeaks(){
     fPeakBins.clear();
     fPeakVoltage.clear();
     fPeakTime.clear();
+    // fNbPeaks.clear();
+    fNbPeaks = 0;
+    int nbPeaks = 0; //default value to be overwritten
     double maxVal = 0;
     int max = -1;
     int len = 0;
@@ -146,10 +149,19 @@ void WaveformAnalysis::FindPeaks(){
             maxVal = 0;
         }
     }*/
+
+
+    //counting the number of peaks
+    bool goingDown = true;
+    double pedestalFluctuations = 5 * fPedestalSigma; //arbirary number - need to change that
+    double previousVoltage = fPedestal;
  
     if(fPeakBins.size() == 0){
+
         double peakVoltage = 0;
         int maxbin = 0;
+        nbPeaks = 0;
+
         for(int i = fAnaWindowT0Bin; i < fAnaWindowT1Bin; i++){
             double voltage = anaHist->GetBinContent(i)*fVoltScale-fPedestal;
             
@@ -160,10 +172,31 @@ void WaveformAnalysis::FindPeaks(){
                 peakVoltage = voltage;
                 maxbin = i;
             }
+            //we want to count the number of peaks
+            //go through the waveform, first going down
+
+            //if (voltage - previousVoltage > pedestalFluctuations and goingDown = true) continue;
+            if (voltage - previousVoltage >= pedestalFluctuations and goingDown == true){
+                //here, the current voltage is smaller than the previous voltage by more than the pedestal fluctuations: we have found a peak
+                nbPeaks += 1;
+                goingDown = false;
+
+            }
+            if (voltage - previousVoltage <= -pedestalFluctuations and goingDown == false){
+                //here, the current voltage is larger than the previous voltage by more than the pedestal fluctuations: we have finished a peak, will need to look for the next one
+                goingDown = true;
+
+            }
+
+
+            //std::cout << "In WaveformAnalysis.cc: peakFinder info: " << nbPeaks << std::endl;
+            previousVoltage = voltage;
+
         }
         
 
-        fPeakBins.push_back(maxbin);    
+        fPeakBins.push_back(maxbin);
+        fNbPeaks = nbPeaks;
         fPeakVoltage.push_back(peakVoltage);
         fPeakTime.push_back(anaHist->GetXaxis()->GetBinCenter(maxbin));
     }   

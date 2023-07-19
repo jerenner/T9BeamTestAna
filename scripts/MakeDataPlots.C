@@ -38,6 +38,7 @@ void MakeDataPlots(string fileName, int momentum) {
   Double_t intCharge[nMaxChannels][1];
   Double_t pedestal[nMaxChannels][1];
   Double_t pedestalSigma[nMaxChannels];
+  Double_t    nbPeaks[nMaxChannels][1];
 
   gSystem->Exec("mkdir -p histos/");
 
@@ -50,6 +51,7 @@ void MakeDataPlots(string fileName, int momentum) {
   tree->SetBranchAddress("IntCharge",&intCharge);
   tree->SetBranchAddress("Pedestal",&pedestal);
   tree->SetBranchAddress("PedestalSigma",&pedestalSigma);
+  tree->SetBranchAddress("NbPeaks",&nbPeaks);
   //tree->SetBranchAddress("PassThreshold",&passThreshold);
 
   int ent = tree->GetEntries();
@@ -139,6 +141,7 @@ void MakeDataPlots(string fileName, int momentum) {
   vector<TH1D> hHit;
   vector<TH1D> hPedestalSigma;
   vector<TH1D> hTime;
+  vector<TH1D> hNbPeaks;
 
   // no cuts
   TH2D hTOFACT0A("hRef_TOFACT0A", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
@@ -166,22 +169,26 @@ void MakeDataPlots(string fileName, int momentum) {
     string name3 = "hRef_Hits" + to_string(i);
     string name4 = "hRef_PedestalSigma" + to_string(i);
     string name5 = "hRef_Time" + to_string(i);
+    string name6 = "hRef_NbPeaks" + to_string(i);
 
     string title1 = "Channel " + to_string(i) + "; Charge [nC]; Triggers";
     string title2 = "Channel " + to_string(i) + "; Total Amplitude [V]; Triggers";
     string title3 = "Channel " + to_string(i) + "; Hits per trigger; Triggers";
     string title4 = "Channel " + to_string(i) + "; #sigma_{ped} [V]; Triggers";
     string title5 = "Channel " + to_string(i) + "; Time [ns]; Triggers";
+    string title6 = "Channel " + to_string(i) + "; Number of peaks; Triggers";
     TH1D temp1(name1.c_str(), title1.c_str(), 200, 0., 25*0.08);
     TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 13*0.8);
     TH1D temp3(name3.c_str(), title3.c_str(), 5, -0.5, 4.5);
     TH1D temp4(name4.c_str(), title4.c_str(), 200, 0., 0.01);
     TH1D temp5(name5.c_str(), title5.c_str(), 270, 0., 540.);
+    TH1D temp6(name6.c_str(), title6.c_str(), 20, 0., 20.);
     hCharge.push_back(temp1);
     hVoltage.push_back(temp2);
     //    hHit.push_back(temp3);
     hPedestalSigma.push_back(temp4);
     hTime.push_back(temp5);
+    hNbPeaks.push_back(temp6);
   }
 
   // +-------------------------------+
@@ -210,6 +217,7 @@ void MakeDataPlots(string fileName, int momentum) {
       hTime.at(j).Fill(signalTime[j][0]);
       //      hHit.at(j).Fill(peakVoltage[j][0]);
       hPedestalSigma.at(j).Fill(pedestalSigma[j]);
+      hNbPeaks.at(j).Fill(nbPeaks[j]);
     }
 
 
