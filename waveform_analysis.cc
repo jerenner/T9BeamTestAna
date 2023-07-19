@@ -15,6 +15,7 @@
 
 
 
+
 // Author: Matej Pavin 2022
 // modified for 32 channels in 2023 by Jiri Kvita
 
@@ -152,7 +153,14 @@ int main(int argc, char **argv) {
 
     const int nDigitizers = 4;
     const int nTotChannels = 32;
-
+    const int nChannelsPerDigi = 8; // = nTotChannels / nDigitizers
+    
+    TString channelNames[nTotChannels] = {"ACT-00",  "ACT-01",  "ACT-10",  "ACT-11",  "ACT-20",  "ACT-21",  "ACT-30",  "ACT-31",
+      "TOF-00",  "TOF-01",  "TOF-10",  "TOF-11",  "TOF-20", "TOF-21",  "TOF-30",  "TOF-31",
+      "HC-00",  "HC-10",  "LG-00",
+      "X",  "X",  "X",  "X",  "X",
+      "X",  "X",  "X",  "X",  "X",  "X",  "X",  "X" };
+    
     const double nanosecsPerSample = 2;
 
     cout << "Setting up reading the midas TTrees..." << endl;
@@ -314,12 +322,14 @@ int main(int argc, char **argv) {
 		
 		if (i % verbose_png == 0) {
 		  can -> cd();
+		  int idigi = j / nChannelsPerDigi;
+		  int ich = j % nChannelsPerDigi;
+		  //cout << "channel " << j << " idigi=" << idigi << " ich=" << ich << endl; 
+		  wavef -> SetTitle(Form("Digi %i Chan %i :: %s", idigi, ich, channelNames[j].Data()));
 		  wavef -> Draw();
 		  if (debug) {
 		    cout << "bins: " << wavef -> GetNbinsX() << endl;
 		  }
-		  int idigi = j / nDigitizers;
-		  int ich = j % nDigitizers;
 		  //wavef.SetMinimum(0.);
 		  //gSystem->Exec(Form("mkdir -p png/evt_%i", i));
 		  //can -> Print(Form("png/evt_%i/waveform_%i_%i.png", i, i, j));
