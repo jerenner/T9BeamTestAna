@@ -124,7 +124,9 @@ void MakeDataPlots(string fileName, int momentum) {
   TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 400, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
 
   //acraplet - investigate "weird electrons"
-  //TH2D hHC0HC1("hweirdE_HC0HC1", "; Hole Counter Amp")
+  TH2D hHC0AHC1A("hweirdE_HC0AHC1A", "; Hole Counter 0 Amplitude; Hole Counter 1 Amplitude", 200, 0., 1000, 200, 0., 1000.);
+
+  TH2D hHC0CHC1C("hweirdE_HC0CHC1C", "; Hole Counter 0 Charge; Hole Counter 1 Charge", 200, 0., 1., 200, 0., 1.);
 
 
 
@@ -340,6 +342,12 @@ void MakeDataPlots(string fileName, int momentum) {
     hACT1CACT3C.Fill(act1c, act3c);
     hACT3CACT2C.Fill(act3c, act2c);
     hACT2CACT1C.Fill(act2c, act1c);
+
+    //acraplet - weird electrons which do not see anthing in the ACT
+    if ((act2a+act3a) / 2. != 1.5 && tof >= 13.5 && tof >= 16.5) {
+      hHC0AHC1A.Fill(hc0a, hc1a);
+      hHC0CHC1C.Fill(hc0c, hc1c);
+    }
 
     //acraplet
     hTOFAll.Fill(tof);

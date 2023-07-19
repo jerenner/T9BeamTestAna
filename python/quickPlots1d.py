@@ -411,6 +411,20 @@ def main(argv):
     h.Draw("hist")
     fit.Draw('same')
 
+    #acraplet - investigate "weird electrons"
+
+    canname = 'hHC0CHC1C_weirdE{}'.format(ftag[10:])
+    hname = 'hweirdE_HC0AHC1A'
+    h = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    h.SetTitle('Hole counter amplitudes [weirdE] (act2a+act3a) / 2.) > 1.5 && 13.5 < tof < 16.5 {}'.format(ftag[10:]))
+    #h.GetXaxis().SetRangeUser(10., 50.)
+    h.Draw("hist")
+
+
+
 
 
     ROOT.gPad.SetLogy(1);
