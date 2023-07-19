@@ -196,17 +196,17 @@ void WaveformAnalysis::CalculateSignalTime(){
 		    double calibt = uncalibt;
 
 		    bool isToFChannel = (fGlobalChannelID >= 8 && fGlobalChannelID <= 15);
-		    if (isToFChannel) {
-		      int itof = (fGlobalChannelID - 8) / 4;
-		      int jtof = (fGlobalChannelID - 8) % 4;
-		      if (itof == 0 && jtof != 0) {
-			int ktof = jtof - 1;
-			calibt += ToF_channels_offset_calibration[itof][ktof];
-		      } else if (itof == 1 && jtof != 1) {
-			int ktof = jtof;
-			if (ktof > 1)
-			  ktof -= 1;
-			calibt += ToF_channels_offset_calibration[itof][ktof];
+		    if (isToFChannel) {                                    // channels  8  9 10 11 12 13 14 15
+		      int itof = (fGlobalChannelID - 8) / 4;               //     itof  0  0  0  0  1  1  1  1
+		      int jtof = (fGlobalChannelID - 8) % 4;               //     jtof  0  1  2  3  0  1  2  3
+		      if (itof == 0 && jtof != 0) {                        //              x  x  x
+			int ktof = jtof - 1;                                   //     ktof     0  1  2
+			calibt += ToF_channels_offset_calibration[itof][ktof]; //       ik    00 01 02
+		      } else if (itof == 1 && jtof != 1) {                 //                       x     x  x
+			int ktof = jtof;                                       //     ktof              0     2  3
+			if (ktof > 1)                                          //                             x  x
+			  ktof -= 1;                                           //     ktof              0     1  2
+			calibt += ToF_channels_offset_calibration[itof][ktof]; //       ik             10    11 12
 		      }
 		    }
 		    

@@ -152,43 +152,9 @@ void MakeDataPlots(string fileName, int momentum) {
   TH2D hTOFACT3C("hRef_TOFACT3C", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
 
   
-  // electrons
-  TH2D hTOFACT0A_el("hRef_TOFACT0A_el", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT1A_el("hRef_TOFACT1A_el", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT2A_el("hRef_TOFACT2A_el", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT3A_el("hRef_TOFACT3A_el", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-
-  TH2D hTOFACT0C_el("hRef_TOFACT0C_el", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT1C_el("hRef_TOFACT1C_el", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT2C_el("hRef_TOFACT2C_el", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT3C_el("hRef_TOFACT3C_el", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-
-  // Act1cut
-  TH2D hTOFACT0A_act1cut("hRef_TOFACT0A_act1cut", "; t_{1}-t_{0} [ns]; ACT0 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT1A_act1cut("hRef_TOFACT1A_act1cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT2A_act1cut("hRef_TOFACT2A_act1cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT3A_act1cut("hRef_TOFACT3A_act1cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-
-  TH2D hTOFACT0C_act1cut("hRef_TOFACT0C_act1cut", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT1C_act1cut("hRef_TOFACT1C_act1cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT2C_act1cut("hRef_TOFACT2C_act1cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT3C_act1cut("hRef_TOFACT3C_act1cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-
-  TH1D hTOF_act1cut("hTOF_act1cut", "; t_{1}-t_{0} [ns];", ntofbins, tofmin, tofmax);
-
-  // Act2cut
-  TH2D hTOFACT0A_act2cut("hRef_TOFACT0A_act2cut", "; t_{1}-t_{0} [ns]; ACT0 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT1A_act2cut("hRef_TOFACT1A_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Amplitude non-ele", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT2A_act2cut("hRef_TOFACT2A_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-  TH2D hTOFACT3A_act2cut("hRef_TOFACT3A_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
-
-  TH2D hTOFACT0C_act2cut("hRef_TOFACT0C_act2cut", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT1C_act2cut("hRef_TOFACT1C_act2cut", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT2C_act2cut("hRef_TOFACT2C_act2cut", "; t_{1}-t_{0} [ns]; ACT2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-  TH2D hTOFACT3C_act2cut("hRef_TOFACT3C_act2cut", "; t_{1}-t_{0} [ns]; ACT3 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
-
-  TH1D hTOF_act2cut("hTOF_act2cut", "; t_{1}-t_{0} [ns];", 120, tofmin, tofmax);
-
+  // ACT2+ACT3 cut
+  TH1D hTOF_act2act3cut("hTOF_act2act3cut", "; t_{1}-t_{0} [ns];", 120, tofmin, tofmax);
+  
   // 2D ACT charges
   TH2D hACT2CACT1C("hRef_ACT2CACT1C", "; ACT2 Charge; ACT1 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
   TH2D hACT3CACT2C("hRef_ACT3CACT2C", "; ACT3 Charge; ACT2 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
@@ -368,38 +334,16 @@ void MakeDataPlots(string fileName, int momentum) {
         // placeholder for momentum dependent cuts
         break;
       } // 320
-
-      /*
-       *      // placeholder
-       *	  case 400: {
-       *	    double voltageCut[16] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.025, 0.025, 0.025, 0.025, 0.025, 0.040, 0.025, 0.025};
-       *	    for(int j = 0; j < 16; j++) {
-       *	      if (peakVoltage[j][0] < voltageCut[j]) {
-       *		pass = false;
-       *		break;
-    }
-    }
-    break;
-    } // 400
-    */
-
+	
       default: {
         if (i < 10)
           cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
-        if (act0a > 1.) {
-          isEl = true;
-        }
-        if (act1a > 2.) {
-          passed_act1a_cuts = true;
-        }
-        if (act2a > 2.) {
-          passed_act1a_cuts = true;
-        }
-        if (act3a > 1.) {
+	if ( (act2a + act3a)/2. > 3.) { // custom electron removal cut
           isEl = true;
         }
       } // default
 
+	
     } // case
 
     if (!pass) continue;
@@ -408,62 +352,17 @@ void MakeDataPlots(string fileName, int momentum) {
     if (isEl) {
       // electrons
       hTOFEl.Fill(tof);
-      hTOFElLow.Fill(tof);
-	  
-      hTOFACT1A_el.Fill(tof, act1a);
-      hTOFACT2A_el.Fill(tof, act2a);
-      hTOFACT3A_el.Fill(tof, act3a);
-
-      hTOFACT1C_el.Fill(tof, act1c);
-      hTOFACT2C_el.Fill(tof, act2c);
-      hTOFACT3C_el.Fill(tof, act3c);
+      hTOFElLow.Fill(tof);   
     }
     else {
-
       // non-electrons
       hTOFOther.Fill(tof);
       hTOFOtherLow.Fill(tof);
-
     } // non-electrons
-
-    if (act1a < 1.) { // custom electron removal cut
-
-      hTOFAll.Fill(tof);
-      hTOFAllWide.Fill(tof);
-
-      // TO VALIDATE the cut values!!!
-      if (passed_act1a_cuts) {
-        hTOFACT0A_act1cut.Fill(tof, act0a);
-        hTOFACT1A_act1cut.Fill(tof, act1a);
-        hTOFACT2A_act1cut.Fill(tof, act2a);
-        hTOFACT3A_act1cut.Fill(tof, act3a);
-
-        hTOFACT0C_act1cut.Fill(tof, act0c);
-        hTOFACT1C_act1cut.Fill(tof, act1c);
-        hTOFACT2C_act1cut.Fill(tof, act2c);
-        hTOFACT3C_act1cut.Fill(tof, act3c);
-
-        hTOF_act1cut.Fill(tof);
-      } // act1 cuts
-
-      // TO VALIDATE the cut values!!!
-      if (passed_act2a_cuts > 2.) {
-        hTOFACT0A_act2cut.Fill(tof, act0a);
-        hTOFACT1A_act2cut.Fill(tof, act1a);
-        hTOFACT2A_act2cut.Fill(tof, act2a);
-        hTOFACT3A_act2cut.Fill(tof, act3a);
-
-        hTOFACT0C_act2cut.Fill(tof, act0c);
-        hTOFACT1C_act2cut.Fill(tof, act1c);
-        hTOFACT2C_act2cut.Fill(tof, act2c);
-        hTOFACT3C_act2cut.Fill(tof, act3c);
-
-        hTOF_act2cut.Fill(tof);
-      } // act2 cuts
-
-    } // custom electron removal cut
-
-
+    
+    hTOFAll.Fill(tof);
+    hTOFAllWide.Fill(tof);
+ 
 
   } // entries
   cout << "End of event loop!" << endl;

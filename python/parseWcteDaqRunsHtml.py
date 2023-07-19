@@ -3,6 +3,8 @@
 
 momentasDict = {}
 runsDict = {}
+runsRefractionIndexDict = {}
+
 
 # saved html page
 infile = open('share/wcte-daq.html')
@@ -19,12 +21,20 @@ for xline in infile.readlines():
     #print(srun, smomentum)
     run = int(srun)
     momentum = int(float(smomentum)*100)*10
-
+    
     if run < 255:
         continue
 
     if abs(momentum) < 50:
         continue
+
+    n = -1.
+    sn =  tokens[10]
+    try:
+        n = float(sn)
+    except:
+        print('# error getting ACT1 index of refraction!')
+    runsRefractionIndexDict[run] = n
 
     #print(run, momentum)
 
@@ -45,5 +55,15 @@ print('momentaDict = ', momentasDict)
 print()
 print('runsDict = ', runsDict)
 print()
+print('runsRefractionIndexDict = ', runsRefractionIndexDict)
 print()
+print()
+
+# Save data to csv
+import numpy  as np
+import pandas as pd
+
+df = pd.DataFrame(columns=["Run", "Momentum", "Charge"]) # TO-DO: Add refraction indexes info
+for (run, momentum) in runsDict.items(): df.loc[len(df)] = (run, abs(momentum), np.sign(momentum))
+df.to_csv("run_info_db.csv", index=False)
 

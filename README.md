@@ -66,6 +66,12 @@ then in your local analysis directory, get the file to share/:
 cd share/ ; ./get.sh ; cd ../
 Now you can run parse script to get/update run-momenta dictionary:
 ./python/parseWcteDaqRunsHtml.py > python/data_runs_dicts.py 
+Also
+Add a list of bad runs based on length of files in output/:
+First check it:
+./python/makeBadRunList.py
+If sure, add it:
+./python/makeBadRunList.py > python/data_badruns.py 
 
 Expected TOF times can be computed using utils in
 python/tofUtil.py
