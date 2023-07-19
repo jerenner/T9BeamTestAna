@@ -149,6 +149,7 @@ int main(int argc, char **argv) {
     int freqsetting;
 
     const int nDigitizers = 4;
+    const int nChannelsPerDigi = 8;
     const int nTotChannels = 32;
 
     const double nanosecsPerSample = 2;
@@ -301,12 +302,14 @@ int main(int argc, char **argv) {
 		
 		if (i % verbose_png == 0) {
 		  can -> cd();
+		  int idigi = j / nChannelsPerDigi;
+		  int ich = j % nChannelsPerDigi;
+		  //cout << "channel " << j << " idigi=" << idigi << " ich=" << ich << endl; 
+		  wavef -> SetTitle(Form("Digi %i Chan %i", idigi, ich));
 		  wavef -> Draw();
 		  if (debug) {
 		    cout << "bins: " << wavef -> GetNbinsX() << endl;
 		  }
-		  int idigi = j / nDigitizers;
-		  int ich = j % nDigitizers;
 		  //wavef.SetMinimum(0.);
 		  //gSystem->Exec(Form("mkdir -p png/evt_%i", i));
 		  //can -> Print(Form("png/evt_%i/waveform_%i_%i.png", i, i, j));
