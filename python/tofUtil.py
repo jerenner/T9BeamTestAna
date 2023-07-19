@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 from math import sqrt, pow
-
+import ROOT
 from collections import OrderedDict
 
 momentaMeV = [200 + i*20 for i in range(1,9)]
@@ -10,10 +10,19 @@ print(momentaMeV)
 
 ms = OrderedDict()
 ms['e'] = 0.511
-ms['mu'] = 135.6
-ms['pi'] = 139.6
+ms['mu'] = 105.66
+ms['pi'] = 139.57
 ms['p'] = 938.3
 ms['d'] = 1876.
+
+
+pcols = OrderedDict()
+pcols['e'] = ROOT.kRed
+pcols['mu'] = ROOT.kBlue 
+pcols['pi'] = ROOT.kGreen+1
+pcols['p'] = ROOT.kBlack
+pcols['d'] = ROOT.kGray
+
 
 conv = 1.e9
 #TB2022 l = 2.90 # m
@@ -24,12 +33,16 @@ c = 299792458 # m/c
 print('*** The Time of Flight times for L = {} m as function of particles momenta ***'.format(l))
 
 ############################################################
+def getTof(m, momentum):
+    return l/c*sqrt(1.+pow(m/momentum,2))*conv
+
+############################################################
 
 def getTofDiff(particle1, particle2, momentum):
     m1 = ms[particle1]
     m2 = ms[particle2]
-    t1 = l/c*sqrt(1.+pow(m1/momentum,2))*conv
-    t2 = l/c*sqrt(1.+pow(m2/momentum,2))*conv
+    t1 = getTof(m1, momentum)
+    t2 = getTof(m2, momentum)
     return t2 - t1
 
 ############################################################
@@ -48,7 +61,7 @@ def GenerateTimes(verbose = True):
         line = 'p = {} MeV: '.format(p)
         for pname in ms:
             m = ms[pname]
-            t = l/c*sqrt(1.+pow(m/p,2))*conv
+            t = getTof(m, p) #l/c*sqrt(1.+pow(m/p,2))*conv
             line = line + ' {}: {:2.2f}'.format(pname, t)
             ts[pname].append(1.*t)
         line = line + ' ns'
