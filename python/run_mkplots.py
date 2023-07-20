@@ -8,8 +8,8 @@ import os, sys
 
 os.system('mkdir -p output')
 
-dryrun = True # default
-#dryrun = False # Careful!!
+#dryrun = True # default
+dryrun = False # Careful!!
 
 if not dryrun:
     print("WARNING, this will MakeDataPlots for all runs in your output/, do you really wish to continue? Y/n")
@@ -58,7 +58,7 @@ for xlistname in  os.popen('cd output/ ; ls ntuple_*.root'):
     print(cmd)
     if not dryrun:
         cmd = cmd + ' -b'
-        os.system(cmd)
+        #os.system(cmd)
         
 
 

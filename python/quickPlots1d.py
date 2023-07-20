@@ -99,6 +99,7 @@ def main(argv):
         'hRef_Time' : ROOT.kGreen,
         'hRef_Charge' : ROOT.kCyan,
         'hRef_Voltage' : ROOT.kMagenta,
+        'hRef_nPeaks' : ROOT.kYellow,
     }
     
     nChannels = 19 # 32
@@ -152,7 +153,8 @@ def main(argv):
             can.cd(ich % 8 + 1)
             h.SetStats(0)
             #if not 'Time' in h.GetName():
-            #    ROOT.gPad.SetLogy(1)
+            if 'nPeaks' in h.GetName():
+                ROOT.gPad.SetLogy(1)
             #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
             h.SetFillColor(hbasenames[hbasename])
             h.SetFillStyle(1111)

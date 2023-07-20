@@ -26,8 +26,9 @@ double GetBeta(double mass, double momentum) {
 
 
 // ______________________________________________________________
+// peakMode: "", a, b, c, d, e, f
 
-void MakeDataPlots(string fileName, int momentum) {
+void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
   const int nMaxChannels = 32;
   const int nChannels = 19; // UPDATE THIS FOR HODOSCOPE PMTs! to e.g. 32!
@@ -68,9 +69,11 @@ void MakeDataPlots(string fileName, int momentum) {
 
   double actChargeMax = 1.0;
   double actAmplitudeMax =  20.;
-
-
-  TString outFileName = fileName.substr(0, fileName.size()-5) + "_plots.root";
+  
+  TString peakModeTag = "";
+  if (peakMode != "")
+    peakModeTag = "_" + peakMode;
+  TString outFileName = TString(fileName.substr(0, fileName.size()-5).c_str()) + "_plots" + peakModeTag + ".root";
   outFileName = outFileName.ReplaceAll("output/", "histos/");
 
   TFile outFile(outFileName.Data(), "RECREATE");
@@ -128,17 +131,13 @@ void MakeDataPlots(string fileName, int momentum) {
   //acraplet - investigate "weird electrons"
   //TH2D hHC0HC1("hweirdE_HC0HC1", "; Hole Counter Amp")
 
-
-
-
-
-
   // standard
   vector<TH1D> hCharge;
   vector<TH1D> hVoltage;
   vector<TH1D> hHit;
   vector<TH1D> hPedestalSigma;
   vector<TH1D> hTime;
+  vector<TH1D> hnPeaks;
 
   // no cuts
   TH2D hTOFACT0A("hRef_TOFACT0A", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
@@ -160,28 +159,36 @@ void MakeDataPlots(string fileName, int momentum) {
   TH2D hACT3CACT2C("hRef_ACT3CACT2C", "; ACT3 Charge; ACT2 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
   TH2D hACT1CACT3C("hRef_ACT1CACT3C", "; ACT1 Charge; ACT3 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
 
+  // nPeak 2D plots;)
+  
+  
   for(int i = 0; i < nChannels; i++) {
     string name1 = "hRef_Charge" + to_string(i);
     string name2 = "hRef_Voltage" + to_string(i);
     string name3 = "hRef_Hits" + to_string(i);
     string name4 = "hRef_PedestalSigma" + to_string(i);
     string name5 = "hRef_Time" + to_string(i);
+    string name6 = "hRef_nPeaks" + to_string(i);
 
     string title1 = "Channel " + to_string(i) + "; Charge [nC]; Triggers";
     string title2 = "Channel " + to_string(i) + "; Total Amplitude [V]; Triggers";
     string title3 = "Channel " + to_string(i) + "; Hits per trigger; Triggers";
     string title4 = "Channel " + to_string(i) + "; #sigma_{ped} [V]; Triggers";
     string title5 = "Channel " + to_string(i) + "; Time [ns]; Triggers";
+    string title6 = "Channel " + to_string(i) + "; nPeaks; Triggers";
+    
     TH1D temp1(name1.c_str(), title1.c_str(), 200, 0., 25*0.08);
     TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 13*0.8);
     TH1D temp3(name3.c_str(), title3.c_str(), 5, -0.5, 4.5);
     TH1D temp4(name4.c_str(), title4.c_str(), 200, 0., 0.01);
     TH1D temp5(name5.c_str(), title5.c_str(), 270, 0., 540.);
+    TH1D temp6(name6.c_str(), title6.c_str(), 10, 0., 10);
     hCharge.push_back(temp1);
     hVoltage.push_back(temp2);
     //    hHit.push_back(temp3);
     hPedestalSigma.push_back(temp4);
     hTime.push_back(temp5);
+    hnPeaks.push_back(temp6);
   }
 
   // +-------------------------------+
@@ -189,21 +196,60 @@ void MakeDataPlots(string fileName, int momentum) {
   // +-------------------------------+
 
   cout << "Event loop!" << endl;
+  
   for(int i = 0; i < ent; i++) {
     
     tree->GetEntry(i);
     vector<int> indices(nChannels, 0);;
 
-    for(int j = 0; j < nChannels; j++) {
+    bool onePeakInAllACTs = true;
+    bool onePeakInAllToFs = true;
+    bool onePeakInAll = true;
 
+    bool moreThanOnePeakInAllACTs = true;
+    bool moreThanOnePeakInAllToFs = true;
+    bool moreThanOnePeakInAll = true;
+    
+    for(int j = 0; j < nChannels; j++) {
+      if (j < 16) {
+	onePeakInAll = onePeakInAll && (nPeaks[j] == 1);
+	moreThanOnePeakInAll = moreThanOnePeakInAll && (nPeaks[j] > 1);
+      }
+      if (j < 8) {
+	onePeakInAllACTs = onePeakInAllACTs && (nPeaks[j] == 1);
+	moreThanOnePeakInAllACTs = moreThanOnePeakInAllACTs && (nPeaks[j] > 1);
+      }
+      if (j >= 8 && j < 16) {
+	onePeakInAllToFs = onePeakInAllToFs && (nPeaks[j] == 1);
+	moreThanOnePeakInAllToFs = moreThanOnePeakInAllToFs && (nPeaks[j] > 1);
+      }
+    } // channels
+    
+
+    if (peakMode == "a" && ! (onePeakInAll) )
+      continue;
+    if (peakMode == "b" && (! moreThanOnePeakInAllACTs) )
+      continue;
+    if (peakMode == "c" && ! (onePeakInAllACTs && moreThanOnePeakInAllToFs) )
+      continue;
+    if (peakMode == "d" && ! (moreThanOnePeakInAllACTs && onePeakInAllToFs) )
+      continue;
+    if (peakMode == "e" && ! (onePeakInAllACTs) )
+      continue;
+    if (peakMode == "f" && ! (onePeakInAllToFs) )
+      continue;
+
+    for(int j = 0; j < nChannels; j++) {
+      
+    
       /*
-      int ind = std::max_element(peakVoltage->at(j).begin(),peakVoltage->at(j).end()) - peakVoltage->at(j).begin();
-      indices.at(j) = ind;
-      hCharge.at(j).Fill(intCharge->at(j).at(indices.at(j)));
-      hVoltage.at(j).Fill(peakVoltage->at(j).at(indices.at(j)));
-      hTime.at(j).Fill(signalTime->at(j).at(indices.at(j)));
-      hHit.at(j).Fill(peakVoltage->at(j).size());
-      hPedestalSigma.at(j).Fill(pedestalSigma[j]);
+	int ind = std::max_element(peakVoltage->at(j).begin(),peakVoltage->at(j).end()) - peakVoltage->at(j).begin();
+	indices.at(j) = ind;
+	hCharge.at(j).Fill(intCharge->at(j).at(indices.at(j)));
+	hVoltage.at(j).Fill(peakVoltage->at(j).at(indices.at(j)));
+	hTime.at(j).Fill(signalTime->at(j).at(indices.at(j)));
+	hHit.at(j).Fill(peakVoltage->at(j).size());
+	hPedestalSigma.at(j).Fill(pedestalSigma[j]);
       */
       hCharge.at(j).Fill(intCharge[j][0]);
       hVoltage.at(j).Fill(peakVoltage[j][0]);
@@ -211,22 +257,22 @@ void MakeDataPlots(string fileName, int momentum) {
       //      hHit.at(j).Fill(peakVoltage[j][0]);
       hPedestalSigma.at(j).Fill(pedestalSigma[j]);
       //cout << "channel " << j << " nPeaks: " << nPeaks[j] << endl;
-    }
-
+      hnPeaks.at(j).Fill(nPeaks[j]);
+      
+    } // channels
     
-
-    // JK's time resolution
+    // JK's time resolution of 2022
     double t0a = (signalTime[8][0]  + signalTime[11][0] ) / 2.;
     double t0b = (signalTime[9][0]  + signalTime[10][0] ) / 2.;
     double t1a = (signalTime[12][0] + signalTime[15][0] ) / 2.;
     double t1b = (signalTime[13][0] + signalTime[14][0] ) / 2.;
 
-    // time diffs for time resolution histogramme:
+    // time diffs for time resolution histogramme 2022:
     double t0diff = t0a - t0b;
     double t1diff = t1a - t1b;
 
     // jiri
-    // Fill resolution histograms:
+    // Fill resolution histograms of 2022:
     hTimeReso0.Fill(t0diff);
     hTimeReso1.Fill(t1diff);
     hTimeReso0_zoom.Fill(t0diff);
