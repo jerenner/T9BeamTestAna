@@ -163,7 +163,14 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TH2D hACT1CACT3C("hRef_ACT1CACT3C", "; ACT1 Charge; ACT3 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
 
   // nPeak 2D plots;)
-  
+  TH2D hnPeaksACTvsnPeaksToF("hnPeaksACTvsnPeaksToF", "hnPeaksACTvsnPeaksToF;<nPeaks_{ToF}>;<nPeaks_{ACT}>", 10, 0, 10, 10, 0, 10);
+  TH2D hnPeaksACTvsToF("hnPeaksACTvsToF", "hnPeaksACTvsToF;t_{TOF};<nPeaks_{ACT}>", ntofbins2d, tofmin, tofmax, 10, 0, 10);
+  TH2D hnPeaksACTvsToFlow("hnPeaksACTvsToFlow", "hnPeaksACTvsToF;t_{TOF};<nPeaks_{ACT}>", ntofbins2d, tofminlow, tofmaxlow, 10, 0, 10);
+  TH2D hnPeaksToFvsToF("hnPeaksToFvsToF", "hnPeaksToFvsToF;t_{TOF};<nPeaks_{ToF}>", ntofbins2d, tofmin, tofmax, 10, 0, 10);
+  TH2D hnPeaksToFvsToFlow("hnPeaksToFvsToFlow", "hnPeaksToFvsToF;t_{TOF};<nPeaks_{ToF}>", ntofbins2d, tofminlow, tofmaxlow, 10, 0, 10);
+
+  TH2D hnPeaksLeadGlassvsLeadGlassA("hnPeaksLeadGlassvsLeadGlassA", "hnPeaksLeadGlassvsLeadGlassA;lead glass A;nPeaks_{Pb}", 500,  0., actChargeMax, 10, 0, 10);
+
   
   for(int i = 0; i < nChannels; i++) {
     string name1 = "hRef_Charge" + to_string(i);
@@ -334,8 +341,6 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hTOFACT23A.Fill(tof, (act2a+act3a) / 2.);
     hPbATOF.Fill(pba, tof);
 
-
-
     double act0c = intCharge[0][0] + intCharge[1][0];
     double act1c = intCharge[2][0] + intCharge[3][0];
     double act2c = intCharge[4][0] + intCharge[5][0];
@@ -373,6 +378,21 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hT0.Fill(t0);
     hT1.Fill(t1);
 
+
+    // 2D nPeaks
+    nPeaksToFAver = (nPeaks) / .;
+    
+    hnPeaksACTvsnPeaksToF -> Fill();
+    hnPeaksACTvsToF -> Fill();
+    hnPeaksACTvsToFlow -> Fill();
+    hnPeaksToFvsToF -> Fill();
+    hnPeaksToFvsToFlow -> Fill();
+    hnPeaksLeadGlassvsLeadGlassA -> Fill();
+
+
+
+    // selections:
+    
     bool pass = true;
     bool isEl = false;
 
@@ -393,12 +413,9 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
           isEl = true;
         }
       } // default
-
-	
     } // case
 
     if (!pass) continue;
-
 
     if (isEl) {
       // electrons
@@ -414,7 +431,6 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hTOFAll.Fill(tof);
     hTOFAllWide.Fill(tof);
  
-
   } // entries
   cout << "End of event loop!" << endl;
   outFile.Write();
