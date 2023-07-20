@@ -68,7 +68,6 @@ int EventSelection(double act, double pbg){
   }
 }
 
-
 void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplots = 10, const int spillID = -1, const int eventID = -1) {
 //void CheckWaveForms() {  
   if (!LinkDigiDet()) {
@@ -80,7 +79,7 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
   TFile rootFile(Form("%s/%s/root_run_%06d.root", data_dir.c_str(), rootfile_dir.c_str(), runnum), "READ");
 
   if (ntupleFile.IsZombie() || rootFile.IsZombie() || det_to_plot < (int)DetChannels::act_e_veto0 || det_to_plot >= (int)DetChannels::nDetChannels || spillID*eventID < 0) {
-    cout << "Usage: " << endl;
+    cout << "<<<<<USAGE>>>>>: " << endl;
     cout << "root -l -b -q 'CheckWaveForms(\"/your/data/dir/that/has/ntuple_files/and/root_files\", run number, detector id to show the waveform (0~18), number of plots in each category (default = 10), (optional) spill number to plot, (optional) event number to plot)'" << endl;
     exit(0);
   }
@@ -118,14 +117,16 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
 
   for (int ievt = 0; ievt < nevt; ievt++){
       tree_ntuple->GetEntry(ievt);
-      if (spillID >= 0 && spillNumber != spillID) { // selected spill
-	continue;
+      if (spillID >= 0 && eventID >= 0){
+	if (spillNumber != spillID) { // selected spill
+	  continue;
+	}
+	else {foundspill = true;}
+	if (eventNumber != eventID){ // selected event
+	  continue;
+	}
+	else {foundevent = true;}
       }
-      else {foundspill = true;}
-      if (eventID >= 0 && eventNumber != eventID){ // selected event
-	continue;
-      }
-      else {foundevent = true;}
       double actamp = 0.5*(peakVoltage[(int)DetChannels::act_2_R][0] +
 			   peakVoltage[(int)DetChannels::act_2_R][0] +
 			   peakVoltage[(int)DetChannels::act_3_R][0] +
@@ -166,17 +167,17 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
       
   }
 
-  if (!(foundspill&&foundevent)){
-    printf("Cannot find spill %d event %d in run %d.\n", spillID, eventID, runnum);
-    exit(1);
-  }
   
   if (spillID < 0 || eventID < 0){
     for (int iregion = 0; iregion < (int)EventRegion::EventRegionCount; iregion++){
       printf("Number of plots plotted in region %s is %d.\n", EventRegionNames.at(EventRegion(iregion)).c_str(), nplots_region[iregion]);
     }
-  }    
-  
+  }
+  else if (!(foundspill&&foundevent)){
+    printf("Cannot find spill %d event %d in run %d.\n", spillID, eventID, runnum);
+    exit(1);
+  }
+ 
   TCanvas *c1 = new TCanvas("c1","c1",800,600);
   if (eventID < 0 || spillID < 0){//events selected by cuts
     c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf[", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
@@ -225,5 +226,6 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
     c1->Print(Form("%s/plots/%s_spill_%d_evt_%d_waveform.pdf", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), spillID, eventID));
     outfile->Close();
   }
-
+  
 }
+
