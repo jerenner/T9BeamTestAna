@@ -38,8 +38,8 @@ void MakeDataPlots(string fileName, int momentum) {
   Double_t intCharge[nMaxChannels][1];
   Double_t pedestal[nMaxChannels][1];
   Double_t pedestalSigma[nMaxChannels];
-  Double_t    nbPeaks[nMaxChannels][1];
-
+  Double_t nPeaks[nMaxChannels];
+  
   gSystem->Exec("mkdir -p histos/");
 
   TFile inFile(fileName.c_str(), "READ");
@@ -53,7 +53,8 @@ void MakeDataPlots(string fileName, int momentum) {
   tree->SetBranchAddress("PedestalSigma",&pedestalSigma);
   tree->SetBranchAddress("NbPeaks",&nbPeaks);
   //tree->SetBranchAddress("PassThreshold",&passThreshold);
-
+  tree->SetBranchAddress("nPeaks",&nPeaks);
+  
   int ent = tree->GetEntries();
 
   double tofmin = 10.;
@@ -197,7 +198,7 @@ void MakeDataPlots(string fileName, int momentum) {
 
   cout << "Event loop!" << endl;
   for(int i = 0; i < ent; i++) {
-
+    
     tree->GetEntry(i);
     vector<int> indices(nChannels, 0);;
 
@@ -217,9 +218,9 @@ void MakeDataPlots(string fileName, int momentum) {
       hTime.at(j).Fill(signalTime[j][0]);
       //      hHit.at(j).Fill(peakVoltage[j][0]);
       hPedestalSigma.at(j).Fill(pedestalSigma[j]);
-      hNbPeaks.at(j).Fill(nbPeaks[j]);
     }
 
+    
 
     // JK's time resolution
     double t0a = (signalTime[8][0]  + signalTime[11][0] ) / 2.;

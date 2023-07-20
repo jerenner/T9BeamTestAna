@@ -120,8 +120,8 @@ void WaveformAnalysis::FindPeaks(){
     fPeakVoltage.clear();
     fPeakTime.clear();
     // fNbPeaks.clear();
-    fNbPeaks = 0;
-    int nbPeaks = 0; //default value to be overwritten
+    //fNbPeaks = 0;
+    //int nbPeaks = 0; //default value to be overwritten
     double maxVal = 0;
     int max = -1;
     int len = 0;
@@ -166,7 +166,7 @@ void WaveformAnalysis::FindPeaks(){
 
         double peakVoltage = 0;
         int maxbin = 0;
-        nbPeaks = 0;
+//        nbPeaks = 0;
 
         // if anaHist->GetBinContent(0)*fVoltScale-fPedestal;
 
@@ -184,20 +184,20 @@ void WaveformAnalysis::FindPeaks(){
             //go through the waveform, first going down
         }
 
-        //this is not working
-        double theshold = 0.2 * peakVoltage; //from look at data
-
-        for(int i = fAnaWindowT0Bin; i < fAnaWindowT1Bin; i++){
-            if (voltage>theshold){
-                aboveThresh = true;
-                if (voltage>localPeakVoltage) localPeakVoltage = voltage;
-            }
-            if (voltage>theshold and aboveThresh==true){
-                aboveThresh = false;
-                if (localPeakVoltage > theshold){
-                    nbPeaks += 1;
-                    localPeakVoltage = 0;
-                }
+//        //this is not working
+//        double theshold = 0.2 * peakVoltage; //from look at data
+//
+//        for(int i = fAnaWindowT0Bin; i < fAnaWindowT1Bin; i++){
+//            if (voltage>theshold){
+//                aboveThresh = true;
+//                if (voltage>localPeakVoltage) localPeakVoltage = voltage;
+//            }
+//            if (voltage>theshold and aboveThresh==true){
+//                aboveThresh = false;
+//                if (localPeakVoltage > theshold){
+//                    nbPeaks += 1;
+//                    localPeakVoltage = 0;
+//                }
 
 
             }
@@ -232,7 +232,7 @@ void WaveformAnalysis::FindPeaks(){
         
 
         fPeakBins.push_back(maxbin);
-        fNbPeaks = nbPeaks;
+      //  fNbPeaks = nbPeaks;
         fPeakVoltage.push_back(peakVoltage);
         fPeakTime.push_back(anaHist->GetXaxis()->GetBinCenter(maxbin));
     }   
