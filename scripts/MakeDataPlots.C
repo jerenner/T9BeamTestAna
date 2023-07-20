@@ -51,7 +51,7 @@ void MakeDataPlots(string fileName, int momentum) {
   tree->SetBranchAddress("IntCharge",&intCharge);
   tree->SetBranchAddress("Pedestal",&pedestal);
   tree->SetBranchAddress("PedestalSigma",&pedestalSigma);
-  tree->SetBranchAddress("NbPeaks",&nbPeaks);
+  //tree->SetBranchAddress("NbPeaks",&nbPeaks);
   //tree->SetBranchAddress("PassThreshold",&passThreshold);
   tree->SetBranchAddress("nPeaks",&nPeaks);
   
