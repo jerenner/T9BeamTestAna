@@ -68,8 +68,22 @@ int EventSelection(double act, double pbg){
   }
 }
 
-void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplots = 10, const int spillID = -1, const int eventID = -1) {
-//void CheckWaveForms() {  
+void PlotAvgHists(TH1D** hist, const int nplots, TCanvas* c){
+  for (int iplot = 0; iplot < nplots; iplot++){
+    c->cd();
+    hist[iplot]->SetLineColorAlpha(kGray,0.5);
+    if (iplot == 0){	    	  
+      hist[iplot]->Draw("hist c");
+    }
+    else{
+      hist[iplot]->Draw("hist c same");
+    }	  
+    c->Modified();
+    c->Update();
+  }
+}
+
+void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplots = 10, const bool plotavg = false,  const int spillID = -1, const int eventID = -1) {
   if (!LinkDigiDet()) {
     cerr << "Cannot link digitizer channels to detectors" << endl;
     exit(-1);
@@ -78,12 +92,13 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
   TFile ntupleFile(Form("%s/%s/ntuple_%06d.root", data_dir.c_str(), ntuplefile_dir.c_str(), runnum), "READ"); // digitized events  
   TFile rootFile(Form("%s/%s/root_run_%06d.root", data_dir.c_str(), rootfile_dir.c_str(), runnum), "READ");
 
-  if (ntupleFile.IsZombie() || rootFile.IsZombie() || det_to_plot < (int)DetChannels::act_e_veto0 || det_to_plot >= (int)DetChannels::nDetChannels || spillID*eventID < 0) {
+  if (ntupleFile.IsZombie() || rootFile.IsZombie() || det_to_plot < (int)DetChannels::act_e_veto0 || det_to_plot >= (int)DetChannels::nDetChannels || nplots < 1 || spillID*eventID < 0) {
     cout << "<<<<<USAGE>>>>>: " << endl;
-    cout << "root -l -b -q 'CheckWaveForms(\"/your/data/dir/that/has/ntuple_files/and/root_files\", run number, detector id to show the waveform (0~18), number of plots in each category (default = 10), (optional) spill number to plot, (optional) event number to plot)'" << endl;
+    cout << "root -l -b -q 'CheckWaveForms(\"/your/data/dir/that/has/ntuple_files/and/root_files\", run number, detector id to show the waveform (0~18), number of plots in each category (default = 10), (optional) whether to show all waveforms in the background, (optional) spill number to plot, (optional) event number to plot)'" << endl;
     exit(0);
   }
 
+  gStyle->SetOptStat(0);
   bool foundspill = false;
   bool foundevent = false;
   
@@ -112,7 +127,12 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
   tree_ntuple->SetBranchAddress("spillNumber", &spillNumber);
 
   vector<int> nplots_region(int(EventRegion::EventRegionCount), 0);
-  TH1D* hist_waveform_cuts[int(EventRegion::EventRegionCount)][nplots]; //waveform for events selected by cuts 
+  //TH1D* hist_waveform_cuts[int(EventRegion::EventRegionCount)][nplots]; //waveform for events selected by cuts
+  TH1D*** hist_waveform_cuts = new TH1D **[int(EventRegion::EventRegionCount)](); //waveform for events selected by cuts
+  for (int iregion = 0; iregion < int(EventRegion::EventRegionCount); iregion++){
+    hist_waveform_cuts[iregion] = new TH1D *[nplots]();
+  }
+  
   TH1D* hist_waveform;// waveform for events specified in the input
 
   for (int ievt = 0; ievt < nevt; ievt++){
@@ -179,30 +199,51 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
   }
  
   TCanvas *c1 = new TCanvas("c1","c1",800,600);
+  TCanvas *cavg = new TCanvas("cavg","cavg",800,600);
   if (eventID < 0 || spillID < 0){//events selected by cuts
-    c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf[", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+    if (plotavg){
+      cavg->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf[", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+    }
+    else{
+      c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf[", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+    }
     TFile *outfile = new TFile(Form("%s/root_hists/%s_waveform_cuts_%d_evts.root", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots),"recreate");
+
     for (int iregion = 0; iregion < (int)EventRegion::EventRegionCount; iregion++){
+      if (plotavg) {PlotAvgHists(hist_waveform_cuts[iregion], nplots, cavg);}
       for (int iplot = 0; iplot < nplots; iplot++){
 	outfile->cd();
 	hist_waveform_cuts[iregion][iplot]->Write();
-	c1->cd();	
-	hist_waveform_cuts[iregion][iplot]->Draw("hist c");
-	c1->Update();
-	auto stat = dynamic_cast<TPaveStats*>(hist_waveform_cuts[iregion][iplot]->FindObject("stats"));
-	if (stat) {
-	  stat->SetX1NDC(0.7);
-	  stat->SetX2NDC(0.9);
-	  stat->SetY1NDC(0.1);
-	  stat->SetY2NDC(0.3);
-	  stat->Draw();
+	if (plotavg){
+	  cavg->cd();
+	  hist_waveform_cuts[iregion][iplot]->SetLineColor(kBlue+1);
+	  hist_waveform_cuts[iregion][iplot]->Draw("hist c same");
+	  cavg->Modified();
+	  cavg->Update();
+	  cavg->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+	  //remove the plotted histogram
+	  cavg->GetListOfPrimitives()->Remove(hist_waveform_cuts[iregion][iplot]);
+	  hist_waveform_cuts[iregion][iplot]->SetLineColorAlpha(kGray, 0.5);
+	  hist_waveform_cuts[iregion][iplot]->Draw("hist c same");
+	  cavg->Modified();
+	  cavg->Update();
 	}
-	c1->Modified();
-	c1->Update();
-	c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+	else{
+	  c1->cd();
+	  hist_waveform_cuts[iregion][iplot]->Draw("hist c");
+	  c1->Modified();
+	  c1->Update();
+	  c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+
+	}
       }    
-    }    
-    c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf]", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+    }
+    if (plotavg){
+      cavg->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf]", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+    }
+    else{
+      c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf]", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
+    }
     outfile->Close();
   }
   else{
@@ -211,15 +252,6 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
     hist_waveform->Write();
     c1->cd();
     hist_waveform->Draw("hist c");
-    c1->Update();
-    auto stat = dynamic_cast<TPaveStats*>(hist_waveform->FindObject("stats"));
-    if (stat) {
-      stat->SetX1NDC(0.7);
-      stat->SetX2NDC(0.9);
-      stat->SetY1NDC(0.1);
-      stat->SetY2NDC(0.3);
-      stat->Draw();
-    }    
     c1->Modified();
     c1->Update();
     c1->Print(Form("%s/plots/%s_spill_%d_evt_%d_waveform.png", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), spillID, eventID));
