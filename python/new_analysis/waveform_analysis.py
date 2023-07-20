@@ -87,7 +87,7 @@ class WaveformAnalysis:
             passed_threshold1 = passed_threshold1 | pass_threshold1[:, i]  # check if passed threshold1
             new_peak[:, i] = pass_threshold2[:, i] & passed_threshold1  # there's a new peak when it passes threshold2 and has passed threshold 1
             passed_threshold1 &= ~pass_threshold2[:, i]  # t1 is lower than t2, so after passing t2, don't consider it passed t1 until it passes again
-        self.n_peaks = new_peak.sum(axis=1)
+        self.n_peaks = np.count_nonzero(new_peak, axis=1)
         return self.n_peaks
 
     def calculate_signal_times(self):
