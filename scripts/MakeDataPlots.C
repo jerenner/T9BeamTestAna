@@ -52,6 +52,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   tree->SetBranchAddress("IntCharge",&intCharge);
   tree->SetBranchAddress("Pedestal",&pedestal);
   tree->SetBranchAddress("PedestalSigma",&pedestalSigma);
+  //tree->SetBranchAddress("NbPeaks",&nbPeaks);
   //tree->SetBranchAddress("PassThreshold",&passThreshold);
   tree->SetBranchAddress("nPeaks",&nPeaks);
   
@@ -129,7 +130,9 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 400, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
 
   //acraplet - investigate "weird electrons"
-  //TH2D hHC0HC1("hweirdE_HC0HC1", "; Hole Counter Amp")
+  TH2D hHC0AHC1A("hweirdE_HC0AHC1A", "; Hole Counter 0 Amplitude; Hole Counter 1 Amplitude", 200, 0., 1000, 200, 0., 1000.);
+
+  TH2D hHC0CHC1C("hweirdE_HC0CHC1C", "; Hole Counter 0 Charge; Hole Counter 1 Charge", 200, 0., 1., 200, 0., 1.);
 
   // standard
   vector<TH1D> hCharge;
@@ -137,7 +140,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   vector<TH1D> hHit;
   vector<TH1D> hPedestalSigma;
   vector<TH1D> hTime;
-  vector<TH1D> hnPeaks;
+  vector<TH1D> hNbPeaks;
 
   // no cuts
   TH2D hTOFACT0A("hRef_TOFACT0A", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
@@ -168,27 +171,28 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     string name3 = "hRef_Hits" + to_string(i);
     string name4 = "hRef_PedestalSigma" + to_string(i);
     string name5 = "hRef_Time" + to_string(i);
-    string name6 = "hRef_nPeaks" + to_string(i);
+    string name6 = "hRef_NbPeaks" + to_string(i);
 
     string title1 = "Channel " + to_string(i) + "; Charge [nC]; Triggers";
     string title2 = "Channel " + to_string(i) + "; Total Amplitude [V]; Triggers";
     string title3 = "Channel " + to_string(i) + "; Hits per trigger; Triggers";
     string title4 = "Channel " + to_string(i) + "; #sigma_{ped} [V]; Triggers";
     string title5 = "Channel " + to_string(i) + "; Time [ns]; Triggers";
-    string title6 = "Channel " + to_string(i) + "; nPeaks; Triggers";
-    
+    string title6 = "Channel " + to_string(i) + "; Number of peaks; Triggers";
+
     TH1D temp1(name1.c_str(), title1.c_str(), 200, 0., 25*0.08);
     TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 13*0.8);
     TH1D temp3(name3.c_str(), title3.c_str(), 5, -0.5, 4.5);
     TH1D temp4(name4.c_str(), title4.c_str(), 200, 0., 0.01);
     TH1D temp5(name5.c_str(), title5.c_str(), 270, 0., 540.);
-    TH1D temp6(name6.c_str(), title6.c_str(), 10, 0., 10);
+    TH1D temp6(name6.c_str(), title6.c_str(), 20, 0., 20.);
+
     hCharge.push_back(temp1);
     hVoltage.push_back(temp2);
     //    hHit.push_back(temp3);
     hPedestalSigma.push_back(temp4);
     hTime.push_back(temp5);
-    hnPeaks.push_back(temp6);
+    hNbPeaks.push_back(temp6);
   }
 
   // +-------------------------------+
@@ -256,10 +260,9 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
       hTime.at(j).Fill(signalTime[j][0]);
       //      hHit.at(j).Fill(peakVoltage[j][0]);
       hPedestalSigma.at(j).Fill(pedestalSigma[j]);
-      //cout << "channel " << j << " nPeaks: " << nPeaks[j] << endl;
-      hnPeaks.at(j).Fill(nPeaks[j]);
-      
-    } // channels
+    }
+
+
     
     // JK's time resolution of 2022
     double t0a = (signalTime[8][0]  + signalTime[11][0] ) / 2.;
@@ -356,6 +359,12 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hACT1CACT3C.Fill(act1c, act3c);
     hACT3CACT2C.Fill(act3c, act2c);
     hACT2CACT1C.Fill(act2c, act1c);
+
+    //acraplet - weird electrons which do not see anthing in the ACT
+    if ((act2a+act3a) / 2. != 1.5 && tof >= 13.5 && tof >= 16.5) {
+      hHC0AHC1A.Fill(hc0a, hc1a);
+      hHC0CHC1C.Fill(hc0c, hc1c);
+    }
 
     //acraplet
     hTOFAll.Fill(tof);
