@@ -168,9 +168,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TH2D hnPeaksACTvsToFlow("hnPeaksACTvsToFlow", "hnPeaksACTvsToF;t_{TOF};<nPeaks_{ACT}>", ntofbins2d, tofminlow, tofmaxlow, 10, 0, 10);
   TH2D hnPeaksToFvsToF("hnPeaksToFvsToF", "hnPeaksToFvsToF;t_{TOF};<nPeaks_{ToF}>", ntofbins2d, tofmin, tofmax, 10, 0, 10);
   TH2D hnPeaksToFvsToFlow("hnPeaksToFvsToFlow", "hnPeaksToFvsToF;t_{TOF};<nPeaks_{ToF}>", ntofbins2d, tofminlow, tofmaxlow, 10, 0, 10);
-
   TH2D hnPeaksLeadGlassvsLeadGlassA("hnPeaksLeadGlassvsLeadGlassA", "hnPeaksLeadGlassvsLeadGlassA;lead glass A;nPeaks_{Pb}", 500,  0., actChargeMax, 10, 0, 10);
-
   
   for(int i = 0; i < nChannels; i++) {
     string name1 = "hRef_Charge" + to_string(i);
@@ -329,13 +327,10 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     double hc1a = peakVoltage[17][0];
     double pba = peakVoltage[18][0];
 
-
-
     hTOFACT0A.Fill(tof, act0a);
     hTOFACT1A.Fill(tof, act1a);
     hTOFACT2A.Fill(tof, act2a);
     hTOFACT3A.Fill(tof, act3a);
-
 
     hPbACT23A.Fill(pba, (act2a+act3a) / 2.);
     hTOFACT23A.Fill(tof, (act2a+act3a) / 2.);
@@ -355,7 +350,6 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hTOFACT1C.Fill(tof, act1c);
     hTOFACT2C.Fill(tof, act2c);
     hTOFACT3C.Fill(tof, act3c);
-
 
     hPbACT23C.Fill(pbc, (act2c+act3c) / 2.);
     hTOFACT23C.Fill(tof, (act2c+act3c) / 2.);
@@ -380,7 +374,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
 
     // 2D nPeaks
-    nPeaksToFAver = (nPeaks) / .;
+    /*
+    nPeaksToFAver = (nPeaks) / ;
     
     hnPeaksACTvsnPeaksToF -> Fill();
     hnPeaksACTvsToF -> Fill();
@@ -388,7 +383,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hnPeaksToFvsToF -> Fill();
     hnPeaksToFvsToFlow -> Fill();
     hnPeaksLeadGlassvsLeadGlassA -> Fill();
-
+    */
 
 
     // selections:
