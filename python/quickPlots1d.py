@@ -338,7 +338,7 @@ def main(argv):
     cans.append(can)
     can.cd()
     integral_full = h.Integral()
-    h.GetXaxis().SetRangeUser(0, 4)
+    h.GetXaxis().SetRangeUser(0, 10)
     h.GetYaxis().SetRangeUser(0, 15)
     x1, x2, y1, y2 = 0.2, 1.3, 1.5, 4.5
     bx1 = h.GetXaxis().FindBin(x1)
@@ -400,7 +400,7 @@ def main(argv):
     cans.append(can)
     can.cd()
     h.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
-    h.GetXaxis().SetRangeUser(0., 4.)
+    h.GetXaxis().SetRangeUser(0., 10.)
     h.GetYaxis().SetRangeUser(0., 16.0)
     h.Draw(opt2d)
     adjustStats(h)
