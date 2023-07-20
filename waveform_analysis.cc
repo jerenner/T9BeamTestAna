@@ -325,7 +325,7 @@ int main(int argc, char **argv) {
 		  int idigi = j / nChannelsPerDigi;
 		  int ich = j % nChannelsPerDigi;
 		  //cout << "channel " << j << " idigi=" << idigi << " ich=" << ich << endl; 
-		  wavef -> SetTitle(Form("Digi %i Chan %i :: %s", idigi, ich, channelNames[j].Data()));
+		  wavef -> SetTitle(Form("Digi %i Chan %i :: %s - nbPeaks %i - pedestal %.2f pedestalSigma %.2f", idigi, ich, channelNames[j].Data(), nbPeaks[j], pedestal[j], pedestalSigma[j]));
 		  wavef -> Draw();
 		  if (debug) {
 		    cout << "bins: " << wavef -> GetNbinsX() << endl;

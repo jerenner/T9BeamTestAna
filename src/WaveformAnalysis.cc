@@ -152,9 +152,15 @@ void WaveformAnalysis::FindPeaks(){
 
 
     //counting the number of peaks
-    bool goingDown = true;
-    double pedestalFluctuations = 5 * fPedestalSigma; //arbirary number - need to change that
-    double previousVoltage = fPedestal;
+    //bool goingDown = false;
+    bool aboveThresh = false;
+
+    double localPeakVoltage = 0;
+
+
+    //double pedestalFluctuations = 3 * fPedestalSigma; //arbirary number - need to change that
+    //double previousVoltage = fPedestal*fVoltScale;
+
  
     if(fPeakBins.size() == 0){
 
@@ -162,35 +168,65 @@ void WaveformAnalysis::FindPeaks(){
         int maxbin = 0;
         nbPeaks = 0;
 
+        // if anaHist->GetBinContent(0)*fVoltScale-fPedestal;
+
         for(int i = fAnaWindowT0Bin; i < fAnaWindowT1Bin; i++){
             double voltage = anaHist->GetBinContent(i)*fVoltScale-fPedestal;
             
             if(fPolarity==0) voltage = -1.0*voltage;
 
-
+            //global peak
             if(voltage>peakVoltage){
                 peakVoltage = voltage;
                 maxbin = i;
             }
             //we want to count the number of peaks
             //go through the waveform, first going down
+        }
 
-            //if (voltage - previousVoltage > pedestalFluctuations and goingDown = true) continue;
-            if (voltage - previousVoltage >= pedestalFluctuations and goingDown == true){
-                //here, the current voltage is smaller than the previous voltage by more than the pedestal fluctuations: we have found a peak
-                nbPeaks += 1;
-                goingDown = false;
+        //this is not working
+        double theshold = 0.2 * peakVoltage; //from look at data
+
+        for(int i = fAnaWindowT0Bin; i < fAnaWindowT1Bin; i++){
+            if (voltage>theshold){
+                aboveThresh = true;
+                if (voltage>localPeakVoltage) localPeakVoltage = voltage;
+            }
+            if (voltage>theshold and aboveThresh==true){
+                aboveThresh = false;
+                if (localPeakVoltage > theshold){
+                    nbPeaks += 1;
+                    localPeakVoltage = 0;
+                }
+
 
             }
-            if (voltage - previousVoltage <= -pedestalFluctuations and goingDown == false){
-                //here, the current voltage is larger than the previous voltage by more than the pedestal fluctuations: we have finished a peak, will need to look for the next one
-                goingDown = true;
 
-            }
+            // {
+            //     if(voltage>thisPeakVoltage){
+            //         thisPeakVoltage = voltage;
+            //     }
+            // }
+
+            //This was too convoluted
+
+            // if (voltage - previousVoltage <= pedestalFluctuations and goingDown == false and voltage > -pedestalFluctuations){
+            //     //here, the current voltage is smaller than the previous voltage by more than the pedestal fluctuations: we have found a peak
+            //     nbPeaks += 1;
+            //     goingDown = true;
+            //
+            // }
+            // if (voltage - previousVoltage >= pedestalFluctuations and goingDown == true){
+            //     //here, the current voltage is larger than the previous voltage by more than the pedestal fluctuations: we have finished a peak, will need to look for the next one
+            //     goingDown = false;
+            //
+            // }
+            //std::cout << "voltage: " << voltage << " previous voltage " << previousVoltage <<  " voltage - previousVoltage = " << voltage - previousVoltage << " pedestalFluctuations = " << pedestalFluctuations << " goingDown " << goingDown << std::endl;
 
 
+            //std::cout << "PEDESTAL: " << fPedestal << " voltage " << voltage << "scale " << fVoltScale << "pedestal scaled " << fPedestal*fVoltScale << "SIGMA " << fPedestalSigma << std::endl;
             //std::cout << "In WaveformAnalysis.cc: peakFinder info: " << nbPeaks << std::endl;
-            previousVoltage = voltage;
+            //previousVoltage = voltage;
 
         }
         

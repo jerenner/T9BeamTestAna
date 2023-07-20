@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.signal import find_peaks
 
 
 def find_mode(values, n_bins, range_width):

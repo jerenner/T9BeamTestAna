@@ -99,7 +99,7 @@ def process_file(root_filename, config, output_file):
             "PeakVoltage": peak_voltages,
             "PeakTime": peak_times,
             "SignalTime": signal_times,
-            "IntCharge": integrated_charges
+            "IntCharge": integrated_charges,
         }
     if "anaTree" not in output_file.keys():
         output_file["anaTree"] = branches
