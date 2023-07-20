@@ -98,7 +98,9 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
     exit(0);
   }
 
+  gROOT->SetStyle("Plain");
   gStyle->SetOptStat(0);
+  gStyle->SetOptTitle(0);
   bool foundspill = false;
   bool foundevent = false;
   
@@ -200,6 +202,10 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
  
   TCanvas *c1 = new TCanvas("c1","c1",800,600);
   TCanvas *cavg = new TCanvas("cavg","cavg",800,600);
+  TPaveLabel *titlelabel = new TPaveLabel(0.1, 0.91, 0.5, 0.99, "", "brNDC");
+  titlelabel->SetFillColor(0);
+  titlelabel->SetShadowColor(0);
+
   if (eventID < 0 || spillID < 0){//events selected by cuts
     if (plotavg){
       cavg->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf[", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
@@ -218,6 +224,8 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
 	  cavg->cd();
 	  hist_waveform_cuts[iregion][iplot]->SetLineColor(kBlue+1);
 	  hist_waveform_cuts[iregion][iplot]->Draw("hist c same");
+	  titlelabel->SetLabel(hist_waveform_cuts[iregion][iplot]->GetTitle());
+	  titlelabel->Draw();	  
 	  cavg->Modified();
 	  cavg->Update();
 	  cavg->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
@@ -231,6 +239,8 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
 	else{
 	  c1->cd();
 	  hist_waveform_cuts[iregion][iplot]->Draw("hist c");
+	  titlelabel->SetLabel(hist_waveform_cuts[iregion][iplot]->GetTitle());
+	  titlelabel->Draw();
 	  c1->Modified();
 	  c1->Update();
 	  c1->Print(Form("%s/plots/%s_waveform_cuts_%d_evts.pdf", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots));
@@ -252,6 +262,8 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
     hist_waveform->Write();
     c1->cd();
     hist_waveform->Draw("hist c");
+    titlelabel->SetLabel(hist_waveform->GetTitle());
+    titlelabel->Draw();
     c1->Modified();
     c1->Update();
     c1->Print(Form("%s/plots/%s_spill_%d_evt_%d_waveform.png", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), spillID, eventID));
