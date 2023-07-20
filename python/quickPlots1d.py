@@ -99,6 +99,7 @@ def main(argv):
         'hRef_Time' : ROOT.kGreen,
         'hRef_Charge' : ROOT.kCyan,
         'hRef_Voltage' : ROOT.kMagenta,
+        'hRef_nPeaks' : ROOT.kYellow,
     }
     
     nChannels = 19 # 32
@@ -152,7 +153,8 @@ def main(argv):
             can.cd(ich % 8 + 1)
             h.SetStats(0)
             #if not 'Time' in h.GetName():
-            #    ROOT.gPad.SetLogy(1)
+            if 'nPeaks' in h.GetName():
+                ROOT.gPad.SetLogy(1)
             #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
             h.SetFillColor(hbasenames[hbasename])
             h.SetFillStyle(1111)
@@ -338,7 +340,7 @@ def main(argv):
     cans.append(can)
     can.cd()
     integral_full = h.Integral()
-    h.GetXaxis().SetRangeUser(0, 4)
+    h.GetXaxis().SetRangeUser(0, 10)
     h.GetYaxis().SetRangeUser(0, 15)
     x1, x2, y1, y2 = 0.2, 1.3, 1.5, 4.5
     bx1 = h.GetXaxis().FindBin(x1)
@@ -400,7 +402,7 @@ def main(argv):
     cans.append(can)
     can.cd()
     h.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
-    h.GetXaxis().SetRangeUser(0., 4.)
+    h.GetXaxis().SetRangeUser(0., 10.)
     h.GetYaxis().SetRangeUser(0., 16.0)
     h.Draw(opt2d)
     adjustStats(h)

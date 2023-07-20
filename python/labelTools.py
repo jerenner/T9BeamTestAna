@@ -11,7 +11,7 @@ ChNames =  {0: 'ACT-00', 1: 'ACT-01', 2: 'ACT-10', 3: 'ACT-11', 4: 'ACT-20', 5: 
             24: 'X', 25: 'X', 26: 'X', 27: 'X', 28: 'X', 29: 'X', 30: 'X', 31: 'X' }
 
 
-def makeMomentumLabel(srun, x = 0.12, y = 0.86, size = 0.04, addn = True):
+def makeMomentumLabel(srun, x = 0.12, y = 0.86, size = 0.04, addn = True, addSlit = True):
     momentum = getMomentum(srun)
     tag = 'Pos'
     if momentum < 0:
@@ -25,6 +25,16 @@ def makeMomentumLabel(srun, x = 0.12, y = 0.86, size = 0.04, addn = True):
             print('ERROR getting the ACT n info for run {}'.format(srun))
         if n > 0:
             txt = txt + f' n={n}'
+    if addSlit:
+        slit = ''
+        slitperc = -1
+        try:
+            slitperc = runsSlitDict[int(srun)]
+        except:
+            print('ERROR getting the slit information for run {}'.format(srun))
+        if slitperc > 0:
+            slit = f' slit {slitperc}%'
+            txt = txt + slit
     pnote = ROOT.TLatex(x, y, txt)
     pnote.SetTextSize(size)
     pnote.SetNDC()
