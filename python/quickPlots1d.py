@@ -122,6 +122,12 @@ def main(argv):
             #    continue
             hname = hbasename + str(ich)
             h = rfile.Get(hname)
+            try:
+                print('ok, got ', h.GetName())
+            except:
+                print('ERROR getting histo {}!'.format(hname))
+                continue
+
             print('Pushing ', ich, hname)
             hs.append(h)
         Hs.append(hs)
@@ -132,6 +138,11 @@ def main(argv):
         #cans.append(can)
         #can.Divide(8,4)
         for h in hs:
+            try:
+                print('ok, got ', h.GetName())
+            except:
+                print('ERROR getting histo!')
+                continue
             ich = hs.index(h)
 
             if ich % 8 == 0:
