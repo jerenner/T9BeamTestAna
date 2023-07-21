@@ -140,7 +140,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   vector<TH1D> hHit;
   vector<TH1D> hPedestalSigma;
   vector<TH1D> hTime;
-  vector<TH1D> hNbPeaks;
+  vector<TH1D> hnPeaks;
 
   // no cuts
   TH2D hTOFACT0A("hRef_TOFACT0A", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
@@ -170,17 +170,17 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TH2D hnPeaksACT23vsnPeaksToF("hnPeaksACT23vsnPeaksToF", "hnPeaksACT23vsnPeaksToF;<n_{Peaks}^{ToF}>;<n_{Peaks}^{ACT23}>", nbn, n1, n2, nbn, n1, n2);
   TH2D hnPeaksToF1vsnPeaksToF0("hnPeaksToF1vsnPeaksToF0", "hnPeaksToF1vsnPeaksToF0;<n_{Peaks}^{ToF0}>;<n_{Peaks}^{ToF1}>", nbn, n1, n2, nbn, n1, n2);
   TH2D hnPeaksACT3vsnPeaksACT2("hnPeaksACT3vsnPeaksACT2", "hnPeaksACT3vsnPeaksACT2;<n_{Peaks}^{ACT2}>;<n_{Peaks}^{ACT3}>", nbn/2, n1, n2, nbn/2, n1, n2);
-
-  TH2D hnPeaksACT23vsToF("hnPeaksACT23vsToF", "hnPeaksACT23vsToF;t_{TOF};<n_{Peaks}^{ACT23}>", ntofbins2d, tofmin, tofmax, nbn, n1, n2);
-  TH2D hnPeaksACT23vsToFlow("hnPeaksACT23vsToFlow", "hnPeaksACT23vsToF;t_{TOF};<n_{Peaks}^{ACT23}>", ntofbins2d, tofminlow, tofmaxlow, nbn, n1, n2);
-  TH2D hnPeaksToFvsToF("hnPeaksToFvsToF", "hnPeaksToFvsToF;t_{TOF};<n_{Peaks}^{ToF}>", ntofbins2d, tofmin, tofmax, nbn, n1, n2);
-  TH2D hnPeaksToFvsToFlow("hnPeaksToFvsToFlow", "hnPeaksToFvsToF;t_{TOF};<n_{Peaks}^{ToF}>", ntofbins2d, tofminlow, tofmaxlow, nbn, n1, n2);
-  TH2D hnPeaksACT23vsLeadGlassA("hnPeaksACT23vsLeadGlassA", "hnPeaksACT23vsLeadGlassA;lead glass A;<n_{Peaks}^{ACT23}>", 500,  0., actAmplitudeMax/2., nbn, n1, n2);
-  TH2D hnPeaksToFvsLeadGlassA("hnPeaksToFvsLeadGlassA", "hnPeaksToFvsLeadGlassA;lead glass A;<n_{Peaks}^{ToF}>", 500,  0., actAmplitudeMax/2., nbn, n1, n2);
+  
+  TH2D hnPeaksACT23vsToF("hnPeaksACT23vsToF", "hnPeaksACT23vsToF;t_{TOF};<n_{Peaks}^{ACT23}>", ntofbins2d/4, tofmin, tofmax, nbn, n1, n2);
+  TH2D hnPeaksACT23vsToFlow("hnPeaksACT23vsToFlow", "hnPeaksACT23vsToF;t_{TOF};<n_{Peaks}^{ACT23}>", ntofbins2d/4, tofminlow, tofmaxlow, nbn, n1, n2);
+  TH2D hnPeaksToFvsToF("hnPeaksToFvsToF", "hnPeaksToFvsToF;t_{TOF};<n_{Peaks}^{ToF}>", ntofbins2d/4, tofmin, tofmax, nbn, n1, n2);
+  TH2D hnPeaksToFvsToFlow("hnPeaksToFvsToFlow", "hnPeaksToFvsToF;t_{TOF};<n_{Peaks}^{ToF}>", ntofbins2d/4, tofminlow, tofmaxlow, nbn, n1, n2);
+  TH2D hnPeaksACT23vsLeadGlassA("hnPeaksACT23vsLeadGlassA", "hnPeaksACT23vsLeadGlassA;lead glass A;<n_{Peaks}^{ACT23}>", 100,  0., actAmplitudeMax/2., nbn, n1, n2);
+  TH2D hnPeaksToFvsLeadGlassA("hnPeaksToFvsLeadGlassA", "hnPeaksToFvsLeadGlassA;lead glass A;<n_{Peaks}^{ToF}>", 100,  0., actAmplitudeMax/2., nbn, n1, n2);
   n1 = 0.;
   n2 = 10.;
-  TH2D hnPeaksLeadGlassvsLeadGlassA("hnPeaksLeadGlassvsLeadGlassA", "hnPeaksLeadGlassvsLeadGlassA;lead glass A;n_{Peaks}^{Pb}", 500,  0., actAmplitudeMax/2., int(n2-n1), n1, n2);
-
+  TH2D hnPeaksLeadGlassvsLeadGlassA("hnPeaksLeadGlassvsLeadGlassA", "hnPeaksLeadGlassvsLeadGlassA;lead glass A;n_{Peaks}^{Pb}", 100,  0., actAmplitudeMax/2., int(n2-n1), n1, n2);
+  
   for(int i = 0; i < nChannels; i++) {
     string name1 = "hRef_Charge" + to_string(i);
     string name2 = "hRef_Voltage" + to_string(i);
@@ -208,7 +208,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     //    hHit.push_back(temp3);
     hPedestalSigma.push_back(temp4);
     hTime.push_back(temp5);
-    hNbPeaks.push_back(temp6);
+    hnPeaks.push_back(temp6);
   }
 
   // +-------------------------------+
@@ -291,6 +291,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
       hTime.at(j).Fill(signalTime[j][0]);
       hNbPeaks.at(j).Fill(nPeaks[j]);
       hPedestalSigma.at(j).Fill(pedestalSigma[j]);
+      hnPeaks.at(j).Fill(nPeaks[j]);
     }
 
 
