@@ -1,5 +1,7 @@
-#!/usr/bin/python3
-# 20/09/2022
+#!//snap/bin/pyroot
+## !/usr/bin/python3
+# jk
+# 20/09/2022, 20.7.2023
 
 #from __future__ import print_function
 
@@ -134,6 +136,15 @@ def main(argv):
         text.SetNDC()
         text.Draw()
         txts.append(text)
+        
+        prof = h.ProfileX()
+        prof.SetMarkerSize(1)
+        prof.SetMarkerStyle(21)
+        prof.SetMarkerColor(ROOT.kYellow)
+        prof.SetLineColor(ROOT.kYellow)
+        prof.Draw('e1 x0 same')
+        stuff.append(prof)
+        
         pnote.Draw()
         can.Update()
 
