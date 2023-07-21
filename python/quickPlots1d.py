@@ -151,7 +151,7 @@ def main(argv):
 
             
             can.cd(ich % 8 + 1)
-            h.SetStats(0)
+            #h.SetStats(0)
             #if not 'Time' in h.GetName():
             if 'nPeaks' in h.GetName():
                 ROOT.gPad.SetLogy(1)
@@ -417,11 +417,11 @@ def main(argv):
     can.cd()
     h.SetTitle('TOF(all) {}'.format(ftag[10:]))
     h.GetXaxis().SetRangeUser(10., 50.)
-    fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
-    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
+    fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) ', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax()) #+ [3]*exp(-(x-[4])^2/(2*[5]^2))
+    fit.SetParameters(h.GetMaximum()/6., h.GetMean(), h.GetStdDev()) #, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev()
     h.Fit(fname, 'q', '', )
     h.Draw(opt2d)
-    fit.Draw('same')
+    #fit.Draw('same')
     ROOT.gPad.SetLogy(1);
 
     #acraplet - investigate "weird electrons"
