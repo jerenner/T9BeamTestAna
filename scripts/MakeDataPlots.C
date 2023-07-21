@@ -163,12 +163,23 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TH2D hACT1CACT3C("hRef_ACT1CACT3C", "; ACT1 Charge; ACT3 Charge", 200, 0., actChargeMax, 200, 0., actChargeMax);
 
   // nPeak 2D plots;)
-  TH2D hnPeaksACTvsnPeaksToF("hnPeaksACTvsnPeaksToF", "hnPeaksACTvsnPeaksToF;<nPeaks_{ToF}>;<nPeaks_{ACT}>", 10, 0, 10, 10, 0, 10);
-  TH2D hnPeaksACTvsToF("hnPeaksACTvsToF", "hnPeaksACTvsToF;t_{TOF};<nPeaks_{ACT}>", ntofbins2d, tofmin, tofmax, 10, 0, 10);
-  TH2D hnPeaksACTvsToFlow("hnPeaksACTvsToFlow", "hnPeaksACTvsToF;t_{TOF};<nPeaks_{ACT}>", ntofbins2d, tofminlow, tofmaxlow, 10, 0, 10);
-  TH2D hnPeaksToFvsToF("hnPeaksToFvsToF", "hnPeaksToFvsToF;t_{TOF};<nPeaks_{ToF}>", ntofbins2d, tofmin, tofmax, 10, 0, 10);
-  TH2D hnPeaksToFvsToFlow("hnPeaksToFvsToFlow", "hnPeaksToFvsToF;t_{TOF};<nPeaks_{ToF}>", ntofbins2d, tofminlow, tofmaxlow, 10, 0, 10);
-  TH2D hnPeaksLeadGlassvsLeadGlassA("hnPeaksLeadGlassvsLeadGlassA", "hnPeaksLeadGlassvsLeadGlassA;lead glass A;nPeaks_{Pb}", 500,  0., actChargeMax, 10, 0, 10);
+  int nbn = 16.;
+  double n1 = 0.;
+  double n2 = 4.;
+
+  TH2D hnPeaksACT23vsnPeaksToF("hnPeaksACT23vsnPeaksToF", "hnPeaksACT23vsnPeaksToF;<n_{Peaks}^{ToF}>;<n_{Peaks}^{ACT23}>", nbn, n1, n2, nbn, n1, n2);
+  TH2D hnPeaksToF1vsnPeaksToF0("hnPeaksToF1vsnPeaksToF0", "hnPeaksToF1vsnPeaksToF0;<n_{Peaks}^{ToF0}>;<n_{Peaks}^{ToF1}>", nbn, n1, n2, nbn, n1, n2);
+  TH2D hnPeaksACT3vsnPeaksACT2("hnPeaksACT3vsnPeaksACT2", "hnPeaksACT3vsnPeaksACT2;<n_{Peaks}^{ACT2}>;<n_{Peaks}^{ACT3}>", nbn/2, n1, n2, nbn/2, n1, n2);
+  
+  TH2D hnPeaksACT23vsToF("hnPeaksACT23vsToF", "hnPeaksACT23vsToF;t_{TOF};<n_{Peaks}^{ACT23}>", ntofbins2d, tofmin, tofmax, nbn, n1, n2);
+  TH2D hnPeaksACT23vsToFlow("hnPeaksACT23vsToFlow", "hnPeaksACT23vsToF;t_{TOF};<n_{Peaks}^{ACT23}>", ntofbins2d, tofminlow, tofmaxlow, nbn, n1, n2);
+  TH2D hnPeaksToFvsToF("hnPeaksToFvsToF", "hnPeaksToFvsToF;t_{TOF};<n_{Peaks}^{ToF}>", ntofbins2d, tofmin, tofmax, nbn, n1, n2);
+  TH2D hnPeaksToFvsToFlow("hnPeaksToFvsToFlow", "hnPeaksToFvsToF;t_{TOF};<n_{Peaks}^{ToF}>", ntofbins2d, tofminlow, tofmaxlow, nbn, n1, n2);
+  TH2D hnPeaksACT23vsLeadGlassA("hnPeaksACT23vsLeadGlassA", "hnPeaksACT23vsLeadGlassA;lead glass A;<n_{Peaks}^{ACT23}>", 500,  0., actAmplitudeMax/2., nbn, n1, n2);
+  TH2D hnPeaksToFvsLeadGlassA("hnPeaksToFvsLeadGlassA", "hnPeaksToFvsLeadGlassA;lead glass A;<n_{Peaks}^{ToF}>", 500,  0., actAmplitudeMax/2., nbn, n1, n2);
+  n1 = 0.;
+  n2 = 10.;
+  TH2D hnPeaksLeadGlassvsLeadGlassA("hnPeaksLeadGlassvsLeadGlassA", "hnPeaksLeadGlassvsLeadGlassA;lead glass A;n_{Peaks}^{Pb}", 500,  0., actAmplitudeMax/2., int(n2-n1), n1, n2);
   
   for(int i = 0; i < nChannels; i++) {
     string name1 = "hRef_Charge" + to_string(i);
@@ -374,19 +385,30 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hT1.Fill(t1);
 
 
-    // 2D nPeaks
-    /*
-    nPeaksToFAver = (nPeaks) / ;
+    // 2D nPeaks    
+    double nPeaksToFAver = (nPeaks[8] + nPeaks[9] + nPeaks[10] + nPeaks[11] + nPeaks[12] + nPeaks[13] + nPeaks[14] + nPeaks[15]) / 8;
+    double nPeaksACT23Aver = (nPeaks[4] + nPeaks[5] + nPeaks[6] + nPeaks[7]) / 4;
+
+    double nPeaksToF0Aver = (nPeaks[8] + nPeaks[9] + nPeaks[10] + nPeaks[11] ) / 4;
+    double nPeaksToF1Aver = (nPeaks[12] + nPeaks[13] + nPeaks[14] + nPeaks[15]) / 4;
+    double nPeaksACT2Aver = (nPeaks[4] + nPeaks[5] ) / 2;
+    double nPeaksACT3Aver = (nPeaks[6] + nPeaks[7]) / 2;
+
     
-    hnPeaksACTvsnPeaksToF -> Fill();
-    hnPeaksACTvsToF -> Fill();
-    hnPeaksACTvsToFlow -> Fill();
-    hnPeaksToFvsToF -> Fill();
-    hnPeaksToFvsToFlow -> Fill();
-    hnPeaksLeadGlassvsLeadGlassA -> Fill();
-    */
+    hnPeaksACT23vsnPeaksToF.Fill(nPeaksToFAver, nPeaksACT23Aver);
+    
+    hnPeaksToF1vsnPeaksToF0.Fill(nPeaksToF1Aver, nPeaksToF0Aver);
+    hnPeaksACT3vsnPeaksACT2.Fill(nPeaksACT2Aver, nPeaksACT3Aver);
+  
+    hnPeaksACT23vsToF.Fill(tof,  nPeaksACT23Aver);
+    hnPeaksACT23vsToFlow.Fill(tof,  nPeaksACT23Aver);
+    hnPeaksToFvsToF.Fill(tof, nPeaksToFAver);
+    hnPeaksToFvsToFlow.Fill(tof, nPeaksToFAver);
+    hnPeaksLeadGlassvsLeadGlassA.Fill(pba, nPeaks[18]);
 
-
+    hnPeaksACT23vsLeadGlassA.Fill(pba, nPeaksACT23Aver);
+    hnPeaksToFvsLeadGlassA.Fill(pba, nPeaksToFAver);
+    
     // selections:
     
     bool pass = true;
