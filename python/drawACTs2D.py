@@ -7,6 +7,8 @@ import ROOT
 from math import sqrt, pow, log, exp
 import os, sys, getopt
 
+from labelTools import *
+
 cans = []
 stuff = []
 
@@ -20,6 +22,10 @@ def PrintUsage(argv):
 ##########################################
 # https://www.tutorialspoint.com/python/python_command_line_arguments.htm
 def main(argv):
+
+    ROOT.gStyle.SetPalette(ROOT.kDeepSea)
+    ROOT.gStyle.SetOptTitle(0)
+    
     #if len(sys.argv) > 1:
     #  foo = sys.argv[1]
 
@@ -60,35 +66,56 @@ def main(argv):
         PrintUsage(argv)
         return
 
-    basetag = 'charges'
-    
     ROOT.gStyle.SetOptFit(111)
     ROOT.gStyle.SetPadLeftMargin(0.20)
     
     print('*** Settings:')
     print('tag={:}, batch={:}'.format(gTag, gBatch))
 
-    #ROOT.gStyle.SetPalette(ROOT.kSolar)
     
     #filename = 'output_300n_plots.root'
     filename = argv[1]
     rfile = ROOT.TFile(filename, 'read')
-    hnames = [ 'hRef_ACT2CACT1C', 'hRef_ACT3CACT2C', 'hRef_ACT1CACT3C']
+    #hnames = [ 'hRef_ACT2CACT1C', 'hRef_ACT3CACT2C', 'hRef_ACT1CACT3C']
+    hnames = ['hnPeaksACT23vsnPeaksToF', 
+              'hnPeaksToF1vsnPeaksToF0', 
+              'hnPeaksACT3vsnPeaksACT2', 
+              'hnPeaksACT23vsToF', 
+              'hnPeaksACT23vsToFlow', 
+              'hnPeaksToFvsToF', 
+              'hnPeaksToFvsToFlow', 
+              'hnPeaksLeadGlassvsLeadGlassA', 
+              'hnPeaksACT23vsLeadGlassA', 
+              'hnPeaksToFvsLeadGlassA'
+              ]
     hs = []
     txts = []
-
-
-    ftag = filename.replace('output_','').replace('_plots.root','')
-    canname = 'WCTEJuly2022_ACT2D_{}_{}'.format(basetag, ftag)
-    can = ROOT.TCanvas(canname, canname, 0, 0, 1500, 450)
-    can.Divide(3,1)
-    cans.append(can)
 
     
     for hname in hnames:
         h = rfile.Get(hname)
         hs.append(h)
+
+
+
+    srun = ''
+    tokens = filename.split('_')
+    for token in tokens:
+        if '00' in token:
+            srun = token.replace('000','')
+    pnote = makeMomentumLabel(srun, 0.05, 0.93)
+    stuff.append(pnote)
+
+    ih = -1
     for h in hs:
+        ih = ih+1
+        basetag = h.GetName()
+        ftag = filename.replace('output_','').replace('_plots.root','').replace('/ntuple_', '')
+        canname = 'WCTEJuly2023_{}_{}'.format(basetag, ftag)
+        can = ROOT.TCanvas(canname, canname, 20*ih, 20*ih, 1000, 900)
+        cans.append(can)
+
+        
         hnameTag = h.GetName().replace('hRef_','')
         can.cd(hs.index(h)+1)
         h.SetStats(0)
@@ -96,21 +123,24 @@ def main(argv):
         #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
         h.Draw('colz')
         ROOT.gPad.SetLogz(1)
-        txt= '{} {} p={} MeV/c'.format(hnameTag, basetag, ftag.replace('n','').replace('p',''))
-        if 'p' in ftag:
-            txt = txt + ' (Pos)'
-        else:
-            txt = txt + ' (Neg)'
-        text = ROOT.TLatex(0.120, 0.93, txt)
+        #txt= '{} {} p={} MeV/c'.format(hnameTag, basetag, ftag.replace('n','').replace('p',''))
+        #if 'p' in ftag:
+        #    txt = txt + ' (Pos)'
+        #else:
+        #    txt = txt + ' (Neg)'
+        txt = '#rho={:1.2f}'.format(h.GetCorrelationFactor())
+        text = ROOT.TLatex(0.78, 0.85, txt)
         text.SetTextSize(0.04)
         text.SetNDC()
         text.Draw()
         txts.append(text)
-       
+        pnote.Draw()
+        can.Update()
 
-    can.Update()
-    can.Print(can.GetName() + '.png')
-    can.Print(can.GetName() + '.pdf')
+    for can in cans:
+        can.Print(can.GetName() + '.png')
+        can.Print(can.GetName() + '.pdf')
+        
     if not gBatch:
         ROOT.gApplication.Run()
     return
