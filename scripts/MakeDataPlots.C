@@ -233,8 +233,12 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     bool PbGlassAboveElectronLevel = true;
     bool ACT23AboveElectronLevel = true;
 
-    double PbGlassElectronThreshA = 2.4;
-    double ACTC23ElectronThreshA = 2.;
+    double PbGlassElectronThreshA = 5;
+    double PbGlassElectronUpperThreshA = 6.5;
+
+
+    double ACTC23ElectronThreshA = 1.5;
+    double ACTC23ElectronUpperThreshA = 3.5;
 
     for(int j = 0; j < nChannels; j++) {
       if (j < 16) {
@@ -252,9 +256,12 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
       //dirty add-on to select electrons
       if (j==18){
         PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (peakVoltage[j][0] > PbGlassElectronThreshA);
+        PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (peakVoltage[j][0] < PbGlassElectronUpperThreshA);
       }
       if (j==4){
         ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((peakVoltage[j][0] + peakVoltage[j+1][0] + peakVoltage[j+2][0] + peakVoltage[j+3][0])/2. > ACTC23ElectronThreshA);
+
+        ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((peakVoltage[j][0] + peakVoltage[j+1][0] + peakVoltage[j+2][0] + peakVoltage[j+3][0])/2. < ACTC23ElectronUpperThreshA);
       }
     } // channels
 
@@ -289,7 +296,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
       hCharge.at(j).Fill(intCharge[j][0]);
       hVoltage.at(j).Fill(peakVoltage[j][0]);
       hTime.at(j).Fill(signalTime[j][0]);
-      hNbPeaks.at(j).Fill(nPeaks[j]);
+      //hNbPeaks.at(j).Fill(nPeaks[j]);
       hPedestalSigma.at(j).Fill(pedestalSigma[j]);
       hnPeaks.at(j).Fill(nPeaks[j]);
     }
