@@ -162,7 +162,7 @@ def main(argv):
 
             
             can.cd(ich % 8 + 1)
-            #h.SetStats(0)
+            h.SetStats(0)
             #if not 'Time' in h.GetName():
             if 'nPeaks' in h.GetName():
                 ROOT.gPad.SetLogy(1)
