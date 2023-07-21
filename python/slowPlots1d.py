@@ -304,8 +304,8 @@ def main(argv):
             
             #h.GetXaxis().SetRangeUser(-4,8.)
             fname = 'fit_tofs_{}'.format(ic)
-            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
-            fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev(), h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
+            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))+ [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax()) #
+            fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev(), h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev()) #
             #try to fiut the peaks one by one
             #g1 = ROOT.TF1("g1", "gaus", 0, 15);
             #g2 = ROOT.TF1("g2", "gaus", 12, 20);
@@ -423,8 +423,8 @@ def main(argv):
     can.cd()
     h.SetTitle('TOF(all) {}'.format(ftag[10:]))
     h.GetXaxis().SetRangeUser(10., 50.)
-    fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
-    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
+    fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax()) #
+    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev()) #
     h.Fit(fname, 'q', '', )
     h.Draw(opt2d)
     fit.Draw('same')
