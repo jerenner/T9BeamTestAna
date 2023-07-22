@@ -41,10 +41,13 @@ quick simple plotting 1D:
 python3 ./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
 then close by File -> Quit ROOT in any of the Canvases that appear
 
+more plots:
+python3 ./python/slowPlots1d.py histos/output_list_root_run_000222_plots.root
+
 
 July 17th 2023:
 
-New default way will be: instead of getting the midas-to-ROOT converted files, for those not interested in waveforms, get the already waveform-analyzed ntuples with the anaTree from the wctePC:
+New default way: instead of getting the midas-to-ROOT converted files, for those not interested in waveforms, get the already waveform-analyzed ntuples with the anaTree from the wctePC:
 
 cd output/ ; ./get.sh; cd ../
 
@@ -57,6 +60,11 @@ and choose what to run, e.g.
 ./python/run_mkplots.py | grep "Make"
 
 ./python/run_mkplots.py | grep "quick"
+
+./python/run_mkplots.py | grep "slow"
+
+2023 SHIFTER:
+./shifter/CheckRun.sh XYZ
 
 
 More detailed:
