@@ -106,3 +106,7 @@ df = pd.DataFrame(columns=["Run", "Momentum", "Charge"]) # TO-DO: Add refraction
 for (run, momentum) in runsDict.items(): df.loc[len(df)] = (run, abs(momentum), np.sign(momentum))
 df.to_csv("run_info_db.csv", index=False)
 
+print('std::map<int, int> runsDict{')
+for r,p in runsDict.items():
+    print(r'  { ' + f'{r}, {p}' + r' },')
+print('};')
