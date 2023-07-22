@@ -52,7 +52,7 @@ void morePlots(TString filename = "") {
     canname = canname.ReplaceAll("_list_root","").ReplaceAll("_ntuple","");
     TCanvas *can = new TCanvas(canname, canname, ih*350, ih*100, 800, 800);
     if (h) {
-      h -> SetStats(0);
+      //h -> SetStats(0);
       
       TString opt = "colz";
       if (hname.Contains("hTOF")) {
