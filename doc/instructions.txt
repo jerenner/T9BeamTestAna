@@ -6,7 +6,7 @@ cd /home/wcte/np/T9BeamTestAna
 
 
 You can also edit run list and run
-root compare_LG.cc
+root macros/compare_LG.C
 
 which is esp. important for runs in your current ACT n range, where runs with different momenta have different lead glass amplitude profiles.
 

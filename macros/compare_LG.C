@@ -9,7 +9,7 @@
 
 
 
-void compare_LG(){
+void compare_LG(int rebin = 4, bool scale = true){
 
   //int run_numbers[] = {435,436,437,449,438,439,440,441}; ///< n=1.02, positive
   //int run_numbers[] = {399,440};
@@ -17,7 +17,8 @@ void compare_LG(){
   //int run_numbers[] = {459, 458, 457, 456, 455, 454, 453, 451, 452}; ///< n=1.015, positive
 
   //int run_numbers[] = {460, 461, 462, 463, 469, 470, 471, 459, 458, 457}; ///< n=1.015, negative
-  int run_numbers[] = {490, 491, 492};
+  int run_numbers[] = {490, 491, 492, 493, 494};
+  //    int run_numbers[] = {493};
   
   
   int lsts[] = {1,1,1,2,2,2,
@@ -78,12 +79,15 @@ void compare_LG(){
       hists[i]->SetLineWidth(3);
       hists[i]->SetLineStyle(lsts[i]);
       
-      hists[i]->Rebin(4);
+      if (rebin > 1)
+	hists[i]->Rebin(rebin);
+      
       int b1 = 0;
       int b2 = hists[i] -> GetNbinsX() + 1;
       if (hname.Contains("DT730_02_Amplitude_2"))
       	b1 = hists[i] -> GetXaxis()->FindBin(60.);
-      hists[i]->Scale(1.0/hists[i]->Integral(b1, b2));
+      if (scale) 
+	hists[i]->Scale(1.0/hists[i]->Integral(b1, b2));
 
       hists[i]->SetStats(false);
 
@@ -92,7 +96,7 @@ void compare_LG(){
       else hists[i]->Draw("same hist");
 
       if (ih == 0) {
-	leg->AddEntry(hists[i],Form("Run %d %+i: MeV/c",run_numbers[i], runsDict[run_numbers[i]]),"l");
+	leg->AddEntry(hists[i],Form("Run %d: %+i MeV/c",run_numbers[i], runsDict[run_numbers[i]]),"l");
       }
       ndraw++;
     } // files
