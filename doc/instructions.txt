@@ -1,0 +1,3 @@
+cd /home/wcte/np/T9BeamTestAna
+./shifter/CheckRun.sh XYZ
+

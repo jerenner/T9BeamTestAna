@@ -75,7 +75,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   if (peakMode != "")
     peakModeTag = "_" + peakMode;
   TString outFileName = TString(fileName.substr(0, fileName.size()-5).c_str()) + "_plots" + peakModeTag + ".root";
-  outFileName = outFileName.ReplaceAll("output/", "histos/");
+  outFileName = outFileName.ReplaceAll("output/", "histos/").ReplaceAll("ntuple_files/","histos/");
 
   TFile outFile(outFileName.Data(), "RECREATE");
   outFile.cd();
