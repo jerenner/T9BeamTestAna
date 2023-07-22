@@ -196,8 +196,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     string title5 = "Channel " + to_string(i) + "; Time [ns]; Triggers";
     string title6 = "Channel " + to_string(i) + "; Number of peaks; Triggers";
 
-    TH1D temp1(name1.c_str(), title1.c_str(), 200, 0., 25*0.08);
-    TH1D temp2(name2.c_str(), title2.c_str(), 200, 0., 13*0.8);
+    TH1D temp1(name1.c_str(), title1.c_str(), 240, -0.16, 30*0.08);
+    TH1D temp2(name2.c_str(), title2.c_str(), 320, 0., 13*0.8);
     TH1D temp3(name3.c_str(), title3.c_str(), 5, -0.5, 4.5);
     TH1D temp4(name4.c_str(), title4.c_str(), 200, 0., 0.01);
     TH1D temp5(name5.c_str(), title5.c_str(), 270, 0., 540.);

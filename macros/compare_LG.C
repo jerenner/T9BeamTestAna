@@ -17,8 +17,8 @@ void compare_LG(int rebin = 4, bool scale = true){
   //int run_numbers[] = {459, 458, 457, 456, 455, 454, 453, 451, 452}; ///< n=1.015, positive
 
   //int run_numbers[] = {460, 461, 462, 463, 469, 470, 471, 459, 458, 457}; ///< n=1.015, negative
-  int run_numbers[] = {490, 491, 492, 493, 494};
-  //    int run_numbers[] = {493};
+  // int run_numbers[] = {490, 491, 492, 493, 494, 495};
+  int run_numbers[] = {495};
   
   
   int lsts[] = {1,1,1,2,2,2,
