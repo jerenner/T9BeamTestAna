@@ -13,6 +13,8 @@ import numpy as np
 import uproot as ur
 import json5
 from waveform_analysis import WaveformAnalysis
+import awkward as ak
+from channel_map import channel_map
 
 
 def print_usage(argv):
@@ -65,14 +67,13 @@ def process_file(root_filename, config, output_file):
         print(f"WARNING: The channels in {root_filename} have zero events. Skipping this file.")
         return
     print(f"All {n_channels} active channels have {n_events} events")
-    pedestals = np.zeros((n_events, n_channels))
-    pedestal_sigmas = np.zeros((n_events, n_channels))
-    n_peaks = 1
-    peak_voltages = np.zeros((n_events, n_channels, n_peaks))
-    peak_times = np.zeros((n_events, n_channels, n_peaks))
-    signal_times = np.zeros((n_events, n_channels, n_peaks))
-    integrated_charges = np.zeros((n_events, n_channels, n_peaks))
-    n_peaks = np.zeros((n_events, n_channels))
+    pedestals = []
+    pedestal_sigmas = []
+    peak_voltages = []
+    peak_times = []
+    signal_times = []
+    integrated_charges = []
+    n_peaks = []
     for i, c in enumerate(channels):
         print(f"Processing {c}")
         waveforms = run_file[c].array()
@@ -84,26 +85,26 @@ def process_file(root_filename, config, output_file):
                                              voltage_scale=config["VoltageScale"],
                                              time_offset=config["TimeOffset"][i])
         waveform_analysis.run_analysis()
-        pedestals[:, i] = waveform_analysis.pedestals.squeeze()
-        pedestal_sigmas[:, i] = waveform_analysis.pedestal_sigmas.squeeze()
-        peak_voltages[:, i] = waveform_analysis.peak_voltages
-        peak_times[:, i] = waveform_analysis.peak_times
-        signal_times[:, i] = waveform_analysis.signal_times
-        integrated_charges[:, i] = waveform_analysis.integrated_charges
-        n_peaks[:, i] = waveform_analysis.n_peaks
+        pedestals.append(waveform_analysis.pedestals.squeeze())
+        pedestal_sigmas.append(waveform_analysis.pedestal_sigmas.squeeze())
+        n_peaks.append(waveform_analysis.n_peaks)
+        peak_voltages.append(waveform_analysis.pulse_peak_voltages)
+        peak_times.append(waveform_analysis.pulse_peak_times)
+        signal_times.append(waveform_analysis.pulse_signal_times)
+        integrated_charges.append(waveform_analysis.pulse_charges)
     run_file.close()
 
+    branches = {}
+    for c, i in channel_map.items():
+        branches[f"{c}/Pedestal"] = pedestals[i]
+        branches[f"{c}/PedestalSigma"] = pedestal_sigmas[i]
+        branches[f"{c}/nPeaks"] = n_peaks[i]
+        branches[f"{c}/PeakVoltage"] = peak_voltages[i]
+        branches[f"{c}/PeakTime"] = peak_times[i]
+        branches[f"{c}/SignalTime"] = signal_times[i]
+        branches[f"{c}/IntCharge"] = integrated_charges[i]
+
     print(f"Writing to {output_file.file_path}")
-    branches = {
-            "nChannels": np.repeat(n_channels, n_events),
-            "Pedestal": pedestals,
-            "PedestalSigma": pedestal_sigmas,
-            "nPeaks": n_peaks,
-            "PeakVoltage": peak_voltages,
-            "PeakTime": peak_times,
-            "SignalTime": signal_times,
-            "IntCharge": integrated_charges,
-        }
     if "anaTree" not in output_file.keys():
         output_file["anaTree"] = branches
     else:
