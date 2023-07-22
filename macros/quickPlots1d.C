@@ -1,6 +1,5 @@
 // jk
-// 20/09/2022
-// 14.7.2023
+// 22.7.2023
 
 
 
@@ -61,9 +60,9 @@ void quickPlots1d(TString filename = "") {
     for (int ich = 0; ich <  nChannels; ich++) {
       TString hname = hbasename;
       hname += ich;
-      cout << "Will try to get histo names " << hname.Data() << endl;
+      //cout << "Will try to get histo names " << hname.Data() << endl;
       TH1D *h = (TH1D*) rfile -> Get(hname);
-      cout << "Pushing " << ich << " " <<  hname << endl;
+      //cout << "Pushing " << ich << " " <<  hname << endl;
       hs.push_back(h);
     } // channels
     

@@ -116,8 +116,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TH1D hTimeTOF3("hTimeTOF3", "; hTimeTOF3", 100, 0.,50.);
 
   //lead glass vs act 2 and 3 - identify particles
-  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 400, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
-  TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 400, 0., actChargeMax, 400, 0., actAmplitudeMax);
+  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 200, 0., actAmplitudeMax/5, 400, 0., actAmplitudeMax);
+  TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 200, 0., actChargeMax, 400, 0., actAmplitudeMax);
 
 
   //ACT2+ACT3/2 vs TOF plots
@@ -126,9 +126,11 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
 
   //TOF vs Pb-glass plots
-  TH2D hPbATOF("hRef_PbATOF", "; Pb-glass Amplitude; t_{1}-t_{0} [ns]", 400, 0., actAmplitudeMax/2, ntofbins2d, tofmin, tofmax);
-  TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 400, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
+  TH2D hPbATOF("hRef_PbATOF", "; Pb-glass Amplitude; t_{1}-t_{0} [ns]", 200, 0., actAmplitudeMax/2, ntofbins2d, tofmin, tofmax);
+  TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 200, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
+  TH2D hTOFPbA("hRef_TOFPbA", "; t_{1}-t_{0} [ns]; Pb-glass Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax/2);
 
+  
   //acraplet - investigate "weird electrons"
   TH2D hHC0AHC1A("hweirdE_HC0AHC1A", "; Hole Counter 0 Amplitude; Hole Counter 1 Amplitude", 200, 0., 1000, 200, 0., 1000.);
 
@@ -369,7 +371,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hPbACT23A.Fill(pba, (act2a+act3a) / 2.);
     hTOFACT23A.Fill(tof, (act2a+act3a) / 2.);
     hPbATOF.Fill(pba, tof);
-
+    hTOFPbA.Fill(tof, pba);
+    
     double act0c = intCharge[0][0] + intCharge[1][0];
     double act1c = intCharge[2][0] + intCharge[3][0];
     double act2c = intCharge[4][0] + intCharge[5][0];
