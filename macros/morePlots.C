@@ -51,8 +51,8 @@ void morePlots(TString filename = "") {
     TString canname = Form("WCTEJuly2023_Quick1D_%s_%s",ftag.Data(), hname.Data());
     canname = canname.ReplaceAll("_list_root","").ReplaceAll("_ntuple","");
     TCanvas *can = new TCanvas(canname, canname, ih*350, ih*100, 800, 800);
-    if (h) {
-      //h -> SetStats(0);
+    if (h)  {
+      h -> SetStats(111111111);
       
       TString opt = "colz";
       if (hname.Contains("hTOF")) {
