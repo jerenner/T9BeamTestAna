@@ -48,12 +48,19 @@ for xlistname in  os.popen('cd output/ ; ls ntuple_*.root'):
     #    os.system(cmd)
 
     hfilename = rfilename.replace('.root','_plots.root')
+    
     cmd='./python/quickPlots1d.py histos/{}'.format(hfilename)
     print(cmd)
     if not dryrun:
         cmd = cmd + ' -b'
         os.system(cmd)
         
+    cmd='./python/slowPlots1d.py histos/{}'.format(hfilename)
+    print(cmd)
+    if not dryrun:
+        cmd = cmd + ' -b'
+        os.system(cmd)
+
     cmd='./python/fitToF.py histos/{}'.format(hfilename)
     print(cmd)
     if not dryrun:
