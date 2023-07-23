@@ -9,12 +9,11 @@
 
 import sys
 
-import numpy as np
 import uproot as ur
 import json5
 from waveform_analysis import WaveformAnalysis
+import channel_map as cm
 import awkward as ak
-from channel_map import channel_map
 
 
 def print_usage(argv):
@@ -67,48 +66,47 @@ def process_file(root_filename, config, output_file):
         print(f"WARNING: The channels in {root_filename} have zero events. Skipping this file.")
         return
     print(f"All {n_channels} active channels have {n_events} events")
-    pedestals = []
-    pedestal_sigmas = []
-    peak_voltages = []
-    peak_times = []
-    signal_times = []
-    integrated_charges = []
-    n_peaks = []
     for i, c in enumerate(channels):
-        print(f"Processing {c}")
-        waveforms = run_file[c].array()
-        waveform_analysis = WaveformAnalysis(waveforms,
-                                             threshold=config["Thresholds"][i],
-                                             analysis_window=(config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
-                                             pedestal_window=(config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
-                                             reverse_polarity=(config["Polarity"][i] == 0),
-                                             voltage_scale=config["VoltageScale"],
-                                             time_offset=config["TimeOffset"][i])
-        waveform_analysis.run_analysis()
-        pedestals.append(waveform_analysis.pedestals.squeeze())
-        pedestal_sigmas.append(waveform_analysis.pedestal_sigmas.squeeze())
-        n_peaks.append(waveform_analysis.n_peaks)
-        peak_voltages.append(waveform_analysis.pulse_peak_voltages)
-        peak_times.append(waveform_analysis.pulse_peak_times)
-        signal_times.append(waveform_analysis.pulse_signal_times)
-        integrated_charges.append(waveform_analysis.pulse_charges)
+        channel_name = cm.channel_numbers_to_names[i]
+        print(f"Processing {c} into {channel_name}")
+        for batch, report in run_file[c].iterate(step_size=10000, report=True):
+            print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")
+            config_args = {
+                "threshold": config["Thresholds"][i],
+                "analysis_window": (config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
+                "pedestal_window": (config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
+                "reverse_polarity": (config["Polarity"][i] == 0),
+                "voltage_scale": config["VoltageScale"],
+                "time_offset": config["TimeOffset"][i],
+            }
+            process_batch(batch[batch.fields[0]], channel_name, output_file, config_args)
     run_file.close()
 
-    branches = {}
-    for c, i in channel_map.items():
-        branches[f"{c}/Pedestal"] = pedestals[i]
-        branches[f"{c}/PedestalSigma"] = pedestal_sigmas[i]
-        branches[f"{c}/nPeaks"] = n_peaks[i]
-        branches[f"{c}/PeakVoltage"] = peak_voltages[i]
-        branches[f"{c}/PeakTime"] = peak_times[i]
-        branches[f"{c}/SignalTime"] = signal_times[i]
-        branches[f"{c}/IntCharge"] = integrated_charges[i]
 
-    print(f"Writing to {output_file.file_path}")
-    if "anaTree" not in output_file.keys():
-        output_file["anaTree"] = branches
+def process_batch(waveforms, channel, output_file, config_args):
+    waveform_analysis = WaveformAnalysis(waveforms, **config_args)
+    waveform_analysis.run_analysis()
+    pedestals = waveform_analysis.pedestals.squeeze()
+    pedestal_sigmas = waveform_analysis.pedestal_sigmas.squeeze()
+    n_peaks = waveform_analysis.n_peaks
+    peak_voltages = waveform_analysis.pulse_peak_voltages
+    peak_times = waveform_analysis.pulse_peak_times
+    signal_times = waveform_analysis.pulse_signal_times
+    integrated_charges = waveform_analysis.pulse_charges
+
+    branches = {f"Pedestal": pedestals,
+                f"PedestalSigma": pedestal_sigmas,
+                f"nPeaks": n_peaks,
+                f"PeakVoltage": peak_voltages,
+                f"PeakTime": peak_times,
+                f"SignalTime": signal_times,
+                f"IntCharge": integrated_charges}
+
+    print(f"... writing {channel} to {output_file.file_path}")
+    if channel not in output_file.keys():
+        output_file[channel] = branches
     else:
-        output_file["anaTree"].extend(branches)
+        output_file[channel].extend(branches)
 
 
 if __name__ == "__main__":
