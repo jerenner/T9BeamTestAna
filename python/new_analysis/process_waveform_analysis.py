@@ -69,7 +69,7 @@ def process_file(root_filename, config, output_file):
     for i, c in enumerate(channels):
         channel_name = cm.channel_numbers_to_names[i]
         print(f"Processing {c} into {channel_name}")
-        for batch, report in run_file[c].iterate(step_size=10000, report=True):
+        for batch, report in run_file[c].iterate(step_size="500 MB", report=True):
             print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")
             config_args = {
                 "threshold": config["Thresholds"][i],
