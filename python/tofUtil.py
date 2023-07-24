@@ -27,14 +27,21 @@ pcols['d'] = ROOT.kGray
 conv = 1.e9
 #TB2022 l = 2.90 # m
 #TB2023
-l = 3.45 # m
+l = 3.49 # m
 c = 299792458 # m/c
 
 print('*** The Time of Flight times for L = {} m as function of particles momenta ***'.format(l))
 
 ############################################################
 def getTof(m, momentum):
-    return l/c*sqrt(1.+pow(m/momentum,2))*conv
+    return l/(c*sqrt(1.+pow(m/momentum,2)))*conv
+############################################################
+def TofToMomentum(tof, m):
+    #the tof needs to be the absolute flying time
+    p = m/sqrt(pow((tof) * c / (conv * l), 2) - 1)
+    return p
+
+
 
 ############################################################
 

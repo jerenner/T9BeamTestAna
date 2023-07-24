@@ -15,6 +15,10 @@ import os, sys, getopt
 cans = []
 stuff = []
 
+
+
+
+
 ##########################################
 
 def PrintUsage(argv):
@@ -28,6 +32,7 @@ def makeLines(h, eoff, parts, momentum):
     lines = []
     #y1 = h.GetYaxis().GetXmin()
     #y2 = h.GetYaxis().GetXmax()
+    print("LINE MOMENTUM: ", momentum)
     y1 = h.GetMaximum()
     y2 = h.GetMinimum()
     te = getTof(ms['e'], momentum) + eoff
@@ -42,6 +47,18 @@ def makeLines(h, eoff, parts, momentum):
         line.Draw()
         lines.append(line)
     return lines
+
+def makeOneLine(h, value, part):
+    y1 = h.GetMaximum()
+    y2 = h.GetMinimum()
+    line = ROOT.TLine(value, y1, value, y2)
+    line.SetLineStyle(2)
+    line.SetLineWidth(2)
+    line.SetLineColor(pcols[part])
+    line.Draw()
+    return line
+
+
 
 
 ##########################################
@@ -138,15 +155,15 @@ def MultiFit(h, tag, momentum, cts, ws, t1, t2, peaksfs = [1., 1., 1.]):
 
 
     te = getTof(ms['e'], momentum)
-    eoff = fit.GetParameter(1) - te
+    print("TE", te, momentum, fit.GetParameter(1))
+    eoff = 0 #te - fit.GetParameter(1)
 
     parts = ['e', 'mu', 'pi']
     lines = makeLines(h, eoff, parts, momentum)
     stuff.append(lines)
+    #makeOneLine()
     
     return fits
-
-
 
 
 ##########################################
@@ -214,14 +231,15 @@ def main(argv):
         if '00' in token:
             srun = token.replace('000','')
         
-    momentum = getMomentum(srun)
+    #momentum = getMomentum(srun)
+    momentum = 240
     print(f'Assuming run {srun} and momentum {momentum}')
 
     suff = ''
     if abs(momentum) < 500:
         suff = 'Low'
         print('Low momentum run, looking at zoomed version of tof histos!')
-    hTOFAll = inFile.Get("hTOFOther" + suff)
+    hTOFOther = inFile.Get("hTOFOther" + suff)
     hTOFEl = inFile.Get("hTOFEl" + suff)
 
 
@@ -239,12 +257,12 @@ def main(argv):
     
     ROOT.gStyle.SetOptStat(0)
     
-    hTOFAll.SetLineColor(ROOT.kBlack)
-    hTOFAll.SetMarkerColor(hTOFAll.GetLineColor())
-    hTOFAll.SetMarkerStyle(20)
-    hTOFAll.SetMarkerSize(1)
-    hTOFAll.SetLineWidth(1)
-    hTOFAll.Draw('e1')
+    hTOFOther.SetLineColor(ROOT.kBlack)
+    hTOFOther.SetMarkerColor(hTOFOther.GetLineColor())
+    hTOFOther.SetMarkerStyle(20)
+    hTOFOther.SetMarkerSize(1)
+    hTOFOther.SetLineWidth(1)
+    hTOFOther.Draw('e1')
 
     # def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
 
@@ -253,40 +271,139 @@ def main(argv):
         off = 3.
     width = 0.2
 
-    tofDiff_e_mu = getTofDiff('e','mu',momentum)
-    tofDiff_e_pi = getTofDiff('e','pi',momentum)
-    tofDiff_e_p = getTofDiff('e','p',momentum)
-    tofDiff_e_d = getTofDiff('e','d',momentum)
+    tofDiff_e_mu = getTofDiff('e','mu', momentum)
+    tofDiff_e_pi = getTofDiff('e','pi', momentum)
+    tofDiff_e_p = getTofDiff('e','p', momentum)
+    tofDiff_e_d = getTofDiff('e','d', momentum)
+    tofDiff_mu_pi = getTofDiff('mu','pi', momentum)
 
-    print(f'ToF diffs for momentum {momentum}: mu-e: {tofDiff_e_mu:2.2f}, pi-e: {tofDiff_e_pi:2.2f}, p-e: {tofDiff_e_p:2.2f}, d-e: {tofDiff_e_d:2.2f}')
+    print(f'ToF diffs for momentum {momentum}: mu-e: {tofDiff_e_mu:2.2f}, pi-e: {tofDiff_e_pi:2.2f}, p-e: {tofDiff_e_p:2.2f}, d-e: {tofDiff_e_d:2.2f}, mu-pi: {tofDiff_mu_pi:2.2f}')
 
-    if abs(momentum) < 300:
+    if abs(momentum) <= 300:
         print('Assuming low momentum run, will try to fit e/mu/pi')
-        tcs = [11.7, 11.7 + off + tofDiff_e_mu, 11.7 + off + tofDiff_e_pi]
-        ws = [0.25, 0.3, 0.35]
-        sfs = [1., 10., 25.]
-        fits = MultiFit(hTOFAll, '_mupi', momentum, tcs, ws, 11., 14., sfs)
+        tcs = [11.63, 12.6, 14.0]
+        #11.87 - tofDiff_e_mu
+        #1- tofDiff_e_pi
+
+        ws = [0.4, 0.4, 0.3]
+        sfs = [1., 10., 10.]
+        fits = MultiFit(hTOFOther, '_mupi', abs(momentum), tcs, ws, 10.5, 14.5, sfs)
         stuff.append(fits)
-    elif abs(momentum) < 700:
-        print('Assuming medium momentum run, will try to fit e/mu+pi')
-        tcs = [11.7, 11.7 + off + tofDiff_e_mu]
-        ws = [0.25, 0.3]
-        sfs = [1., 5.]
-        fits = MultiFit(hTOFAll, '_mupi', momentum, tcs, ws, 11., 14., sfs)
-        stuff.append(fits)
-    else:
-        print('Assuming high momentum run, will try to fit e/p/d')
-        fite = Fit(hTOFAll, '_el', momentum, 11.7 + off, width, 11. + off, 13. + off, 1.)
-        
-        fitp = Fit(hTOFAll, '_p', momentum,  16. + off, width, 14 + off,  17.5 + off, 1.)
-        fitd = Fit(hTOFAll, '_d', momentum,  25. + off, 0.8, 24.3 + off, 25.7 + off, 0.8)
-        stuff.append([fitp, fitd])
-        
-        tdif_e_p = fitp.GetParameter(1) - fite.GetParameter(1)
-        tex = ROOT.TLatex(0.7, 0.8, 't_{p}-t_{e}=' + '{:1.2f}'.format(tdif_e_p))
+
+        tex = ROOT.TLatex(0.4, 0.8, 't_{e} = '+ '{:1.2f}'.format(fits[0].GetParameter(1)) + ', t_{mu}=' + '{:1.2f}'.format(fits[1].GetParameter(1)))
+
+        print("Integral fits[1]", fits[1].Integral(10, 20)/ hTOFOther.GetBinWidth(1))
+        n_e = fits[1].Integral(10, 20)/ hTOFOther.GetBinWidth(1)
+        n_mu = fits[2].Integral(10, 20)/ hTOFOther.GetBinWidth(1)
+        n_pi = fits[3].Integral(10, 20)/ hTOFOther.GetBinWidth(1)
+        print("Integral fits[2]", fits[2].Integral(10, 20)/ hTOFOther.GetBinWidth(1))
+        print("Integral fits[3]", fits[3].Integral(10, 20)/ hTOFOther.GetBinWidth(1))
+
+        tex3 = ROOT.TLatex(0.4, 0.7,  'N_{e} = ' + '{:1.0f}'.format(n_e) + ', N_{mu} = ' + '{:1.0f}'.format(n_mu) + ', N_{pi} = ' + '{:1.0f}'.format(n_pi))
+
+
+        n_spill = 371
+
+        print("mu/electron = ", n_mu/(n_e+n_mu+n_pi))
+        print("pi/electron = ", n_pi/(n_e+n_mu+n_pi))
+
+        tex2 = ROOT.TLatex(0.4, 0.6,  'N_{e}/sp. = ' + '{:1.1f}'.format(n_e/n_spill) + ', N_{mu}/sp. = ' + '{:1.1f}'.format(n_mu/n_spill) + ', N_{pi}/sp. = ' + '{:1.1f}'.format(n_pi/n_spill))
+
+
         tex.SetNDC()
         tex.Draw()
         stuff.append(tex)
+        tex3.SetNDC()
+        tex3.Draw()
+        stuff.append(tex3)
+        tex2.SetNDC()
+        tex2.Draw()
+        stuff.append(tex2)
+
+    elif abs(momentum) <= 500:
+        print('Assuming medium momentum run, will try to fit e/mu+pi')
+        tcs = [11.63, 11.63 + tofDiff_e_mu]
+        ws = [0.3, 0.24]
+        sfs = [3., 1.]
+        print('AHAHHAHAHA')
+        fits = MultiFit(hTOFOther, '_mupi', momentum, tcs, ws, 11., 14., sfs)
+        stuff.append(fits)
+        t_mu = max(fits[1].GetParameter(1), fits[2].GetParameter(1))
+        t_e = min(fits[1].GetParameter(1), fits[2].GetParameter(1))
+        if t_mu == fits[1].GetParameter(1):
+            n_mu = fits[1].Integral(0, 100)/ hTOFOther.GetBinWidth(1)
+            n_e = fits[2].Integral(0, 100)/ hTOFOther.GetBinWidth(2)
+        else:
+            n_mu = fits[2].Integral(0, 20)/ hTOFOther.GetBinWidth(1)
+            n_e = fits[1].Integral(0, 20)/ hTOFOther.GetBinWidth(2)
+        mom_pred = 0#TofToMomentum(t_mu+t_e-getTof(ms['e'], momentum),ms['mu'])
+
+        # #integrate the gaussians
+        print("Integral fits[1]", fits[1].Integral(10, 20)/ hTOFOther.GetBinWidth(1))
+        print("Integral fits[2]", fits[2].Integral(10, 20)/ hTOFOther.GetBinWidth(1))
+
+        print("Momentum from muon ", mom_pred, "Mometum = ", momentum)
+        tex = ROOT.TLatex(0.4, 0.8, 't_{e} = '+ '{:1.2f}'.format(t_e) + ', t_{mu}=' + '{:1.2f}'.format(t_mu))
+        tex2 = ROOT.TLatex(0.4, 0.7, 'Mom. from tof mu = ' + '{:1.1f}'.format(mom_pred) + 'MeV/c')
+
+        tex3 = ROOT.TLatex(0.4, 0.6, 'Nmu+Npi = ' + '{:1.0f}'.format(n_mu) + ', Ne = ' + '{:1.0f}'.format(n_e))
+
+        tex.SetNDC()
+        tex2.SetNDC()
+        tex3.SetNDC()
+        tex.Draw()
+        tex2.Draw()
+        tex3.Draw()
+        stuff.append(tex)
+        stuff.append(tex2)
+        stuff.append(tex3)
+
+        #
+        # width = 0.24
+        # fite = Fit(hTOFOther, '_el', momentum, 11.6, width, 10., 14., 1.)
+        # fitmu = Fit(hTOFOther, '_p', momentum,  11.63 - tofDiff_e_mu, width*1.1, 10 - tofDiff_e_mu,  14 - tofDiff_e_mu, .5)
+
+
+
+
+
+    else:
+        width = 0.24
+        print('Assuming high momentum run, will try to fit e/p/d')
+        print(tofDiff_e_d)
+        fite = Fit(hTOFOther, '_el', momentum, 11.6, width, 10., 14., 1.)
+        
+        fitp = Fit(hTOFOther, '_p', momentum,  11.63 - tofDiff_e_p, width, 10 - tofDiff_e_p,  14 - tofDiff_e_p, 1.)
+        fitd = Fit(hTOFOther, '_d', momentum,  25.5, width+2, 24,  27, 0.8)
+        stuff.append([fitp, fitd])
+
+
+        
+        tdif_e_p = fitp.GetParameter(1) - fite.GetParameter(1)
+
+        mom_pred = TofToMomentum(fitp.GetParameter(1),ms['p'])
+
+        a = (fitd.GetParameter(1)*c)/(l*conv)
+        print(a)
+        m3 = mom_pred*sqrt((a)**2-1)
+
+        if (momentum)>0:
+            print("Mometum from proton ", TofToMomentum(fitp.GetParameter(1),ms['p']))
+            tex = ROOT.TLatex(0.3, 0.8, 't_{e} = '+ '{:1.2f}'.format(fite.GetParameter(1)) + ', t_{p}=' + '{:1.2f}'.format(fitp.GetParameter(1)) + ', t_{3}=' + '{:1.2f}'.format(fitd.GetParameter(1)) + ', m_{3}=' + '{:1.0f}'.format(m3) + 'MeV')
+        else:
+            tex = ROOT.TLatex(0.4, 0.8, 't_{e} =' + '{:1.2f}'.format(fite.GetParameter(1)))
+
+
+        tex2 = ROOT.TLatex(0.4, 0.7, 'Mom. from tof p = ' + '{:1.1f}'.format(mom_pred) + 'MeV/c')
+
+
+
+        tex.SetNDC()
+        tex2.SetNDC()
+        tex.Draw()
+        tex2.Draw()
+        stuff.append(tex)
+        stuff.append(tex2)
 
         #tdif_e_d = fitd.GetParameter(1) - fite.GetParameter(1)
         #tex = ROOT.TLatex(0.7, 0.7, 't_{d}-t_{e}=' + '{:1.2f}'.format(tdif_e_d))

@@ -46,6 +46,9 @@ def process_waveforms(argv):
 
 
 def process_file(root_filename, config, output_file):
+    #monitor pedestal fluctuations
+    runNb = int(root_filename[14:20])
+    pedestal_list = [runNb]
     print(f"Processing root file {root_filename}")
     run_file = ur.open(root_filename)
     digitizers = ["midas_data_D300", "midas_data_D301", "midas_data_D302", "midas_data_D303"]
@@ -91,7 +94,12 @@ def process_file(root_filename, config, output_file):
         signal_times[:, i] = waveform_analysis.signal_times
         integrated_charges[:, i] = waveform_analysis.integrated_charges
         n_peaks[:, i] = waveform_analysis.n_peaks
+        #print("pedestals", waveform_analysis.pedestals.squeeze(), waveform_analysis.my_pedestals)
+        pedestal_list.append(waveform_analysis.my_pedestals)
+        pedestal_list.append(waveform_analysis.my_pedestal_sigmas)
+    print("Pedestals: ", pedestal_list)
     run_file.close()
+    print(f"Using global pedestal: ", waveform_analysis.use_global_pedestal)
 
     print(f"Writing to {output_file.file_path}")
     branches = {
@@ -109,6 +117,12 @@ def process_file(root_filename, config, output_file):
     else:
         output_file["anaTree"].extend(branches)
 
+    if True:
+        #chekcing the stability of pedestal
+        import csv
+        with open(r'pedestalStabilityChecks.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(pedestal_list)
 
 if __name__ == "__main__":
     # execute only if run as a script"

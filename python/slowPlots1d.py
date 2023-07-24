@@ -106,6 +106,8 @@ def main(argv):
         'hRef_Charge' : ROOT.kCyan,
         'hRef_Voltage' : ROOT.kMagenta,
         'hRef_nPeaks' : ROOT.kYellow,
+        'hRef_Pedestal': ROOT.kBlue,
+        'hRef_PedestalNbPeaks': ROOT.kGray,
     }
     
     os.system('mkdir -p pdf png')
@@ -413,6 +415,18 @@ def main(argv):
     h.Draw(opt2d)
     adjustStats(h)
 
+    canname = 'PbvsACT1_{}'.format(ftag[10:])
+    hname = 'hRef_pbA_act1C'
+    h = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    h.SetTitle('Lead glass vs ACT1 {}'.format(ftag[10:]))
+    # h.GetXaxis().SetRangeUser(0., 10.)
+    # h.GetYaxis().SetRangeUser(0., 16.0)
+    h.Draw(opt2d)
+    adjustStats(h)
+
 
 
     canname = 'TOFall_{}'.format(ftag[10:])
@@ -424,7 +438,7 @@ def main(argv):
     h.SetTitle('TOF(all) {}'.format(ftag[10:]))
     h.GetXaxis().SetRangeUser(10., 50.)
     fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax()) #
-    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev()) #
+    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-1, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev()) #
     h.Fit(fname, 'q', '', )
     h.Draw(opt2d)
     fit.Draw('same')

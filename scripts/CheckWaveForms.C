@@ -48,24 +48,38 @@ bool LinkDigiDet(){
 }
 
 
-int EventSelection(double act, double pbg){
+int EventSelection(double act, double pbg, double nPeaks){
     // in the act2+3 vs. pb amplitude space
     // pb < 1.3 && act < 10 -> mu/pi
     // 1.3 < pb < 2.5 && 10 < act -> e
     // pb > 2.5 -> mu/pi in e pile-up?
+  std::cout << nPeaks << std::endl;
+  if (nPeaks<=0.2){
+    std::cout << "zeroPeak" << std::endl;
+    return (int)EventRegion::zeroPeak;
 
-  if (pbg < 1.3 && act < 10){
-    return (int)EventRegion::mupi_1pulse;
   }
-  else if (pbg > 1.3 && pbg < 2.5 && act > 10){
-    return (int)EventRegion::e_npulses;
+  else if (nPeaks==1){
+    std::cout << "onePeak" << std::endl;
+    return (int)EventRegion::onePeak;
   }
-  else if (pbg > 2.5){
-    return (int)EventRegion::mupi_npulses;
+  else if (nPeaks>1){
+    std::cout << "multiPeak" << std::endl;
+    return (int)EventRegion::multiPeaks;
   }
-  else{
-    return (int)EventRegion::not_defined;
-  }
+
+ // if (pbg < 1.3 && act < 10){
+ //   return (int)EventRegion::mupi_1pulse;
+ // }
+ // else if (pbg > 1.3 && pbg < 2.5 && act > 10){
+ //   return (int)EventRegion::e_npulses;
+ // }
+ // else if (pbg > 2.5){
+ //   return (int)EventRegion::mupi_npulses;
+ //  }
+ // else{
+ //   return (int)EventRegion::not_defined;
+ // }
 }
 
 void PlotAvgHists(TH1D** hist, const int nplots, TCanvas* c){
@@ -108,6 +122,8 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
   gSystem->Exec(Form("mkdir -p %s/root_hists", data_dir.c_str()));//create dir for root files of hists in the data dir
   
   Double_t peakVoltage[nMaxChannels][1];
+  Double_t nPeaks[nMaxChannels][1];
+  Double_t pedestal[nMaxChannels][1];
   vector<double> *waveform = NULL;
   int eventNumber, spillNumber;
 
@@ -124,6 +140,8 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
   tree_ntuple->AddFriend(vec_root_trees[digipair.first]); // only add one digitizer branch
   
   tree_ntuple->SetBranchAddress("PeakVoltage",&peakVoltage);
+  tree_ntuple->SetBranchAddress("nPeaks",&nPeaks);
+  tree_ntuple->SetBranchAddress("Pedestal",&pedestal);
   tree_ntuple->SetBranchAddress(Form("Channel%d", digipair.second), &waveform);
   tree_ntuple->SetBranchAddress("eventNumber", &eventNumber);
   tree_ntuple->SetBranchAddress("spillNumber", &spillNumber);
@@ -131,7 +149,8 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
   vector<int> nplots_region(int(EventRegion::EventRegionCount), 0);
   //TH1D* hist_waveform_cuts[int(EventRegion::EventRegionCount)][nplots]; //waveform for events selected by cuts
   TH1D*** hist_waveform_cuts = new TH1D **[int(EventRegion::EventRegionCount)](); //waveform for events selected by cuts
-  for (int iregion = 0; iregion < int(EventRegion::EventRegionCount); iregion++){
+  //acraplet - change back to 0
+  for (int iregion = 2; iregion < int(EventRegion::EventRegionCount); iregion++){
     hist_waveform_cuts[iregion] = new TH1D *[nplots]();
   }
   
@@ -139,6 +158,9 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
 
   for (int ievt = 0; ievt < nevt; ievt++){
       tree_ntuple->GetEntry(ievt);
+      double nPeaksVal = nPeaks[(int)DetChannels(det_to_plot)][0];
+      std::cout << nPeaksVal << std::endl;
+      double pededestalVal = pedestal[(int)DetChannels(det_to_plot)][0];
       if (spillID >= 0 && eventID >= 0){
 	if (spillNumber != spillID) { // selected spill
 	  continue;
@@ -155,7 +177,8 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
 			   peakVoltage[(int)DetChannels::act_3_R][0]);
       
       double pba = peakVoltage[(int)DetChannels::pbg][0];
-      int iregion = EventSelection(actamp, pba); // find the category given act and pb amplitudes
+      int iregion = EventSelection(actamp, pba, nPeaksVal); // find the category given act and pb amplitudes
+
       
       if ((spillID < 0 || eventID < 0) && (iregion < 0 || nplots_region[iregion] >= nplots)){
 	//not interested in these events out of the cut regions
@@ -170,7 +193,7 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
 
       if (spillID < 0 || eventID < 0){
 	char* histname_cuts = Form("Spill%d_Evt%d_%s_%s", spillNumber, eventNumber, EventRegionNames.at(EventRegion(iregion)).c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str());//decimals are not accepted in hist name
-	char* histtitle_cuts = Form("Spill%d_Evt%d_%s_%s_ACT%.2f_Pb%.2f", spillNumber, eventNumber, EventRegionNames.at(EventRegion(iregion)).c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), actamp, pba);
+	char* histtitle_cuts = Form("Spill%d_Evt%d_%s_%s_ACT%.2f_Pb%.2f_nPeaks%.0f_pedestal%.2f", spillNumber, eventNumber, EventRegionNames.at(EventRegion(iregion)).c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), actamp, pba, nPeaksVal, pededestalVal);
 		
 	//initialize hists
 	hist_waveform_cuts[iregion][nplots_region[iregion]] =
@@ -181,7 +204,7 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
       }
       else{
 	char* histname = Form("Spill%d_Evt%d_%s", spillNumber, eventNumber, DetChNames.at(DetChannels(det_to_plot)).c_str());
-	char* histtitle = Form("Spill%d_Evt%d_%s_ACT%.2f_Pb%.2f", spillNumber, eventNumber, DetChNames.at(DetChannels(det_to_plot)).c_str(), actamp, pba);
+	char* histtitle = Form("Spill%d_Evt%d_%s_ACT%.2f_Pb%.2f_nPeaks%.0f_pedestal%.2f", spillNumber, eventNumber, DetChNames.at(DetChannels(det_to_plot)).c_str(), actamp, pba, nPeaksVal, pededestalVal);
 	hist_waveform = new TH1D(histname, histtitle, nsamples, 0, nsamples*nanosecsPerSample);
 	hist_waveform->SetDirectory(0);
 	hist_waveform->FillN(nsamples, &fill_bins[0], &(*waveform)[0]);
@@ -215,9 +238,9 @@ void CheckWaveForms(string data_dir, int runnum, int det_to_plot, const int nplo
     }
     TFile *outfile = new TFile(Form("%s/root_hists/%s_waveform_cuts_%d_evts.root", data_dir.c_str(), DetChNames.at(DetChannels(det_to_plot)).c_str(), nplots),"recreate");
 
-    for (int iregion = 0; iregion < (int)EventRegion::EventRegionCount; iregion++){
+    for (int iregion = 3; iregion < (int)EventRegion::EventRegionCount; iregion++){
       if (plotavg) {PlotAvgHists(hist_waveform_cuts[iregion], nplots, cavg);}
-      for (int iplot = 0; iplot < nplots; iplot++){
+      for (int iplot = 3; iplot < nplots; iplot++){
 	outfile->cd();
 	hist_waveform_cuts[iregion][iplot]->Write();
 	if (plotavg){
