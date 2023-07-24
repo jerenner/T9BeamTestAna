@@ -229,7 +229,7 @@ def main(argv):
             #txts.append(text)
 
 
-    # 2023 toch channels time diff analysis / calibration
+    # 2023 tof channels time diff analysis / calibration
     htdiffnames = []
     base = 'hTimeDiffTOF'
     htofdiffs = {}
@@ -304,8 +304,8 @@ def main(argv):
             
             #h.GetXaxis().SetRangeUser(-4,8.)
             fname = 'fit_tofs_{}'.format(ic)
-            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
-            fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev(), h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
+            fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2))+ [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax()) #
+            fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev(), h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev()) #
             #try to fiut the peaks one by one
             #g1 = ROOT.TF1("g1", "gaus", 0, 15);
             #g2 = ROOT.TF1("g2", "gaus", 12, 20);
@@ -339,25 +339,29 @@ def main(argv):
 #   plot 2d hist act vs lead     #
 ##################################
 
-    canname = 'ACT2+3vsLeadGlass_{}'.format(ftag[10:])
+    interest = []
+
+    # interest
+    canname = 'ACT2_3vsLeadGlass_{}'.format(ftag[10:])
     hname = 'hRef_pbA_act23A'
-    h = rfile.Get(hname)
+    hact23vsPbA = rfile.Get(hname)
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     cans.append(can)
     can.cd()
-    integral_full = h.Integral()
-    h.GetXaxis().SetRangeUser(0, 10)
-    h.GetYaxis().SetRangeUser(0, 15)
+    integral_full = hact23vsPbA.Integral()
+    hact23vsPbA.GetXaxis().SetRangeUser(0, 16.)
+    hact23vsPbA.GetYaxis().SetRangeUser(0, 15.)
     x1, x2, y1, y2 = 0.2, 1.3, 1.5, 4.5
-    bx1 = h.GetXaxis().FindBin(x1)
-    bx2 = h.GetXaxis().FindBin(x2)
-    by1 = h.GetYaxis().FindBin(y1)
-    by2 = h.GetYaxis().FindBin(y2)
-    integral_zoom = h.Integral(bx1, bx2, by1, by2)
+    bx1 = hact23vsPbA.GetXaxis().FindBin(x1)
+    bx2 = hact23vsPbA.GetXaxis().FindBin(x2)
+    by1 = hact23vsPbA.GetYaxis().FindBin(y1)
+    by2 = hact23vsPbA.GetYaxis().FindBin(y2)
+    integral_zoom = hact23vsPbA.Integral(bx1, bx2, by1, by2)
     print(f'integral: ful={integral_full}, zoom={integral_zoom}')
-    h.SetTitle('ACT2+3 vs Lead Glass {}'.format(ftag[10:]))
-    h.Draw(opt2d)
-    adjustStats(h)
+    hact23vsPbA.SetTitle('ACT2+3 vs Lead Glass {}'.format(ftag[10:]))
+    hact23vsPbA.DrawCopy(opt2d)
+    adjustStats(hact23vsPbA)
+    interest.append(hact23vsPbA)
     
     if False:
         line = makeLine(x1, x2, y1, y1)
@@ -384,34 +388,49 @@ def main(argv):
     h.SetTitle('TOF vs ACT3 {}'.format(ftag[10:]))
     #h.GetYaxis().SetRangeUser(0, 15.)
     #h.GetXaxis().SetRangeUser(13.5, 16.0)
-    h.Draw(opt2d)
+    h.DrawCopy(opt2d)
     adjustStats(h)
 
 
+    # interest
     canname = 'TOFvsACT23_{}'.format(ftag[10:])
     hname = 'hRef_TOFACT23A'
-    h = rfile.Get(hname)
+    hTOFvsACT23 = rfile.Get(hname)
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     cans.append(can)
     can.cd()
-    h.SetTitle('TOF vs ACT23 {}'.format(ftag[10:]))
-    h.GetXaxis().SetRangeUser(0., 16.0)
-    h.GetYaxis().SetRangeUser(0, 15)
-    h.Draw(opt2d)
-    adjustStats(h)
+    hTOFvsACT23.SetTitle('TOF vs ACT23 {}'.format(ftag[10:]))
+    hTOFvsACT23.GetXaxis().SetRangeUser(10., 16.0)
+    hTOFvsACT23.GetYaxis().SetRangeUser(0, 15)
+    hTOFvsACT23.DrawCopy(opt2d)
+    adjustStats(hTOFvsACT23)
+    interest.append(hTOFvsACT23)
 
-
-    canname = 'PbvsTOF_{}'.format(ftag[10:])
+    canname = 'TOFvsPb_{}'.format(ftag[10:])
     hname = 'hRef_PbATOF'
-    h = rfile.Get(hname)
+    hPbATOF = rfile.Get(hname)
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     cans.append(can)
     can.cd()
-    h.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
-    h.GetXaxis().SetRangeUser(0., 10.)
-    h.GetYaxis().SetRangeUser(0., 16.0)
-    h.Draw(opt2d)
-    adjustStats(h)
+    hPbATOF.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
+    hPbATOF.GetXaxis().SetRangeUser(0., 10.)
+    hPbATOF.GetYaxis().SetRangeUser(10., 16.0)
+    hPbATOF.DrawCopy(opt2d)
+    adjustStats(hPbATOF)
+
+    # interest
+    canname = 'PbvsTOF_{}'.format(ftag[10:])
+    hname = 'hRef_TOFPbA'
+    hTOFPbA = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    hTOFPbA.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
+    hTOFPbA.GetXaxis().SetRangeUser(10., 16.)
+    hTOFPbA.GetYaxis().SetRangeUser(0., 16.0)
+    hTOFPbA.DrawCopy(opt2d)
+    adjustStats(hTOFPbA)
+    interest.append(hTOFPbA)
 
 
 
@@ -423,13 +442,26 @@ def main(argv):
     can.cd()
     h.SetTitle('TOF(all) {}'.format(ftag[10:]))
     h.GetXaxis().SetRangeUser(10., 50.)
-    fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax())
-    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev())
+    fit = ROOT.TF1(fname, '[0]*exp(-(x-[1])^2/(2*[2]^2)) + [3]*exp(-(x-[4])^2/(2*[5]^2))', h.GetXaxis().GetXmin(), h.GetXaxis().GetXmax()) #
+    fit.SetParameters(h.GetMaximum()/6., h.GetMean()-1, h.GetStdDev()-3, h.GetMaximum()/6., h.GetMean()+1, h.GetStdDev()) #
     h.Fit(fname, 'q', '', )
     h.Draw(opt2d)
     fit.Draw('same')
     ROOT.gPad.SetLogy(1);
 
+
+    canname = 'CmpInterest_{}'.format(ftag[10:])
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.Divide(2,2)
+    ih = 1
+    for h in interest:
+        can.cd(ih)
+        h.Draw('colz')
+        adjustStats(h)
+        ih = ih + 1
+    
+    
     #acraplet - investigate "weird electrons"
 #
 #    canname = 'hHC0CHC1C_weirdE{}'.format(ftag[10:])
