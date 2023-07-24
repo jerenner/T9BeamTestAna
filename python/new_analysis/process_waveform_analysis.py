@@ -9,6 +9,7 @@
 
 import sys
 
+import numpy as np
 import uproot as ur
 import json5
 from waveform_analysis import WaveformAnalysis
@@ -88,25 +89,25 @@ def process_batch(waveforms, channel, output_file, config_args):
     waveform_analysis.run_analysis()
     pedestals = waveform_analysis.pedestals.squeeze()
     pedestal_sigmas = waveform_analysis.pedestal_sigmas.squeeze()
-    n_peaks = waveform_analysis.n_peaks
     peak_voltages = waveform_analysis.pulse_peak_voltages
     peak_times = waveform_analysis.pulse_peak_times
     signal_times = waveform_analysis.pulse_signal_times
     integrated_charges = waveform_analysis.pulse_charges
 
-    branches = {f"Pedestal": pedestals,
-                f"PedestalSigma": pedestal_sigmas,
-                f"nPeaks": n_peaks,
-                f"PeakVoltage": peak_voltages,
-                f"PeakTime": peak_times,
-                f"SignalTime": signal_times,
-                f"IntCharge": integrated_charges}
+    peaks = ak.zip({"PeakVoltage": peak_voltages,
+                    "PeakTime": peak_times,
+                    "SignalTime": signal_times,
+                    "IntCharge": integrated_charges})
+
+    branches = {"Pedestal": pedestals,
+                "PedestalSigma": pedestal_sigmas,
+                "Peaks": peaks}
 
     print(f"... writing {channel} to {output_file.file_path}")
     if channel not in output_file.keys():
-        output_file[channel] = branches
-    else:
-        output_file[channel].extend(branches)
+        branch_types = {"Pedestal": "float64", "PedestalSigma": "float64", "Peaks": peaks.type}
+        output_file.mktree(channel, branch_types, counter_name=(lambda s: "nPeaks"), field_name=(lambda s, f: f))
+    output_file[channel].extend(branches)
 
 
 if __name__ == "__main__":
