@@ -25,7 +25,6 @@ def PrintUsage(argv):
 # https://www.tutorialspoint.com/python/python_command_line_arguments.htm
 def main(argv):
 
-    ROOT.gStyle.SetPalette(ROOT.kDeepSea)
     ROOT.gStyle.SetOptTitle(0)
     
     #if len(sys.argv) > 1:
@@ -79,23 +78,38 @@ def main(argv):
     filename = argv[1]
     rfile = ROOT.TFile(filename, 'read')
     #hnames = [ 'hRef_ACT2CACT1C', 'hRef_ACT3CACT2C', 'hRef_ACT1CACT3C']
-    hnames = ['hnPeaksACT23vsnPeaksToF', 
-              'hnPeaksToF1vsnPeaksToF0', 
-              'hnPeaksACT3vsnPeaksACT2', 
-              'hnPeaksACT23vsToF', 
-              'hnPeaksACT23vsToFlow', 
-              'hnPeaksToFvsToF', 
-              'hnPeaksToFvsToFlow', 
-              'hnPeaksLeadGlassvsLeadGlassA', 
-              'hnPeaksACT23vsLeadGlassA', 
-              'hnPeaksToFvsLeadGlassA'
-              ]
+    hnames = [
+              #'hnPeaksACT23vsnPeaksToF', 
+              #'hnPeaksToF1vsnPeaksToF0', 
+              #'hnPeaksACT3vsnPeaksACT2', 
+              #'hnPeaksACT23vsToF', 
+              #'hnPeaksACT23vsToFlow', 
+              #'hnPeaksToFvsToF', 
+              #'hnPeaksToFvsToFlow', 
+              #'hnPeaksLeadGlassvsLeadGlassA', 
+              #'hnPeaksACT23vsLeadGlassA', 
+              #'hnPeaksToFvsLeadGlassA',
+              #'hRef_ACT2CACT1C', 'hRef_ACT3CACT2C', 'hRef_ACT1CACT3C',
+              'hRef_pbA_act23A',
+              'hRef_TOFACT23A',
+              'hRef_pbA_act0A', 'hRef_TOFACT0A',
+              'hRef_pbA_act1A', 'hRef_TOFACT1A',
+              'hRef_TOFPbA',
+    ]
     hs = []
     txts = []
 
+    if not 'TOF' in hnames[-1]:
+        ROOT.gStyle.SetPalette(ROOT.kDeepSea)
+    else:
+        ROOT.gStyle.SetPalette(ROOT.kSolar)
     
     for hname in hnames:
+        # HACK!!!
+        if 'nPeak' in hname:
+            continue
         h = rfile.Get(hname)
+        print(h)
         hs.append(h)
 
 
@@ -110,6 +124,7 @@ def main(argv):
 
     ih = -1
     for h in hs:
+        hname = h.GetName()
         ih = ih+1
         basetag = h.GetName()
         ftag = filename.replace('output_','').replace('_plots.root','').replace('/ntuple_', '')
@@ -120,10 +135,25 @@ def main(argv):
         
         hnameTag = h.GetName().replace('hRef_','')
         can.cd(hs.index(h)+1)
-        h.SetStats(0)
+        #h.SetStats(0)
         #ROOT.gPad.SetLogy(1)
         #h.GetYaxis().SetRangeUser(1.e-4, h.GetYaxis().GetXmax())
         h.Draw('colz')
+        adjustStats(h)
+
+        if '_TOF' in hname:
+            h.GetXaxis().SetRangeUser(10.,15.)
+        if 'hRef_pbA' in hname:
+            h.GetXaxis().SetRangeUser(0.,4.) # different to be used for higher momenta...        
+        if 'TOFPbA' in hname:
+            h.GetYaxis().SetRangeUser(0.,4.) # different to be used for higher momenta...
+        if 'TOFACT1' in hname or 'act1A' in hname:
+            h.GetYaxis().SetRangeUser(0.,6.) # different to be used for higher momenta...
+        if 'TOFACT23' in hname or 'act23A' in hname:
+            h.GetYaxis().SetRangeUser(0.,10.) # different to be used for higher momenta...        
+        elif 'TOFACT2' in hname or 'act2A' in hname:
+            h.GetYaxis().SetRangeUser(0.,6.) # different to be used for higher momenta...
+        
         ROOT.gPad.SetLogz(1)
         #txt= '{} {} p={} MeV/c'.format(hnameTag, basetag, ftag.replace('n','').replace('p',''))
         #if 'p' in ftag:
@@ -131,7 +161,7 @@ def main(argv):
         #else:
         #    txt = txt + ' (Neg)'
         txt = '#rho={:1.2f}'.format(h.GetCorrelationFactor())
-        text = ROOT.TLatex(0.78, 0.85, txt)
+        text = ROOT.TLatex(0.225, 0.85, txt)
         text.SetTextSize(0.04)
         text.SetNDC()
         text.Draw()
@@ -142,7 +172,8 @@ def main(argv):
         prof.SetMarkerStyle(21)
         prof.SetMarkerColor(ROOT.kYellow)
         prof.SetLineColor(ROOT.kYellow)
-        prof.Draw('e1 x0 same')
+        if 'nPeak' in hname:
+            prof.Draw('e1 x0 same')
         stuff.append(prof)
         
         pnote.Draw()

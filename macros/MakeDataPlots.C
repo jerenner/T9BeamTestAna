@@ -80,11 +80,11 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TFile outFile(outFileName.Data(), "RECREATE");
   outFile.cd();
 
+  // TOF 1D
   TH1D hTOFAll("hTOFAll", ";t_{TOF}^{All} [ns]", 120, tofmin, tofmax);
   TH1D hTOFAllWide("hTOFAllWide", ";t_{TOF}^{All} [ns]", 2*ntofbins, tofmin, 2*tofmax);
   TH1D hTOFEl("hTOFEl", ";t_{TOF}^{e} [ns]", ntofbins, tofmin, tofmax);
   TH1D hTOFOther("hTOFOther", ";t_{TOF}^{non-e} [ns]", ntofbins, tofmin, tofmax);
-
 
   TH1D hTOFAllLow("hTOFAllLow", ";t_{TOF}^{All} [ns]", ntofbinslow, tofminlow, tofmaxlow);
   TH1D hTOFElLow("hTOFElLow", ";t_{TOF}^{e} [ns]", ntofbinslow, tofminlow, tofmaxlow);
@@ -116,24 +116,34 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   TH1D hTimeTOF3("hTimeTOF3", "; hTimeTOF3", 100, 0.,50.);
 
   //lead glass vs act 2 and 3 - identify particles
-  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 200, 0., actAmplitudeMax/5, 400, 0., actAmplitudeMax);
+  TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 200, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
   TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 200, 0., actChargeMax, 400, 0., actAmplitudeMax);
 
+  TH2D hPbACT0A("hRef_pbA_act0A", "; Pb-glass Amplitude ; ACT0 Amplitude", 200, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
+  TH2D hPbACT0C("hRef_pbC_act0C", "; Pb-glass Charge ; ACT1 Charge)", 200, 0., actChargeMax, 400, 0., actAmplitudeMax);
+  TH2D hPbACT1A("hRef_pbA_act1A", "; Pb-glass Amplitude ; ACT1 Amplitude", 200, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
+  TH2D hPbACT1C("hRef_pbC_act1C", "; Pb-glass Charge ; ACT1 Charge)", 200, 0., actChargeMax, 400, 0., actAmplitudeMax);
 
-  //ACT2+ACT3/2 vs TOF plots
+
+  // (ACT2+ACT3)/2 vs TOF plots
   TH2D hTOFACT23A("hRef_TOFACT23A", "; t_{1}-t_{0} [ns]; (ACT2+ACT3)/2 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
   TH2D hTOFACT23C("hRef_TOFACT23C", "; t_{1}-t_{0} [ns]; (ACT2+ACT3)/2 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
 
+  // also ACT 0 and 1, separately:
+  /* seems they were already defined below...
+  TH2D hTOFACT0A("hRef_TOFACT0A", "; t_{1}-t_{0} [ns]; ACT0 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+  TH2D hTOFACT1A("hRef_TOFACT1A", "; t_{1}-t_{0} [ns]; ACT1 Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax);
+  TH2D hTOFACT0C("hRef_TOFACT0C", "; t_{1}-t_{0} [ns]; ACT0 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+  TH2D hTOFACT1C("hRef_TOFACT1C", "; t_{1}-t_{0} [ns]; ACT1 Charge", ntofbins2d, tofmin, tofmax, 200, 0., actChargeMax);
+  */
 
   //TOF vs Pb-glass plots
   TH2D hPbATOF("hRef_PbATOF", "; Pb-glass Amplitude; t_{1}-t_{0} [ns]", 200, 0., actAmplitudeMax/2, ntofbins2d, tofmin, tofmax);
   TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 200, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
   TH2D hTOFPbA("hRef_TOFPbA", "; t_{1}-t_{0} [ns]; Pb-glass Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax/2);
-
   
   //acraplet - investigate "weird electrons"
   TH2D hHC0AHC1A("hweirdE_HC0AHC1A", "; Hole Counter 0 Amplitude; Hole Counter 1 Amplitude", 200, 0., 1000, 200, 0., 1000.);
-
   TH2D hHC0CHC1C("hweirdE_HC0CHC1C", "; Hole Counter 0 Charge; Hole Counter 1 Charge", 200, 0., 1., 200, 0., 1.);
 
   // standard
@@ -242,6 +252,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     double ACTC23ElectronThreshA = 1.5;
     double ACTC23ElectronUpperThreshA = 3.5;
 
+    bool  onePeakInPbGlass = (nPeaks[18] == 1);
+    
     for(int j = 0; j < nChannels; j++) {
       if (j < 16) {
         onePeakInAll = onePeakInAll && (nPeaks[j] == 1);
@@ -281,6 +293,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     if (peakMode == "f" && ! (onePeakInAllToFs) )
       continue;
     if (peakMode == "g" && ( ! (onePeakInAllToFs) || ! (ACT23AboveElectronLevel) || ! (PbGlassAboveElectronLevel)))
+      continue;
+    if (peakMode == "h" && ( ! (onePeakInAllToFs && onePeakInPbGlass)) )
       continue;
 
     for(int j = 0; j < nChannels; j++) {
@@ -370,8 +384,14 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
     hPbACT23A.Fill(pba, (act2a+act3a) / 2.);
     hTOFACT23A.Fill(tof, (act2a+act3a) / 2.);
+
+    hPbACT0A.Fill(pba, act0a);
+    hPbACT1A.Fill(pba, act1a);
+    
     hPbATOF.Fill(pba, tof);
     hTOFPbA.Fill(tof, pba);
+
+    
     
     double act0c = intCharge[0][0] + intCharge[1][0];
     double act1c = intCharge[2][0] + intCharge[3][0];
@@ -390,6 +410,12 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
     hPbACT23C.Fill(pbc, (act2c+act3c) / 2.);
     hTOFACT23C.Fill(tof, (act2c+act3c) / 2.);
+    
+    hPbACT0C.Fill(pbc, act0c);
+    hTOFACT0C.Fill(tof, act0c);
+    hPbACT1C.Fill(pbc, act1c);
+    hTOFACT1C.Fill(tof, act1c);
+    
     hPbCTOF.Fill(pbc, tof);
 
     hACT1CACT3C.Fill(act1c, act3c);
