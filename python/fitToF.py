@@ -221,8 +221,9 @@ def main(argv):
     if abs(momentum) < 500:
         suff = 'Low'
         print('Low momentum run, looking at zoomed version of tof histos!')
-    hTOFAll = inFile.Get("hTOFOther" + suff)
-    hTOFEl = inFile.Get("hTOFEl" + suff)
+    hTOFAll = inFile.Get("hTOFAllLow" + suff)
+    hTOFOther = inFile.Get("hTOFOtherLow" + suff)
+    hTOFEl = inFile.Get("hTOFElLow" + suff)
 
 
     signedmomentum = str(abs(momentum))
@@ -239,12 +240,12 @@ def main(argv):
     
     ROOT.gStyle.SetOptStat(0)
     
-    hTOFAll.SetLineColor(ROOT.kBlack)
-    hTOFAll.SetMarkerColor(hTOFAll.GetLineColor())
-    hTOFAll.SetMarkerStyle(20)
-    hTOFAll.SetMarkerSize(1)
-    hTOFAll.SetLineWidth(1)
-    hTOFAll.Draw('e1')
+    hTOFOther.SetLineColor(ROOT.kBlack)
+    hTOFOther.SetMarkerColor(hTOFOther.GetLineColor())
+    hTOFOther.SetMarkerStyle(20)
+    hTOFOther.SetMarkerSize(1)
+    hTOFOther.SetLineWidth(1)
+    hTOFOther.Draw('e1')
 
     # def Fit(h, tag, ct, w, t1, t2, peaksf = 1.):
 
@@ -265,21 +266,21 @@ def main(argv):
         tcs = [11.7, 11.7 + off + tofDiff_e_mu, 11.7 + off + tofDiff_e_pi]
         ws = [0.25, 0.3, 0.35]
         sfs = [1., 10., 25.]
-        fits = MultiFit(hTOFAll, '_mupi', momentum, tcs, ws, 11., 14., sfs)
+        fits = MultiFit(hTOFOther, '_mupi', momentum, tcs, ws, 11., 14., sfs)
         stuff.append(fits)
     elif abs(momentum) < 700:
         print('Assuming medium momentum run, will try to fit e/mu+pi')
         tcs = [11.7, 11.7 + off + tofDiff_e_mu]
         ws = [0.25, 0.3]
         sfs = [1., 5.]
-        fits = MultiFit(hTOFAll, '_mupi', momentum, tcs, ws, 11., 14., sfs)
+        fits = MultiFit(hTOFOther, '_mupi', momentum, tcs, ws, 11., 14., sfs)
         stuff.append(fits)
     else:
         print('Assuming high momentum run, will try to fit e/p/d')
-        fite = Fit(hTOFAll, '_el', momentum, 11.7 + off, width, 11. + off, 13. + off, 1.)
+        fite = Fit(hTOFOther, '_el', momentum, 11.7 + off, width, 11. + off, 13. + off, 1.)
         
-        fitp = Fit(hTOFAll, '_p', momentum,  16. + off, width, 14 + off,  17.5 + off, 1.)
-        fitd = Fit(hTOFAll, '_d', momentum,  25. + off, 0.8, 24.3 + off, 25.7 + off, 0.8)
+        fitp = Fit(hTOFOther, '_p', momentum,  16. + off, width, 14 + off,  17.5 + off, 1.)
+        fitd = Fit(hTOFOther, '_d', momentum,  25. + off, 0.8, 24.3 + off, 25.7 + off, 0.8)
         stuff.append([fitp, fitd])
         
         tdif_e_p = fitp.GetParameter(1) - fite.GetParameter(1)

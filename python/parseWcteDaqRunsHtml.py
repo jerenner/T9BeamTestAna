@@ -34,7 +34,7 @@ for xline in infile.readlines():
     smomentum = tokens[7]
     #print(srun, smomentum)
     run = int(srun)
-    momentum = int(float(smomentum)*100)*10
+    momentum = int(round(float(smomentum)*1000))
     #print('momentum', momentum)
     if run < 255:
         continue
