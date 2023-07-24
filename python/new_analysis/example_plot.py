@@ -11,7 +11,7 @@ tof_1 = [file[c].arrays() for c in ["TOF10", "TOF11", "TOF12", "TOF13"]]
 act_2_and_3 = [file[c].arrays() for c in ["ACT2L", "ACT2R", "ACT3L", "ACT3R"]]
 all_channels = tof_0+tof_1+act_2_and_3
 
-# find events where all ACT2+3 and all TOF have signal over threshold, and number of peaks is 1 or more in all these waveforms
+# find events where all ACT2+3 and all TOF have signal over threshold, and number of peaks is 1 in all these waveforms
 single_pulses = np.where(np.all([c["nPeaks"] == 1 for c in all_channels], axis=0))[0]
 is_over_threshold = np.all([c["PeakVoltage"][single_pulses, 0] > 0.2 for c in all_channels], axis=0)
 good_events = single_pulses[is_over_threshold]
