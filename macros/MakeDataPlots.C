@@ -7,15 +7,30 @@
 #include <string>
 #include <vector>
 #include <iostream>
+
+#include "channelReadClass.h"
+
+
 // new
 using namespace std;
 
 // Matej Pavin 2022
 // modified by Jiri Kvita 2022
 // modified for 2023 32 channels July 2023
+// modified for different structures of the ntuples multiple times
+
 
 // ______________________________________________________________
 // ______________________________________________________________
+
+
+int getHighestPeakIndex(channelReadClass *reader)
+ {
+   // TODO, find peak index with highest voltage!!
+   return 0;
+   
+ }
+
 // ______________________________________________________________
 
 double GetBeta(double mass, double momentum) {
@@ -26,37 +41,39 @@ double GetBeta(double mass, double momentum) {
 
 
 // ______________________________________________________________
-// peakMode: "", a, b, c, d, e, f
+// peakMode: "", a, b, c, d, e, f, g, h
 
 void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
   const int nMaxChannels = 32;
   const int nChannels = 19; // UPDATE THIS FOR HODOSCOPE PMTs! to e.g. 32!
 
-  Double_t peakVoltage[nMaxChannels][1];
-  Double_t peakTime[nMaxChannels][1];
-  Double_t signalTime[nMaxChannels][1];
-  Double_t intCharge[nMaxChannels][1];
-  Double_t pedestal[nMaxChannels][1];
-  Double_t pedestalSigma[nMaxChannels];
-  Double_t nPeaks[nMaxChannels];
-
   gSystem->Exec("mkdir -p histos/");
 
-  TFile inFile(fileName.c_str(), "READ");
-  TTree *tree = (TTree*) inFile.Get("anaTree");
-
-  tree->SetBranchAddress("PeakVoltage",&peakVoltage);
-  tree->SetBranchAddress("PeakTime",&peakTime);
-  tree->SetBranchAddress("SignalTime",&signalTime);
-  tree->SetBranchAddress("IntCharge",&intCharge);
-  tree->SetBranchAddress("Pedestal",&pedestal);
-  tree->SetBranchAddress("PedestalSigma",&pedestalSigma);
-  //tree->SetBranchAddress("NbPeaks",&nbPeaks);
-  //tree->SetBranchAddress("PassThreshold",&passThreshold);
-  tree->SetBranchAddress("nPeaks",&nPeaks);
-
-  int ent = tree->GetEntries();
+  TFile *infile = new TFile(fileName.c_str(), "READ");
+ 
+  TString treeNames[] = {
+    "ACT0L",    "ACT0R",
+    "ACT1L",    "ACT1R",
+    "ACT2L", 	"ACT2R",
+    "ACT3L", 	"ACT3R",
+    "TOF00", 	"TOF01", 	"TOF02", 	"TOF03",
+    "TOF10", 	"TOF11", 	"TOF12", 	"TOF13",
+    "Hole0", 	"Hole1", 	"PbGlass"
+  };
+  
+  const int nTrees = 19;
+  int ent[nTrees];
+  channelReadClass *reader[nTrees];
+  TTree *trees[nTrees];
+  map<TString, channelReadClass*> readerMap;
+  
+  for (int itree = 0; itree < nTrees; ++itree) {
+    reader[itree] = new channelReadClass(infile, treeNames[itree]);
+    trees[itree] = reader[itree] -> fChain;
+    ent[itree] = trees[itree] -> GetEntries();
+    readerMap[treeNames[itree]] = reader[itree];
+  }
 
   double tofmin = 10.;
   double tofmax = 40.;
@@ -149,7 +166,6 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
   // standard
   vector<TH1D> hCharge;
   vector<TH1D> hVoltage;
-  vector<TH1D> hHit;
   vector<TH1D> hPedestalSigma;
   vector<TH1D> hTime;
   vector<TH1D> hnPeaks;
@@ -217,7 +233,6 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
     hCharge.push_back(temp1);
     hVoltage.push_back(temp2);
-    //    hHit.push_back(temp3);
     hPedestalSigma.push_back(temp4);
     hTime.push_back(temp5);
     hnPeaks.push_back(temp6);
@@ -229,9 +244,12 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
   cout << "Event loop!" << endl;
 
-  for(int i = 0; i < ent; i++) {
+  for(int ientry = 0; ientry < ent[0]; ientry++) {
 
-    tree->GetEntry(i);
+    for (int itree = 0; itree < nTrees; ++itree) {
+      reader[itree] -> GetEntry(ientry);
+    }
+
     vector<int> indices(nChannels, 0);;
 
     bool onePeakInAllACTs = true;
@@ -252,30 +270,30 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     double ACTC23ElectronThreshA = 1.5;
     double ACTC23ElectronUpperThreshA = 3.5;
 
-    bool  onePeakInPbGlass = (nPeaks[18] == 1);
+    bool  onePeakInPbGlass = (reader[18] -> nPeaks == 1);
     
     for(int j = 0; j < nChannels; j++) {
       if (j < 16) {
-        onePeakInAll = onePeakInAll && (nPeaks[j] == 1);
-        moreThanOnePeakInAll = moreThanOnePeakInAll && (nPeaks[j] > 1);
+        onePeakInAll = onePeakInAll && (reader[j] -> nPeaks == 1);
+        moreThanOnePeakInAll = moreThanOnePeakInAll && (reader[j] -> nPeaks > 1);
       }
       if (j < 8) {
-        onePeakInAllACTs = onePeakInAllACTs && (nPeaks[j] == 1);
-        moreThanOnePeakInAllACTs = moreThanOnePeakInAllACTs && (nPeaks[j] > 1);
+        onePeakInAllACTs = onePeakInAllACTs && (reader[j] -> nPeaks == 1);
+        moreThanOnePeakInAllACTs = moreThanOnePeakInAllACTs && (reader[j] -> nPeaks > 1);
       }
       if (j >= 8 && j < 16) {
-        onePeakInAllToFs = onePeakInAllToFs && (nPeaks[j] == 1);
-        moreThanOnePeakInAllToFs = moreThanOnePeakInAllToFs && (nPeaks[j] > 1);
+        onePeakInAllToFs = onePeakInAllToFs && (reader[j] -> nPeaks == 1);
+        moreThanOnePeakInAllToFs = moreThanOnePeakInAllToFs && (reader[j] -> nPeaks > 1);
       }
       //dirty add-on to select electrons
       if (j==18){
-        PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (peakVoltage[j][0] > PbGlassElectronThreshA);
-        PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (peakVoltage[j][0] < PbGlassElectronUpperThreshA);
+        PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (reader[j] -> PeakVoltage[0] > PbGlassElectronThreshA);
+        PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (reader[j] -> PeakVoltage[0] < PbGlassElectronUpperThreshA);
       }
-      if (j==4){
-        ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((peakVoltage[j][0] + peakVoltage[j+1][0] + peakVoltage[j+2][0] + peakVoltage[j+3][0])/2. > ACTC23ElectronThreshA);
+      if (j == 4){
+        ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((reader[j] -> PeakVoltage[0] + reader[j+1] -> PeakVoltage[0] + reader[j+2] -> PeakVoltage[0] + reader[j+3] -> PeakVoltage[0])/2. > ACTC23ElectronThreshA);
 
-        ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((peakVoltage[j][0] + peakVoltage[j+1][0] + peakVoltage[j+2][0] + peakVoltage[j+3][0])/2. < ACTC23ElectronUpperThreshA);
+        ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((reader[j] -> PeakVoltage[0] + reader[j+1] -> PeakVoltage[0] + reader[j+2] -> PeakVoltage[0] + reader[j+3] -> PeakVoltage[0])/2. < ACTC23ElectronUpperThreshA);
       }
     } // channels
 
@@ -297,33 +315,53 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     if (peakMode == "h" && ( ! (onePeakInAllToFs && onePeakInPbGlass)) )
       continue;
 
+    // histograms over all channels
+    
     for(int j = 0; j < nChannels; j++) {
-
-
-      /*
-       *	int ind = std::max_element(peakVoltage->at(j).begin(),peakVoltage->at(j).end()) - peakVoltage->at(j).begin();
-       *	indices.at(j) = ind;
-       *	hCharge.at(j).Fill(intCharge->at(j).at(indices.at(j)));
-       *	hVoltage.at(j).Fill(peakVoltage->at(j).at(indices.at(j)));
-       *	hTime.at(j).Fill(signalTime->at(j).at(indices.at(j)));
-       *	hHit.at(j).Fill(peakVoltage->at(j).size());
-       *	hPedestalSigma.at(j).Fill(pedestalSigma[j]);
-       */
-      hCharge.at(j).Fill(intCharge[j][0]);
-      hVoltage.at(j).Fill(peakVoltage[j][0]);
-      hTime.at(j).Fill(signalTime[j][0]);
-      //hNbPeaks.at(j).Fill(nPeaks[j]);
-      hPedestalSigma.at(j).Fill(pedestalSigma[j]);
-      hnPeaks.at(j).Fill(nPeaks[j]);
+      hCharge.at(j).Fill(reader[j] -> IntCharge[0]);
+      hVoltage.at(j).Fill(reader[j] -> PeakVoltage[0]);
+      hTime.at(j).Fill(reader[j] -> SignalTime[0]);
+      //hNbPeaks.at(j).Fill(reader[j] -> nPeaks);
+      hPedestalSigma.at(j).Fill(reader[j] -> PedestalSigma);
+      hnPeaks.at(j).Fill(reader[j] -> nPeaks);
     }
 
+    // TOF trigger scintilators
 
+    map<TString,int> tofPeakID;
+    map<TString,double> tofA; // amplitude
+    map<TString,double> tofC; // charge
+    map<TString,double> tofT; // time
+    for (int itof = 8; itof < 15; ++ itof) {
+      TString tofname = treeNames[itof];
+      tofPeakID[tofname] = getHighestPeakIndex(readerMap[tofname]);
+      if ( tofPeakID[tofname] < readerMap[tofname] -> nPeaks) {
+	tofA[tofname] = readerMap[tofname] -> PeakVoltage[tofPeakID[tofname]];
+	tofC[tofname] = readerMap[tofname] -> IntCharge[tofPeakID[tofname]];
+	tofT[tofname] = readerMap[tofname] -> SignalTime[tofPeakID[tofname]];
+      } else {
+	tofA[tofname] = 0.;
+	tofC[tofname] = 0.;
+	tofT[tofname] = 0.;
+      }
+    }
+    
+    double t00 = tofT["TOF00"];
+    double t01 = tofT["TOF01"];
+    double t02 = tofT["TOF02"];
+    double t03 = tofT["TOF03"];
 
+    double t10 = tofT["TOF10"];
+    double t11 = tofT["TOF11"];
+    double t12 = tofT["TOF12"];
+    double t13 = tofT["TOF13"];
+    
     // JK's time resolution of 2022
-    double t0a = (signalTime[8][0]  + signalTime[11][0] ) / 2.;
-    double t0b = (signalTime[9][0]  + signalTime[10][0] ) / 2.;
-    double t1a = (signalTime[12][0] + signalTime[15][0] ) / 2.;
-    double t1b = (signalTime[13][0] + signalTime[14][0] ) / 2.;
+    // diagonal combinations
+    double t0a = (t00 + t03) / 2.;
+    double t0b = (t01 + t02) / 2.;
+    double t1a = (t10 + t13) / 2.;
+    double t1b = (t11 + t12) / 2.;
 
     // time diffs for time resolution histogramme 2022:
     double t0diff = t0a - t0b;
@@ -336,19 +374,10 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hTimeReso0_zoom.Fill(t0diff);
     hTimeReso1_zoom.Fill(t1diff);
 
-
-    double t00 = signalTime[8][0];
-    double t01 = signalTime[9][0];
-    double t02 = signalTime[10][0];
-    double t03 = signalTime[11][0];
     hTimeDiffTOF01.Fill(t00 - t01); //carefull, this particular histogram is a difference of hit times,
     hTimeDiffTOF02.Fill(t00 - t02); //not a TOF per say but instead the cable length difference
     hTimeDiffTOF03.Fill(t00 - t03); //plus the photon travel time though the panel
-
-    double t10 = signalTime[12][0];
-    double t11 = signalTime[13][0];
-    double t12 = signalTime[14][0];
-    double t13 = signalTime[15][0];
+ 
     hTimeDiffTOF11.Fill(t11 - t10);
     hTimeDiffTOF12.Fill(t11 - t12);
     hTimeDiffTOF13.Fill(t11 - t13);
@@ -364,19 +393,68 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hTimeTOF2.Fill(t10 - t01);
     hTimeTOF3.Fill(t12 - t03);
 
-    double t0 = ( signalTime[8][0] +  signalTime[9][0] + signalTime[10][0] + signalTime[11][0]) / 4.;
-    double t1 = (signalTime[12][0] + signalTime[13][0] + signalTime[14][0] + signalTime[15][0]) / 4.;
-    double tof = t1-t0;
+    // Time of flight!
+    double t0 = ( t00 + t01 + t02 + t03 ) / 4.;
+    double t1 = ( t10 + t11 + t12 + t13 ) / 4.;
+    double tof = t1 - t0;
 
-    double act0a = peakVoltage[0][0] + peakVoltage[1][0];
-    double act1a = peakVoltage[2][0] + peakVoltage[3][0];
-    double act2a = peakVoltage[4][0] + peakVoltage[5][0];
-    double act3a = peakVoltage[6][0] + peakVoltage[7][0];
+    // ACTs
+    
+    map<TString,int> actPeakID;
+    map<TString,double> actA; // amplitude
+    map<TString,double> actC; // charge
+    map<TString,double> actT; // time
+    for (int iact = 0; iact < 8; ++ iact) {
+      TString actname = treeNames[iact];
+      actPeakID[actname] = getHighestPeakIndex(readerMap[actname]);
+      if ( actPeakID[actname] < readerMap[actname] -> nPeaks) {
+	actA[actname] = readerMap[actname] -> PeakVoltage[actPeakID[actname]];
+	actC[actname] = readerMap[actname] -> IntCharge[actPeakID[actname]];
+	actT[actname] = readerMap[actname] -> SignalTime[actPeakID[actname]];
+      } else {
+	actA[actname] = 0.;
+	actC[actname] = 0.;
+	actT[actname] = 0.;
+      }
+    }
+    double act0c = actC["ACT0L"] + actC["ACT0R"];
+    double act1c = actC["ACT1L"] + actC["ACT1R"];
+    double act2c = actC["ACT2L"] + actC["ACT2R"];
+    double act3c = actC["ACT3L"] + actC["ACT3R"];
 
-    double hc0a = peakVoltage[16][0];
-    double hc1a = peakVoltage[17][0];
-    double pba = peakVoltage[18][0];
+    double act0a = actA["ACT0L"] + actA["ACT0R"];
+    double act1a = actA["ACT1L"] + actA["ACT1R"];
+    double act2a = actA["ACT2L"] + actA["ACT2R"];
+    double act3a = actA["ACT3L"] + actA["ACT3R"];
 
+    // and also hole counter and lead glass
+    
+    int holePeakID0 = 0;
+    int holePeakID1 = 1;
+    double hc0c = -1;
+    double hc1c = -1;
+    double hc0a = -1;
+    double hc1a = -1;
+    
+    int PbGlassPeakID = 0;
+    double pba = -1;
+    double pbc = -1;
+    
+    if (holePeakID0 < readerMap["Hole0"] -> nPeaks) {
+      hc0c = readerMap["Hole0"] -> IntCharge[holePeakID0];
+      hc0a =  readerMap["Hole0"] -> PeakVoltage[holePeakID0];
+    }
+    if (holePeakID1 < readerMap["Hole1"] -> nPeaks) {
+      hc1c = readerMap["Hole1"] -> IntCharge[holePeakID1];
+      hc1a =  readerMap["Hole1"] -> PeakVoltage[holePeakID1];
+    }
+    if ( PbGlassPeakID < readerMap["PbGlass"] -> nPeaks) {
+      pbc = readerMap["PbGlass"] -> IntCharge[PbGlassPeakID];
+      pba =  readerMap["PbGlass"] -> PeakVoltage[PbGlassPeakID];
+    }
+
+    // amplitudes
+    
     hTOFACT0A.Fill(tof, act0a);
     hTOFACT1A.Fill(tof, act1a);
     hTOFACT2A.Fill(tof, act2a);
@@ -391,25 +469,15 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hPbATOF.Fill(pba, tof);
     hTOFPbA.Fill(tof, pba);
 
-    
-    
-    double act0c = intCharge[0][0] + intCharge[1][0];
-    double act1c = intCharge[2][0] + intCharge[3][0];
-    double act2c = intCharge[4][0] + intCharge[5][0];
-    double act3c = intCharge[6][0] + intCharge[7][0];
-
-
-    double hc0c = intCharge[16][0];
-    double hc1c = intCharge[17][0];
-    double pbc = intCharge[18][0];
-
+    // charges    
+   
     hTOFACT0C.Fill(tof, act0c);
     hTOFACT1C.Fill(tof, act1c);
     hTOFACT2C.Fill(tof, act2c);
     hTOFACT3C.Fill(tof, act3c);
 
-    hPbACT23C.Fill(pbc, (act2c+act3c) / 2.);
-    hTOFACT23C.Fill(tof, (act2c+act3c) / 2.);
+    hPbACT23C.Fill(pbc, (act2c + act3c) / 2.);
+    hTOFACT23C.Fill(tof, (act2c + act3c) / 2.);
     
     hPbACT0C.Fill(pbc, act0c);
     hTOFACT0C.Fill(tof, act0c);
@@ -423,7 +491,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hACT2CACT1C.Fill(act2c, act1c);
 
     //acraplet - weird electrons which do not see anthing in the ACT
-    if ((act2a+act3a) / 2. != 1.5 && tof >= 13.5 && tof >= 16.5) {
+    if ((act2a + act3a) / 2. != 1.5 && tof >= 13.5 && tof >= 16.5) {
       hHC0AHC1A.Fill(hc0a, hc1a);
       hHC0CHC1C.Fill(hc0c, hc1c);
     }
@@ -437,15 +505,16 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
 
     // 2D nPeaks
-    double nPeaksToFAver = (nPeaks[8] + nPeaks[9] + nPeaks[10] + nPeaks[11] + nPeaks[12] + nPeaks[13] + nPeaks[14] + nPeaks[15]) / 8;
-    double nPeaksACT23Aver = (nPeaks[4] + nPeaks[5] + nPeaks[6] + nPeaks[7]) / 4;
+    int nPeaksToFAver = (readerMap["TOF00"]->nPeaks + readerMap["TOF01"]->nPeaks + readerMap["TOF02"]->nPeaks + readerMap["TOF03"]->nPeaks + readerMap["TOF10"]->nPeaks + readerMap["TOF11"]->nPeaks + readerMap["TOF12"]->nPeaks + readerMap["TOF13"]->nPeaks) / 8;
+    int nPeaksACT23Aver = (readerMap["ACT2L"]->nPeaks + readerMap["ACT2R"]->nPeaks + readerMap["ACT3L"]->nPeaks + readerMap["ACT3R"]->nPeaks) / 4;
 
-    double nPeaksToF0Aver = (nPeaks[8] + nPeaks[9] + nPeaks[10] + nPeaks[11] ) / 4;
-    double nPeaksToF1Aver = (nPeaks[12] + nPeaks[13] + nPeaks[14] + nPeaks[15]) / 4;
-    double nPeaksACT2Aver = (nPeaks[4] + nPeaks[5] ) / 2;
-    double nPeaksACT3Aver = (nPeaks[6] + nPeaks[7]) / 2;
+    int nPeaksToF0Aver = (readerMap["TOF00"]->nPeaks + readerMap["TOF01"]->nPeaks + readerMap["TOF02"]->nPeaks + readerMap["TOF03"]->nPeaks ) / 4;
+    int nPeaksToF1Aver = (readerMap["TOF10"]->nPeaks + readerMap["TOF11"]->nPeaks + readerMap["TOF12"]->nPeaks + readerMap["TOF13"]->nPeaks) / 4;
+    int nPeaksACT2Aver = (readerMap["ACT2L"]->nPeaks + readerMap["ACT2R"]->nPeaks ) / 2;
+    int nPeaksACT3Aver = (readerMap["ACT3L"]->nPeaks + readerMap["ACT3R"]->nPeaks) / 2;
 
-
+    int nPeaksLeadGlass = readerMap["PbGlass"]->nPeaks;
+   
     hnPeaksACT23vsnPeaksToF.Fill(nPeaksToFAver, nPeaksACT23Aver);
 
     hnPeaksToF1vsnPeaksToF0.Fill(nPeaksToF1Aver, nPeaksToF0Aver);
@@ -455,7 +524,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     hnPeaksACT23vsToFlow.Fill(tof,  nPeaksACT23Aver);
     hnPeaksToFvsToF.Fill(tof, nPeaksToFAver);
     hnPeaksToFvsToFlow.Fill(tof, nPeaksToFAver);
-    hnPeaksLeadGlassvsLeadGlassA.Fill(pba, nPeaks[18]);
+    hnPeaksLeadGlassvsLeadGlassA.Fill(pba, nPeaksLeadGlass);
 
     hnPeaksACT23vsLeadGlassA.Fill(pba, nPeaksACT23Aver);
     hnPeaksToFvsLeadGlassA.Fill(pba, nPeaksToFAver);
@@ -476,8 +545,9 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
       } // 320
 
       default: {
-        if (i < 10)
+        if (ientry < 10)
           cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
+	// add ACT1 cuts?
         if ( (act2a + act3a)/2. > 3.) { // custom electron removal cut
           isEl = true;
         }
