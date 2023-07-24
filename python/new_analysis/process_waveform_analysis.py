@@ -81,6 +81,14 @@ def process_file(root_filename, config, output_file):
                 "time_offset": config["TimeOffset"][i],
             }
             process_batch(batch[batch.fields[0]], channel_name, output_file, config_args)
+
+    run_number = int(root_filename[-11:-5])
+    print(f"Saving event info for run {run_number}")
+    output_file["EventInfo"] = {
+        "RunNumber": np.repeat(run_number, n_events),
+        "EventNumber": run_file[digitizers[0]]["eventNumber"].array(),
+        "SpillNumber": run_file[digitizers[0]]["spillNumber"].array()
+    }
     run_file.close()
 
 
