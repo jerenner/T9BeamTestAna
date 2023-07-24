@@ -6,6 +6,7 @@
 //////////////////////////////////////////////////////////
 // according to new ntuple multi tree format by Nick Prouse
 // modified by Jiri Kvita
+// modified on 24/07/2023
 
 
 #ifndef channelReadClass_h
@@ -19,7 +20,7 @@
 
 // ______________________________________________________________
 
-const int maxnPeaks = 25; // orig: 17
+const int maxnPeaks = 30; // orig: 17
 
 // Header file for the classes stored in the TTree if any.
 
@@ -39,26 +40,18 @@ public :
    Double_t        Pedestal;
    Double_t        PedestalSigma;
    Long64_t        nPeaks;
-   Int_t           nPeakVoltage;
    Double_t        PeakVoltage[maxnPeaks];   //[nPeakVoltage]
-   Int_t           nPeakTime;
    Double_t        PeakTime[maxnPeaks];   //[nPeakTime]
-   Int_t           nSignalTime;
    Double_t        SignalTime[maxnPeaks];   //[nSignalTime]
-   Int_t           nIntCharge;
    Double_t        IntCharge[maxnPeaks];   //[nIntCharge]
 
    // List of branches
    TBranch        *b_Pedestal;   //!
    TBranch        *b_PedestalSigma;   //!
    TBranch        *b_nPeaks;   //!
-   TBranch        *b_nPeakVoltage;   //!
    TBranch        *b_PeakVoltage;   //!
-   TBranch        *b_nPeakTime;   //!
    TBranch        *b_PeakTime;   //!
-   TBranch        *b_nSignalTime;   //!
    TBranch        *b_SignalTime;   //!
-   TBranch        *b_nIntCharge;   //!
    TBranch        *b_IntCharge;   //!
 
    channelReadClass(TFile *infile, TString treeName);
@@ -138,13 +131,9 @@ void channelReadClass::Init(TTree *tree)
    fChain->SetBranchAddress("Pedestal", &Pedestal, &b_Pedestal);
    fChain->SetBranchAddress("PedestalSigma", &PedestalSigma, &b_PedestalSigma);
    fChain->SetBranchAddress("nPeaks", &nPeaks, &b_nPeaks);
-   fChain->SetBranchAddress("nPeakVoltage", &nPeakVoltage, &b_nPeakVoltage);
    fChain->SetBranchAddress("PeakVoltage", PeakVoltage, &b_PeakVoltage);
-   fChain->SetBranchAddress("nPeakTime", &nPeakTime, &b_nPeakTime);
    fChain->SetBranchAddress("PeakTime", PeakTime, &b_PeakTime);
-   fChain->SetBranchAddress("nSignalTime", &nSignalTime, &b_nSignalTime);
    fChain->SetBranchAddress("SignalTime", SignalTime, &b_SignalTime);
-   fChain->SetBranchAddress("nIntCharge", &nIntCharge, &b_nIntCharge);
    fChain->SetBranchAddress("IntCharge", IntCharge, &b_IntCharge);
    Notify();
 }

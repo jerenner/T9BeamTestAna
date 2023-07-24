@@ -69,7 +69,7 @@ double GetBeta(double mass, double momentum) {
 // ______________________________________________________________
 // peakMode: "", a, b, c, d, e, f, g, h
 
-void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
+void MakeDataPlots_new(string fileName, int momentum, TString peakMode = "") {
 
   gSystem->Exec("mkdir -p histos/");
 
@@ -82,6 +82,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
   
   for (int ich = 0; ich < nChannels; ++ich) {
+    cout << "Initializing " <<  treeNames[ich] << endl;
     reader[ich] = new channelReadClass(infile, treeNames[ich]);
     trees[ich] = reader[ich] -> fChain;
     ent[ich] = trees[ich] -> GetEntries();
@@ -257,7 +258,7 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
   cout << "Event loop!" << endl;
   int verbose = 10000;
-  
+  int debug = 2;
   // TODO:
   // check also the number of entries in the trees?
   
@@ -268,9 +269,11 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     }
     
     for (int ich = 0; ich < nChannels; ++ich) {
+      if (debug)	cout << "getting entry for " <<  treeNames[ich] << endl;
       reader[ich] -> GetEntry(ientry);
     }
-
+    if (debug)      cout << "done" << endl;
+    
     //    vector<int> indices(nChannels, 0);
 
     bool onePeakInAllACTs = true;
@@ -290,7 +293,9 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     double ACTC23ElectronThreshA = 1.5;
     double ACTC23ElectronUpperThreshA = 3.5;
 
+    if (debug)      cout << "point a" << endl;
     bool onePeakInPbGlass = (reader[18] -> nPeaks == 1);
+    if (debug)      cout << "point b" << endl;
 
     // to be updated for the highest peak
     // so all [0] need to be changed to appropriate PeakID
@@ -349,6 +354,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
     
     for (int ich = 0; ich < nChannels; ++ich) {
       TString chname = treeNames[ich];
+      if (debug)      cout << "point c, " << chname.Data() << endl;
+
       PeakID[chname] = getHighestPeakIndex(readerMap[chname]);
       if ( PeakID[chname] >= 0 && PeakID[chname] < readerMap[chname] -> nPeaks) {
 	Amplitudes[chname] = readerMap[chname] -> PeakVoltage[PeakID[chname]];
@@ -369,6 +376,8 @@ void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 	Charges[chname] = 0.;
 	PeakTimes[chname] = 0.;
       }
+      if (debug)      cout << "point d" << endl;
+
     }
     
     // TOF trigger scintilators

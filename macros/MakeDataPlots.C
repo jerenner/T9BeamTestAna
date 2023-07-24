@@ -28,7 +28,7 @@ double GetBeta(double mass, double momentum) {
 // ______________________________________________________________
 // peakMode: "", a, b, c, d, e, f
 
-void MakeDataPlots_old(string fileName, int momentum, TString peakMode = "") {
+void MakeDataPlots(string fileName, int momentum, TString peakMode = "") {
 
   const int nMaxChannels = 32;
   const int nChannels = 19; // UPDATE THIS FOR HODOSCOPE PMTs! to e.g. 32!
