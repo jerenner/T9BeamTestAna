@@ -8,6 +8,7 @@
 #include <vector>
 #include <iostream>
 
+#include "EventInfo.h"
 #include "channelReadClass.h"
 
 
@@ -74,13 +75,13 @@ void MakeDataPlots_new(string fileName, int momentum, TString peakMode = "") {
   gSystem->Exec("mkdir -p histos/");
 
   TFile *infile = new TFile(fileName.c_str(), "READ");
- 
+  EventInfo *eventInfo = new EventInfo(infile, "EventInfo");
+  
   int ent[nChannels];
   channelReadClass *reader[nChannels];
   TTree *trees[nChannels];
   map<TString, channelReadClass*> readerMap;
 
-  
   for (int ich = 0; ich < nChannels; ++ich) {
     cout << "Initializing " <<  treeNames[ich] << endl;
     reader[ich] = new channelReadClass(infile, treeNames[ich]);
@@ -267,6 +268,12 @@ void MakeDataPlots_new(string fileName, int momentum, TString peakMode = "") {
     if (ientry % verbose == 0) {
       cout << "processing " << ientry << " / " << ent[0] << endl;
     }
+
+    eventInfo -> GetEntry(ientry);
+    Long64_t  RunNumber = eventInfo->RunNumber;
+    Int_t EventNumber = eventInfo -> EventNumber;
+    Int_t SpillNumber = eventInfo -> SpillNumber;
+    //    cout << " RunNumber=" << RunNumber << " EventNumber=" << EventNumber << " SpillNumber=" << SpillNumber << endl;
     
     for (int ich = 0; ich < nChannels; ++ich) {
       if (debug)	cout << "getting entry for " <<  treeNames[ich] << endl;
