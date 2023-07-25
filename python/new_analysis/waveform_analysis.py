@@ -113,7 +113,7 @@ class WaveformAnalysis:
             my_pulse_voltages[pulse_peak_indices] = analysis_waveform[pulse_peak_indices, i]
             pulse_peak_voltages[pulse_peak_indices, n_peaks[pulse_peak_indices]] = my_pulse_voltages[pulse_peak_indices]
             pulse_peak_times[pulse_peak_indices, n_peaks[pulse_peak_indices]] = (i+0.5)*self.ns_per_sample + self.time_offset
-            my_pulse_voltages[~over_pulse_threshold[:, i]] = -1
+            my_pulse_voltages[~over_integration_threshold[:, i]] = -1
         self.pulse_peak_times = ak.drop_none(np.ma.MaskedArray(pulse_peak_times, pulse_peak_times==-1))
         self.pulse_peak_voltages = ak.drop_none(np.ma.MaskedArray(pulse_peak_voltages, pulse_peak_voltages==-1))
 
