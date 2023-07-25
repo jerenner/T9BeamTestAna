@@ -39,7 +39,7 @@ public :
    // Declaration of leaf types
    Double_t        Pedestal;
    Double_t        PedestalSigma;
-   Long64_t        nPeaks;
+   Int_t           nPeaks;
    Double_t        PeakVoltage[maxnPeaks];   //[nPeakVoltage]
    Double_t        PeakTime[maxnPeaks];   //[nPeakTime]
    Double_t        SignalTime[maxnPeaks];   //[nSignalTime]
