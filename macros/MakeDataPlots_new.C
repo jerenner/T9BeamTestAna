@@ -258,7 +258,7 @@ void MakeDataPlots_new(string fileName, int momentum, TString peakMode = "") {
 
   cout << "Event loop!" << endl;
   int verbose = 10000;
-  int debug = 2;
+  int debug = 0;
   // TODO:
   // check also the number of entries in the trees?
   
