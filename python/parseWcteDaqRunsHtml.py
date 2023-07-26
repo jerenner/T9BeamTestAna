@@ -9,13 +9,8 @@ runsRefractionIndexDict = {}
 runsSlitDict = {}
 
 
-def getTarget(run):
-    if run >= 537:
-        return 'Target3'
-    else:
-        return 'Target1'
 
-
+################################################
 verbose = 0
     
 # saved html page
