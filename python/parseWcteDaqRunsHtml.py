@@ -19,7 +19,7 @@ def getTarget(run):
 verbose = 0
     
 # saved html page
-infile = open('share/wcte-daq.html')
+infile = open('share/wcte-daq_end_of_Run1_working.html') # wcte-daq.html
 line = ''
 for xline in infile.readlines():
 
@@ -53,6 +53,12 @@ for xline in infile.readlines():
     if run < 255:
         continue
 
+    # FIX according to elog entry
+    # 94  	Fri Jul 21 14:57:14 2023	Alie, Jiri	Others	Run Information	Mismatch in momentum value entry in DAQ elog run 451	Run 451 has momentum 0.94GeV/c (agreement between LG profiles, elog entry and shift spreadsheet entry) and not 1GeV/c as was
+
+    if run == 451:
+        momentum = 940
+    
     if abs(momentum) < 50:
         continue
 

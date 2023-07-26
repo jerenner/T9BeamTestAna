@@ -1,0 +1,1181 @@
+<!DOCTYPE html>
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<link rel="stylesheet" href="wcte-daq_files/midas.css"><script src="wcte-daq_files/controls.js"></script>
+<script src="wcte-daq_files/midas.js"></script>
+<script src="wcte-daq_files/mhttpd.js"></script>
+<meta http-equiv="refresh" content="60">
+ <style>
+table {
+    width:100%;
+}
+table, th, td {
+    border: 1px solid black;
+    border-collapse: collapse;
+}
+ th, td {
+    padding: 5px;
+    text-align: left;
+}
+table#nicetable tr:nth-child(even) {
+    background-color: #eee;
+}
+table#t01 tr:nth-child(odd) {
+   background-color:#fff;
+}
+table#nicetable th{
+    background-color: black;
+    color: white;
+}
+</style>
+<style>
+   .dlgFrame {
+      font-family: verdana,tahoma,sans-serif;
+      border: 1px solid black;
+      box-shadow: 6px 6px 10px 4px rgba(0,0,0,0.2);
+      border-radius: 6px;
+      position: absolute;
+      top: 0;
+      left: 0;
+      z-index: 10;
+      display: none; /* pre-hidden */
+   }
+   .dlgTitlebar {
+      user-select: none;
+      text-align: center;
+      background-color: #C0C0C0;
+      border-top-left-radius: 6px;
+      border-top-right-radius: 6px;
+      font-size: 10pt;
+      padding: 2px;
+      padding-left: 30px;
+      padding-right: 30px;
+   }
+   .dlgTitlebar:hover {
+      cursor: pointer;
+   }
+   .dlgButton {
+      font-size: 10pt;
+      background-color: #F8F8F8;
+      border: 1px solid #808080;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin: 3px;
+   }
+   .dlgButtonDefault {
+      font-size: 10pt;
+      background-color: #4187F7;
+      color: #FFFFFF;
+      border: 1px solid #808080;
+      border-radius: 6px;
+      padding: 2px 4px;
+      margin: 3px;
+   }
+   .dlgButton:hover {
+      background-color: #F0F0F0;
+   }
+   .dlgPanel {
+      background-color: #F0F0F0;
+      text-align: center;
+      padding: 4px;
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
+   }
+   .dlgBlackout {
+      background: rgba(0,0,0,.5);
+      position: fixed;
+      top: 0;
+      left: 0;
+      bottom: 0;
+      right: 0;
+      z-index: 20;
+   }
+   .ctrlHSlider {
+      width: 200px;
+      height: 30px;
+      border-radius: 5px;
+      padding: 0;
+   }
+   .ctrlVSlider {
+      width: 20px;
+      height: 200px;
+      border-radius: 5px;
+      padding: 0;
+   }
+   .ctrlProgress {
+      border: 1px solid #A0A0A0;
+      border-radius: 5px;
+      width: 500px;
+      height: 5px;
+      background-color: #E0E0E0;
+      margin-left: 6px;
+      margin-top: 5px;
+   }
+   .ctrlProgressInd {
+      border-radius: 5px;
+      width: 0;
+     height: 5px;
+      background-color: #419bf9;
+      margin: 0;
+   }
+   </style></head>
+
+<body class="mcss" onload="mhttpd_init('Runlog');" style="font-size: 10pt;">
+<div id="mheader_error"></div><div id="mheader" style="display: flex;"><div style="display:inline-block; flex:none;"><span class="mmenuitem" style="padding: 10px;margin-right: 20px;" onclick="mhttpd_toggle_menu()">☰</span><span id="mheader_expt_name">wcte</span></div><div style="flex:auto;">  <div id="mheader_message" style="display: inline-block;"><span style="cursor: pointer;" onclick="window.location.href='?cmd=Messages'">09:11:25.397 2023/07/26 [mhttpd,INFO] Run #579 stopped</span>&nbsp;&nbsp;&nbsp;<span style="cursor: pointer;" onclick="mhttpd_close_message();">╳</span></div></div><div style="display: inline; flex:none;">  <div id="mheader_alarm" class="mgreen mbox"><a href="https://wcte-daq/?cmd=Alarms">Alarms: None</a></div>  <div style="display: inline; font-size: 75%; margin-right: 10px" id="mheader_last_updated">26 Jul 2023, 13:23:58 UTC+2</div></div></div>
+<div id="msidenav" style="top: 31px; width: 93px;"><div class="mmenuitem"><a href="https://wcte-daq/?cmd=Status" class="mmenulink">Status</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Transition" class="mmenulink">Transition</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=ODB" class="mmenulink">ODB</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=OldODB" class="mmenulink">OldODB</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Messages" class="mmenulink">Messages</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Chat" class="mmenulink">Chat</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Elog" class="mmenulink">Elog</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Alarms" class="mmenulink">Alarms</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Programs" class="mmenulink">Programs</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Buffers" class="mmenulink">Buffers</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=History" class="mmenulink">History</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=OldHistory" class="mmenulink">OldHistory</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=MSCB" class="mmenulink">MSCB</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Sequencer" class="mmenulink">Sequencer</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Event%20Dump" class="mmenulink">Event Dump</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Config" class="mmenulink">Config</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=Help" class="mmenulink">Help</a></div>
+<div class="mseparator"></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=custom&amp;page=webdisplay" class="mmenulink">webdisplay</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=custom&amp;page=TRB3" class="mmenulink">TRB3</a></div>
+<div class="mmenuitem"><a href="https://wcte-daq/?cmd=custom&amp;page=RunLog" class="mmenulink">RunLog</a></div>
+<div style="height: 64px;"></div>
+</div>
+<div id="mmain" style="padding-top: 31px; margin-left: 93px; opacity: 1;">
+<table id="nicetable" class="mtable">
+<tbody><tr> <td> Run # </td>  <td> Start </td> <td> End Time </td>
+<td> <pre> # TRB3 
+ events</pre> </td> 
+<td> Beam on? </td> 
+<td> Beam configuration </td> 
+<td> Beam momentum (GeV) </td> 
+<td> Beam Intensity </td> 
+<td> Aerogel 0 </td> 
+<td> Aerogel 1 </td> 
+<td> Comments </td>
+<td> Shift Takers </td>
+</tr><tr><td>579</td><td>Wed Jul 26 08:42:01 2023</td><td>Wed Jul 26 09:11:24 2023</td><td>48723</td><td>True</td><td>momentum scan</td><td>0.40000001</td><td>305100030000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Alie, Jan</td></tr>
+<tr><td>578</td><td>Wed Jul 26 08:09:29 2023</td><td>Wed Jul 26 08:41:13 2023</td><td>53303</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>307100020000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Alie, Jan</td></tr>
+<tr><td>577</td><td>Wed Jul 26 07:37:16 2023</td><td>Wed Jul 26 08:08:42 2023</td><td>40690</td><td>True</td><td>momentum scan</td><td>0.34</td><td>305200010000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Alie, Jan</td></tr>
+<tr><td>576</td><td>Wed Jul 26 04:26:57 2023</td><td>Wed Jul 26 05:27:50 2023</td><td>73566</td><td>True</td><td>momentum scan</td><td>-0.41999999</td><td>307400020000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>575</td><td>Wed Jul 26 03:10:22 2023</td><td>Wed Jul 26 04:11:15 2023</td><td>40706</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>296900000000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>574</td><td>Wed Jul 26 02:08:46 2023</td><td>Wed Jul 26 03:08:58 2023</td><td>70039</td><td>True</td><td>momentum scan</td><td>-0.40000001</td><td>296900000000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>573</td><td>Wed Jul 26 01:01:54 2023</td><td>Wed Jul 26 02:05:37 2023</td><td>71174</td><td>True</td><td>momentum scan</td><td>0.40000001</td><td>301600010000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>572</td><td>Tue Jul 25 23:56:46 2023</td><td>Wed Jul 26 01:00:28 2023</td><td>68547</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>302300000000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>571</td><td>Tue Jul 25 22:54:19 2023</td><td>Tue Jul 25 23:54:21 2023</td><td>67169</td><td>True</td><td>momentum scan</td><td>0.38</td><td>299300000000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>570</td><td>Tue Jul 25 21:32:31 2023</td><td>Tue Jul 25 22:08:13 2023</td><td>35105</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>298399990000.0</td><td>1.006</td><td>1.03</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>569</td><td>Tue Jul 25 20:59:04 2023</td><td>Tue Jul 25 21:30:56 2023</td><td>30335</td><td>True</td><td>momentum scan</td><td>-0.56</td><td>303299990000.0</td><td>1.006</td><td>1.03</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>568</td><td>Tue Jul 25 20:26:39 2023</td><td>Tue Jul 25 20:57:05 2023</td><td>26150</td><td>True</td><td>momentum scan</td><td>-0.62</td><td>302000010000.0</td><td>1.006</td><td>1.03</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>567</td><td>Tue Jul 25 19:53:33 2023</td><td>Tue Jul 25 20:25:10 2023</td><td>27964</td><td>True</td><td>momentum scan</td><td>0.62</td><td>302000010000.0</td><td>1.006</td><td>1.03</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>566</td><td>Tue Jul 25 19:19:10 2023</td><td>Tue Jul 25 19:51:46 2023</td><td>30381</td><td>True</td><td>momentum scan</td><td>0.56</td><td>302999990000.0</td><td>1.006</td><td>1.03</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>565</td><td>Tue Jul 25 18:35:56 2023</td><td>Tue Jul 25 19:15:58 2023</td><td>37518</td><td>True</td><td>momentum scan</td><td>0.5</td><td>302999990000.0</td><td>1.006</td><td>1.03</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>564</td><td>Tue Jul 25 17:14:05 2023</td><td>Tue Jul 25 17:44:58 2023</td><td>28056</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>302300000000.0</td><td>1.006</td><td>1.015</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>563</td><td>Tue Jul 25 16:37:18 2023</td><td>Tue Jul 25 17:12:55 2023</td><td>32206</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>306000000000.0</td><td>1.006</td><td>1.015</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>562</td><td>Tue Jul 25 16:01:17 2023</td><td>Tue Jul 25 16:35:08 2023</td><td>30529</td><td>True</td><td>momentum scan</td><td>0.74000001</td><td>302000010000.0</td><td>1.006</td><td>1.015</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>561</td><td>Tue Jul 25 14:10:40 2023</td><td>Tue Jul 25 15:57:44 2023</td><td>26997</td><td>True</td><td>momentum scan</td><td>-0.74000001</td><td>299300000000.0</td><td>1.006</td><td>1.015</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Dean, Arturo</td></tr>
+<tr><td>560</td><td>Tue Jul 25 13:31:14 2023</td><td>Tue Jul 25 14:00:25 2023</td><td>27006</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>301100010000.0</td><td>1.015</td><td>1.15</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>559</td><td>Tue Jul 25 13:02:29 2023</td><td>Tue Jul 25 13:30:06 2023</td><td>14636</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>302000010000.0</td><td>1.015</td><td>1.15</td><td>
+	Target 3, momentum slit is 1% (3mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>558</td><td>Tue Jul 25 12:57:27 2023</td><td>Tue Jul 25 13:00:00 2023</td><td>120</td><td>True</td><td>momentum scan</td><td>0</td><td>0</td><td>1.015</td><td>1.15</td><td>DR - 12Hz, 5 sec between pulses</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>557</td><td>Tue Jul 25 12:53:22 2023</td><td>Tue Jul 25 12:55:05 2023</td><td>26</td><td>True</td><td>momentum scan</td><td>0</td><td>0</td><td>1.015</td><td>1.15</td><td>DR - 12Hz, 5 sec between pulses</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>556</td><td>Tue Jul 25 12:49:49 2023</td><td>Tue Jul 25 12:50:06 2023</td><td>325</td><td>True</td><td>momentum scan</td><td>0</td><td>0</td><td>1.015</td><td>1.15</td><td>DR - 1.5kHz</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>555</td><td>Tue Jul 25 12:46:52 2023</td><td>Tue Jul 25 12:47:44 2023</td><td>1179</td><td>True</td><td>momentum scan</td><td>0</td><td>0</td><td>1.015</td><td>1.15</td><td>DR - 1.5kHz</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>554</td><td>Tue Jul 25 12:32:03 2023</td><td>Tue Jul 25 12:41:53 2023</td><td>13826</td><td>True</td><td>momentum scan</td><td>0</td><td>0</td><td>1.015</td><td>1.15</td><td>DR - 1.5kHz</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>553</td><td>Tue Jul 25 10:30:08 2023</td><td>Tue Jul 25 11:54:23 2023</td><td>42357</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>30020000000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>552</td><td>Tue Jul 25 09:21:39 2023</td><td>Tue Jul 25 10:29:38 2023</td><td>39138</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>299300000000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>551</td><td>Tue Jul 25 08:14:16 2023</td><td>Tue Jul 25 09:20:42 2023</td><td>39765</td><td>True</td><td>momentum scan</td><td>0.22</td><td>30269991000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>550</td><td>Tue Jul 25 07:04:58 2023</td><td>Tue Jul 25 08:13:53 2023</td><td>35354</td><td>True</td><td>momentum scan</td><td>0.22</td><td>300499990000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>549</td><td>Tue Jul 25 05:58:30 2023</td><td>Tue Jul 25 07:02:34 2023</td><td>43015</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>302999990000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Jan, Junjie</td></tr>
+<tr><td>548</td><td>Tue Jul 25 04:55:14 2023</td><td>Tue Jul 25 05:55:45 2023</td><td>40971</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>305100000000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>547</td><td>Tue Jul 25 03:50:28 2023</td><td>Tue Jul 25 04:54:20 2023</td><td>42947</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>302999990000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>546</td><td>Tue Jul 25 02:46:46 2023</td><td>Tue Jul 25 03:48:36 2023</td><td>36366</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>301000000000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>545</td><td>Tue Jul 25 01:43:03 2023</td><td>Tue Jul 25 02:43:51 2023</td><td>40815</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>301900010000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>544</td><td>Tue Jul 25 00:37:26 2023</td><td>Tue Jul 25 01:42:24 2023</td><td>43756</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>297800010000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>543</td><td>Mon Jul 24 23:25:54 2023</td><td>Tue Jul 25 00:36:39 2023</td><td>47952</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>300499990000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>542</td><td>Mon Jul 24 22:14:13 2023</td><td>Mon Jul 24 23:24:03 2023</td><td>42710</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>288400020000.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>540</td><td>Mon Jul 24 19:34:31 2023</td><td>Mon Jul 24 20:37:16 2023</td><td>39759</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>2955000100.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Arturo, Jan, Jiri</td></tr>
+<tr><td>539</td><td>Mon Jul 24 18:35:22 2023</td><td>Mon Jul 24 19:31:45 2023</td><td>36687</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>2955000100.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Arturo, Jan, Jiri</td></tr>
+<tr><td>538</td><td>Mon Jul 24 17:24:54 2023</td><td>Mon Jul 24 18:34:55 2023</td><td>43392</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>3032999900.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Arturo, Jan, Jiri</td></tr>
+<tr><td>537</td><td>Mon Jul 24 16:24:52 2023</td><td>Mon Jul 24 17:24:08 2023</td><td>37883</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>2980999900.0</td><td>1.006</td><td>1.15</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Arturo, Jan, Jiri</td></tr>
+<tr><td>536</td><td>Mon Jul 24 10:21:32 2023</td><td>Mon Jul 24 10:51:19 2023</td><td>17985</td><td>True</td><td>momentum scan</td><td>0.18000001</td><td>30259999000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Junjie</td></tr>
+<tr><td>535</td><td>Mon Jul 24 10:18:02 2023</td><td>Mon Jul 24 10:19:29 2023</td><td>65930</td><td>True</td><td>momentum scan</td><td>0.18000001</td><td>0</td><td>1.006</td><td>1.15</td><td>	PS is down, using a random constant trigger about 1.5kHz</td><td>Alie, Junjie</td></tr>
+<tr><td>534</td><td>Mon Jul 24 10:04:23 2023</td><td>Mon Jul 24 10:15:53 2023</td><td>4082</td><td>True</td><td>momentum scan</td><td>0.18000001</td><td>0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Junjie</td></tr>
+<tr><td>533</td><td>Mon Jul 24 08:12:32 2023</td><td>Mon Jul 24 09:38:47 2023</td><td>21083</td><td>True</td><td>momentum scan</td><td>0.34</td><td>303399990000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Junjie</td></tr>
+<tr><td>532</td><td>Mon Jul 24 07:04:11 2023</td><td>Mon Jul 24 08:09:40 2023</td><td>53252</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>300200000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Alie, Junjie</td></tr>
+<tr><td>531</td><td>Mon Jul 24 05:44:12 2023</td><td>Mon Jul 24 07:03:52 2023</td><td>63736</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>300200000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>530</td><td>Mon Jul 24 04:37:04 2023</td><td>Mon Jul 24 05:43:17 2023</td><td>55391</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>299300000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>529</td><td>Mon Jul 24 03:33:00 2023</td><td>Mon Jul 24 04:34:22 2023</td><td>64434</td><td>True</td><td>momentum scan</td><td>0.28</td><td>307200000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>528</td><td>Mon Jul 24 02:30:07 2023</td><td>Mon Jul 24 03:32:28 2023</td><td>65197</td><td>True</td><td>momentum scan</td><td>0.28</td><td>298799990000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>527</td><td>Mon Jul 24 01:28:44 2023</td><td>Mon Jul 24 02:29:47 2023</td><td>62852</td><td>True</td><td>momentum scan</td><td>0.28</td><td>298799990000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>526</td><td>Mon Jul 24 00:03:19 2023</td><td>Mon Jul 24 01:10:01 2023</td><td>70376</td><td>True</td><td>momentum scan</td><td>-0.2</td><td>303699980000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>525</td><td>Sun Jul 23 23:00:37 2023</td><td>Mon Jul 24 00:02:55 2023</td><td>68086</td><td>True</td><td>momentum scan</td><td>-0.2</td><td>303699980000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Gonzalo</td></tr>
+<tr><td>524</td><td>Sun Jul 23 21:52:36 2023</td><td>Sun Jul 23 22:59:29 2023</td><td>70168</td><td>True</td><td>momentum scan</td><td>-0.2</td><td>301900010000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>523</td><td>Sun Jul 23 20:44:36 2023</td><td>Sun Jul 23 21:49:41 2023</td><td>68189</td><td>True</td><td>momentum scan</td><td>0.2</td><td>300800020000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>522</td><td>Sun Jul 23 19:40:57 2023</td><td>Sun Jul 23 20:44:13 2023</td><td>66458</td><td>True</td><td>momentum scan</td><td>0.2</td><td>300800020000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>521</td><td>Sun Jul 23 18:32:10 2023</td><td>Sun Jul 23 19:40:10 2023</td><td>69286</td><td>True</td><td>momentum scan</td><td>0.2</td><td>298500000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>520</td><td>Sun Jul 23 17:29:29 2023</td><td>Sun Jul 23 18:30:14 2023</td><td>47705</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>304200020000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>519</td><td>Sun Jul 23 17:23:58 2023</td><td>Sun Jul 23 17:24:44 2023</td><td>374</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>304200020000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>518</td><td>Sun Jul 23 16:19:42 2023</td><td>Sun Jul 23 17:23:33 2023</td><td>50173</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>304800010000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>517</td><td>Sun Jul 23 15:08:52 2023</td><td>Sun Jul 23 16:19:01 2023</td><td>55645</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>304800010000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>516</td><td>Sun Jul 23 14:06:45 2023</td><td>Sun Jul 23 15:07:12 2023</td><td>33615</td><td>True</td><td>momentum scan</td><td>0.22</td><td>334799990000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Bruno, Jiri</td></tr>
+<tr><td>515</td><td>Sun Jul 23 12:58:06 2023</td><td>Sun Jul 23 14:06:05 2023</td><td>53588</td><td>True</td><td>momentum scan</td><td>0.22</td><td>304800040000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Alie</td></tr>
+<tr><td>514</td><td>Sun Jul 23 11:45:38 2023</td><td>Sun Jul 23 12:57:55 2023</td><td>56381</td><td>True</td><td>momentum scan</td><td>0.22</td><td>304800040000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Alie</td></tr>
+<tr><td>513</td><td>Sun Jul 23 11:43:58 2023</td><td>Sun Jul 23 11:45:22 2023</td><td>742</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>304800040000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Alie</td></tr>
+<tr><td>512</td><td>Sun Jul 23 10:29:50 2023</td><td>Sun Jul 23 11:43:04 2023</td><td>56280</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>302600030000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Alie</td></tr>
+<tr><td>511</td><td>Sun Jul 23 09:17:24 2023</td><td>Sun Jul 23 10:29:31 2023</td><td>56378</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>302600030000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Alie</td></tr>
+<tr><td>510</td><td>Sun Jul 23 08:06:25 2023</td><td>Sun Jul 23 09:17:13 2023</td><td>54112</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>302600030000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Alie</td></tr>
+<tr><td>509</td><td>Sun Jul 23 06:55:48 2023</td><td>Sun Jul 23 08:04:12 2023</td><td>53972</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>294600020000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Alie</td></tr>
+<tr><td>508</td><td>Sun Jul 23 05:46:39 2023</td><td>Sun Jul 23 06:54:44 2023</td><td>49903</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>303100000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>507</td><td>Sun Jul 23 04:27:38 2023</td><td>Sun Jul 23 05:45:41 2023</td><td>59729</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>302000010000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>506</td><td>Sun Jul 23 03:23:48 2023</td><td>Sun Jul 23 04:25:16 2023</td><td>45948</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>301100010000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>505</td><td>Sun Jul 23 02:21:53 2023</td><td>Sun Jul 23 03:23:21 2023</td><td>45145</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>303600010000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>504</td><td>Sun Jul 23 01:18:00 2023</td><td>Sun Jul 23 02:21:27 2023</td><td>48054</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>303900000000.0</td><td>1.006</td><td>1.15</td><td>
+	momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>503</td><td>Sun Jul 23 00:59:22 2023</td><td>Sun Jul 23 01:07:25 2023</td><td>10512</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>303900000000.0</td><td>1.006</td><td>1.15</td><td> momentum slit is 3% (9mm) but other collimators are 35mm</td><td>Deesha, Jiri</td></tr>
+<tr><td>502</td><td>Sun Jul 23 00:14:30 2023</td><td>Sun Jul 23 00:54:55 2023</td><td>53626</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>303900000000.0</td><td>1.006</td><td>1.15</td><td> momentum slit is 3% (9mm) but other collimators are 35mm</td><td>Deesha, Jiri</td></tr>
+<tr><td>501</td><td>Sat Jul 22 23:01:52 2023</td><td>Sun Jul 23 00:05:07 2023</td><td>46355</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>302300000000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Jiri</td></tr>
+<tr><td>500</td><td>Sat Jul 22 22:02:33 2023</td><td>Sat Jul 22 23:01:23 2023</td><td>42618</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>301100010000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Jiri</td></tr>
+<tr><td>499</td><td>Sat Jul 22 20:52:22 2023</td><td>Sat Jul 22 21:58:13 2023</td><td>46958</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>296600010000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Jiri</td></tr>
+<tr><td>498</td><td>Sat Jul 22 19:51:35 2023</td><td>Sat Jul 22 20:51:32 2023</td><td>42310</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>303600010000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Jiri</td></tr>
+<tr><td>497</td><td>Sat Jul 22 18:47:05 2023</td><td>Sat Jul 22 19:49:06 2023</td><td>40450</td><td>True</td><td>momentum scan</td><td>-0.28</td><td>301600010000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Jiri</td></tr>
+<tr><td>496</td><td>Sat Jul 22 17:46:58 2023</td><td>Sat Jul 22 18:46:55 2023</td><td>37866</td><td>True</td><td>momentum scan</td><td>-0.28</td><td>301600010000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Jiri</td></tr>
+<tr><td>495</td><td>Sat Jul 22 16:47:43 2023</td><td>Sat Jul 22 17:46:28 2023</td><td>34940</td><td>True</td><td>momentum scan</td><td>-0.28</td><td>303399990000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Deesha, Jiri</td></tr>
+<tr><td>494</td><td>Sat Jul 22 13:17:41 2023</td><td>Sat Jul 22 16:43:20 2023</td><td>106512</td><td>True</td><td>momentum scan</td><td>-0.30000001</td><td>302300000000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>493</td><td>Sat Jul 22 11:26:08 2023</td><td>Sat Jul 22 13:16:01 2023</td><td>32354</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>301100010000.0</td><td>1.006</td><td>1.15</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>492</td><td>Sat Jul 22 10:21:51 2023</td><td>Sat Jul 22 10:46:50 2023</td><td>4754</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>302300000000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>491</td><td>Sat Jul 22 09:47:28 2023</td><td>Sat Jul 22 10:19:05 2023</td><td>5795</td><td>True</td><td>momentum scan</td><td>-0.46000001</td><td>305500000000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>490</td><td>Sat Jul 22 09:09:13 2023</td><td>Sat Jul 22 09:46:03 2023</td><td>6712</td><td>True</td><td>momentum scan</td><td>-0.41999999</td><td>301000000000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>489</td><td>Sat Jul 22 08:26:09 2023</td><td>Sat Jul 22 09:07:37 2023</td><td>7394</td><td>True</td><td>momentum scan</td><td>-0.40000001</td><td>302999990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>488</td><td>Sat Jul 22 07:49:46 2023</td><td>Sat Jul 22 08:22:01 2023</td><td>5285</td><td>True</td><td>momentum scan</td><td>-0.40000001</td><td>302999990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>487</td><td>Sat Jul 22 07:37:06 2023</td><td>Sat Jul 22 07:43:57 2023</td><td>1119</td><td>True</td><td>momentum scan</td><td>-0.40000001</td><td>302999990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>486</td><td>Sat Jul 22 06:57:05 2023</td><td>Sat Jul 22 07:34:34 2023</td><td>6523</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>302499990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>485</td><td>Sat Jul 22 06:10:48 2023</td><td>Sat Jul 22 06:54:40 2023</td><td>12770</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>304199990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Junjie, Arturo</td></tr>
+<tr><td>484</td><td>Sat Jul 22 05:24:22 2023</td><td>Sat Jul 22 06:07:39 2023</td><td>23568</td><td>True</td><td>momentum scan</td><td>-0.30000001</td><td>302999990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>483</td><td>Sat Jul 22 04:51:30 2023</td><td>Sat Jul 22 05:21:41 2023</td><td>12671</td><td>True</td><td>momentum scan</td><td>0.5</td><td>299900010000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>482</td><td>Sat Jul 22 04:19:33 2023</td><td>Sat Jul 22 04:49:43 2023</td><td>5609</td><td>True</td><td>momentum scan</td><td>0.5</td><td>302800010000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>481</td><td>Sat Jul 22 03:45:23 2023</td><td>Sat Jul 22 04:16:09 2023</td><td>5595</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>303299990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>480</td><td>Sat Jul 22 03:10:09 2023</td><td>Sat Jul 22 03:43:00 2023</td><td>5940</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>298200010000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>479</td><td>Sat Jul 22 02:36:06 2023</td><td>Sat Jul 22 03:07:49 2023</td><td>5696</td><td>True</td><td>momentum scan</td><td>0.40000001</td><td>299900010000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 275 us</td><td>Dean, Josh</td></tr>
+<tr><td>478</td><td>Sat Jul 22 02:26:30 2023</td><td>Sat Jul 22 02:31:57 2023</td><td>1035</td><td>True</td><td>momentum scan</td><td>0.38</td><td>300499990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto; test 
+lower dead time</td><td>Dean, Josh</td></tr>
+<tr><td>477</td><td>Sat Jul 22 01:48:36 2023</td><td>Sat Jul 22 02:23:52 2023</td><td>24566</td><td>True</td><td>momentum scan</td><td>0.38</td><td>302800010000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Dean, Josh</td></tr>
+<tr><td>476</td><td>Sat Jul 22 01:00:35 2023</td><td>Sat Jul 22 01:46:37 2023</td><td>36191</td><td>True</td><td>momentum scan</td><td>0.34</td><td>300099990000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Dean, Josh</td></tr>
+<tr><td>475</td><td>Sat Jul 22 00:30:24 2023</td><td>Sat Jul 22 00:57:08 2023</td><td>21331</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>303900000000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Dean, Josh</td></tr>
+<tr><td>474</td><td>Fri Jul 21 22:15:25 2023</td><td>Sat Jul 22 00:23:50 2023</td><td>62957</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>29500000000.0</td><td>1.006</td><td>1.06</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Dean, Josh</td></tr>
+<tr><td>473</td><td>Fri Jul 21 20:59:41 2023</td><td>Fri Jul 21 21:28:44 2023</td><td>22072</td><td>True</td><td>momentum scan</td><td>-1</td><td>300499990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>472</td><td>Fri Jul 21 20:25:40 2023</td><td>Fri Jul 21 20:56:58 2023</td><td>21241</td><td>True</td><td>momentum scan</td><td>-0.94</td><td>304599990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>471</td><td>Fri Jul 21 19:54:16 2023</td><td>Fri Jul 21 20:23:59 2023</td><td>21982</td><td>True</td><td>momentum scan</td><td>-0.89999998</td><td>300099990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>470</td><td>Fri Jul 21 19:20:24 2023</td><td>Fri Jul 21 19:52:06 2023</td><td>23832</td><td>True</td><td>momentum scan</td><td>-0.86000001</td><td>301000000000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>469</td><td>Fri Jul 21 18:45:00 2023</td><td>Fri Jul 21 19:18:56 2023</td><td>24647</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>300499990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>468</td><td>Fri Jul 21 18:36:49 2023</td><td>Fri Jul 21 18:43:53 2023</td><td>7125</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>302600030000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>467</td><td>Fri Jul 21 18:04:18 2023</td><td>Fri Jul 21 18:36:20 2023</td><td>27782</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>298500030000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>466</td><td>Fri Jul 21 17:55:53 2023</td><td>Fri Jul 21 18:01:52 2023</td><td>405</td><td>True</td><td>without any trigger for testing</td><td>1</td><td>305400020000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri, Bruno, Arturo</td></tr>
+<tr><td>465</td><td>Fri Jul 21 17:41:49 2023</td><td>Fri Jul 21 17:55:19 2023</td><td>13585</td><td>True</td><td>without e veto - TOF calibration</td><td>1</td><td>308000030000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. No electron veto</td><td>Alie, Jiri</td></tr>
+<tr><td>464</td><td>Fri Jul 21 17:05:03 2023</td><td>Fri Jul 21 17:41:18 2023</td><td>28165</td><td>True</td><td>without e veto - TOF calibration</td><td>1</td><td>300800020000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Alie, Jiri</td></tr>
+<tr><td>463</td><td>Fri Jul 21 16:30:38 2023</td><td>Fri Jul 21 17:02:34 2023</td><td>22169</td><td>True</td><td>momentum scan</td><td>-0.74000001</td><td>301100010000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Alie, Jiri</td></tr>
+<tr><td>462</td><td>Fri Jul 21 16:01:19 2023</td><td>Fri Jul 21 16:28:26 2023</td><td>21863</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>304000010000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Alie, Jiri</td></tr>
+<tr><td>461</td><td>Fri Jul 21 15:28:18 2023</td><td>Fri Jul 21 15:59:30 2023</td><td>25326</td><td>True</td><td>momentum scan</td><td>-0.66000003</td><td>307499990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Alie, Jiri</td></tr>
+<tr><td>460</td><td>Fri Jul 21 14:51:42 2023</td><td>Fri Jul 21 15:26:28 2023</td><td>24679</td><td>True</td><td>momentum scan</td><td>-0.60000002</td><td>301699990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Alie, Jiri</td></tr>
+<tr><td>459</td><td>Fri Jul 21 13:47:44 2023</td><td>Fri Jul 21 14:47:19 2023</td><td>34266</td><td>True</td><td>momentum scan</td><td>0.60000002</td><td>301900010000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>458</td><td>Fri Jul 21 12:56:44 2023</td><td>Fri Jul 21 13:46:00 2023</td><td>28973</td><td>True</td><td>momentum scan</td><td>0.66000003</td><td>302300000000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>457</td><td>Fri Jul 21 12:22:00 2023</td><td>Fri Jul 21 12:55:07 2023</td><td>27166</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>306299990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>456</td><td>Fri Jul 21 11:43:25 2023</td><td>Fri Jul 21 12:19:42 2023</td><td>29805</td><td>True</td><td>momentum scan</td><td>0.74000001</td><td>303600010000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>455</td><td>Fri Jul 21 11:00:43 2023</td><td>Fri Jul 21 11:37:17 2023</td><td>28082</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>308699990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>454</td><td>Fri Jul 21 10:24:31 2023</td><td>Fri Jul 21 10:58:58 2023</td><td>27810</td><td>True</td><td>momentum scan</td><td>0.86000001</td><td>298700010000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>453</td><td>Fri Jul 21 09:51:30 2023</td><td>Fri Jul 21 10:21:57 2023</td><td>26380</td><td>True</td><td>momentum scan</td><td>0.89999998</td><td>301699990000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>452</td><td>Fri Jul 21 09:14:19 2023</td><td>Fri Jul 21 09:48:23 2023</td><td>30541</td><td>True</td><td>momentum scan</td><td>1</td><td>300200000000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>451</td><td>Fri Jul 21 08:16:24 2023</td><td>Fri Jul 21 09:10:40 2023</td><td>29449</td><td>True</td><td>momentum scan</td><td>1</td><td>298100000000.0</td><td>1.006</td><td>1.015</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Manhoor, Arkadiusz</td></tr>
+<tr><td>449</td><td>Fri Jul 21 06:11:35 2023</td><td>Fri Jul 21 06:49:37 2023</td><td>28901</td><td>True</td><td>momentum scan</td><td>0.60000002</td><td>297900020000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Manhoor, Arkadiusz</td></tr>
+<tr><td>447</td><td>Fri Jul 21 04:50:17 2023</td><td>Fri Jul 21 05:27:45 2023</td><td>28079</td><td>True</td><td>momentum scan</td><td>-0.54000002</td><td>307700010000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>446</td><td>Fri Jul 21 04:11:11 2023</td><td>Fri Jul 21 04:48:06 2023</td><td>25837</td><td>True</td><td>momentum scan</td><td>-0.60000002</td><td>300099990000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>445</td><td>Fri Jul 21 03:35:14 2023</td><td>Fri Jul 21 04:09:07 2023</td><td>22477</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>303399990000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>444</td><td>Fri Jul 21 03:01:22 2023</td><td>Fri Jul 21 03:33:49 2023</td><td>21178</td><td>True</td><td>momentum scan</td><td>-0.74000001</td><td>301400000000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>443</td><td>Fri Jul 21 02:28:29 2023</td><td>Fri Jul 21 02:59:17 2023</td><td>18596</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>302000010000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>442</td><td>Fri Jul 21 01:56:46 2023</td><td>Fri Jul 21 02:26:49 2023</td><td>20544</td><td>True</td><td>momentum scan</td><td>-0.86000001</td><td>300499990000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>441</td><td>Fri Jul 21 01:20:36 2023</td><td>Fri Jul 21 01:54:28 2023</td><td>22839</td><td>True</td><td>momentum scan</td><td>0.86000001</td><td>304599990000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>440</td><td>Fri Jul 21 00:39:23 2023</td><td>Fri Jul 21 01:18:31 2023</td><td>26713</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>304800010000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>439</td><td>Fri Jul 21 00:00:14 2023</td><td>Fri Jul 21 00:37:28 2023</td><td>25592</td><td>True</td><td>momentum scan</td><td>0.74000001</td><td>306500010000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>438</td><td>Thu Jul 20 23:19:41 2023</td><td>Thu Jul 20 23:57:51 2023</td><td>25179</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>299599990000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>437</td><td>Thu Jul 20 22:40:06 2023</td><td>Thu Jul 20 23:17:24 2023</td><td>24908</td><td>True</td><td>momentum scan</td><td>0.60000002</td><td>300499990000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Josh, Mark</td></tr>
+<tr><td>436</td><td>Thu Jul 20 21:58:15 2023</td><td>Thu Jul 20 22:36:29 2023</td><td>28538</td><td>True</td><td>momentum scan</td><td>0.54000002</td><td>301400000000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>435</td><td>Thu Jul 20 21:16:08 2023</td><td>Thu Jul 20 21:56:13 2023</td><td>31011</td><td>True</td><td>momentum scan</td><td>0.5</td><td>297199990000.0</td><td>1.006</td><td>1.02</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>434</td><td>Thu Jul 20 19:35:16 2023</td><td>Thu Jul 20 20:20:17 2023</td><td>34082</td><td>True</td><td>momentum scan</td><td>0.54000002</td><td>299900010000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>433</td><td>Thu Jul 20 18:55:03 2023</td><td>Thu Jul 20 19:32:20 2023</td><td>28722</td><td>True</td><td>momentum scan</td><td>0.5</td><td>302300000000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>432</td><td>Thu Jul 20 18:13:59 2023</td><td>Thu Jul 20 18:53:20 2023</td><td>31682</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>301699990000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>431</td><td>Thu Jul 20 17:32:09 2023</td><td>Thu Jul 20 18:11:18 2023</td><td>36698</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>299599990000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>430</td><td>Thu Jul 20 16:07:10 2023</td><td>Thu Jul 20 17:28:59 2023</td><td>45503</td><td>True</td><td>momentum scan</td><td>0.38</td><td>302000010000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>429</td><td>Thu Jul 20 15:09:00 2023</td><td>Thu Jul 20 16:04:51 2023</td><td>52507</td><td>True</td><td>momentum scan</td><td>0.34</td><td>299000000000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>428</td><td>Thu Jul 20 14:15:01 2023</td><td>Thu Jul 20 15:04:00 2023</td><td>53184</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>303699980000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Gonzalo</td></tr>
+<tr><td>427</td><td>Thu Jul 20 13:23:16 2023</td><td>Thu Jul 20 14:00:04 2023</td><td>42920</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>303699980000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>426</td><td>Thu Jul 20 12:36:18 2023</td><td>Thu Jul 20 13:18:50 2023</td><td>36938</td><td>True</td><td>momentum scan</td><td>-0.41999999</td><td>302600000000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>425</td><td>Thu Jul 20 11:51:35 2023</td><td>Thu Jul 20 12:32:40 2023</td><td>32786</td><td>True</td><td>momentum scan</td><td>-0.46000001</td><td>302000010000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>424</td><td>Thu Jul 20 11:22:22 2023</td><td>Thu Jul 20 11:47:40 2023</td><td>30650</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>304800010000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>423</td><td>Thu Jul 20 10:55:16 2023</td><td>Thu Jul 20 11:19:13 2023</td><td>27879</td><td>True</td><td>momentum scan</td><td>-0.54000002</td><td>302200000000.0</td><td>1.006</td><td>1.047</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>422</td><td>Thu Jul 20 09:30:38 2023</td><td>Thu Jul 20 10:07:57 2023</td><td>23499</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>299000000000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>421</td><td>Thu Jul 20 08:31:57 2023</td><td>Thu Jul 20 09:28:25 2023</td><td>24153</td><td>True</td><td>momentum scan</td><td>-0.66000003</td><td>300200000000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>420</td><td>Thu Jul 20 07:52:55 2023</td><td>Thu Jul 20 08:28:13 2023</td><td>24447</td><td>True</td><td>momentum scan</td><td>-0.62</td><td>301100010000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>419</td><td>Thu Jul 20 07:15:24 2023</td><td>Thu Jul 20 07:50:23 2023</td><td>24192</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>299000000000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>418</td><td>Thu Jul 20 06:28:24 2023</td><td>Thu Jul 20 07:10:27 2023</td><td>30977</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>301900010000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Mahnoor, Luan</td></tr>
+<tr><td>417</td><td>Thu Jul 20 05:36:36 2023</td><td>Thu Jul 20 06:22:46 2023</td><td>36170</td><td>True</td><td>momentum scan</td><td>-0.46000001</td><td>303600010000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>416</td><td>Thu Jul 20 04:31:03 2023</td><td>Thu Jul 20 05:32:29 2023</td><td>48418</td><td>True</td><td>momentum scan</td><td>-0.41999999</td><td>301400000000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>415</td><td>Thu Jul 20 03:37:50 2023</td><td>Thu Jul 20 04:26:34 2023</td><td>38351</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>304199990000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>414</td><td>Thu Jul 20 02:54:46 2023</td><td>Thu Jul 20 03:35:00 2023</td><td>31790</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>305500000000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>413</td><td>Thu Jul 20 02:11:07 2023</td><td>Thu Jul 20 02:52:34 2023</td><td>31599</td><td>True</td><td>momentum scan</td><td>0.5</td><td>302000010000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>412</td><td>Thu Jul 20 01:23:30 2023</td><td>Thu Jul 20 02:07:57 2023</td><td>32741</td><td>True</td><td>momentum scan</td><td>0.56</td><td>304500020000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>411</td><td>Thu Jul 20 00:35:57 2023</td><td>Thu Jul 20 01:19:43 2023</td><td>31492</td><td>True</td><td>momentum scan</td><td>0.62</td><td>297300000000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>410</td><td>Wed Jul 19 23:49:17 2023</td><td>Thu Jul 20 00:33:19 2023</td><td>31001</td><td>True</td><td>momentum scan</td><td>0.66000003</td><td>303399990000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>409</td><td>Wed Jul 19 23:07:35 2023</td><td>Wed Jul 19 23:41:25 2023</td><td>21129</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>299900010000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 3% (9mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>408</td><td>Wed Jul 19 22:21:07 2023</td><td>Wed Jul 19 22:57:58 2023</td><td>26294</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>297000010000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Gonzalo, Josh</td></tr>
+<tr><td>407</td><td>Wed Jul 19 21:15:06 2023</td><td>Wed Jul 19 22:12:04 2023</td><td>53291</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>301400000000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 2% (6mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 640 us.</td><td>Nick, Arkadiusz, Josh</td></tr>
+<tr><td>406</td><td>Wed Jul 19 21:03:29 2023</td><td>Wed Jul 19 21:13:39 2023</td><td>9706</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>299100010000.0</td><td>1.006</td><td>1.03</td><td>
+ momentum slit is 2% (6mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 640 us.</td><td>Nick, Arkadiusz, Josh</td></tr>
+<tr><td>403</td><td>Wed Jul 19 18:39:27 2023</td><td>Wed Jul 19 19:00:11 2023</td><td>9996</td><td>True</td><td>momentum scan</td><td>1.2</td><td>295800010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Nick, Arkadiusz, Josh</td></tr>
+<tr><td>402</td><td>Wed Jul 19 18:02:13 2023</td><td>Wed Jul 19 18:37:43 2023</td><td>15272</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>300700010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Nick, Arkadiusz, Josh</td></tr>
+<tr><td>401</td><td>Wed Jul 19 18:00:03 2023</td><td>Wed Jul 19 18:00:51 2023</td><td>261</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>300700010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. Digitizer test.</td><td>Arturo, Nick, Arkadiusz, Josh</td></tr>
+<tr><td>400</td><td>Wed Jul 19 17:56:23 2023</td><td>Wed Jul 19 17:57:00 2023</td><td>273</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>300700010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us. Digitizer test.</td><td>Arturo, Nick, Arkadiusz, Josh</td></tr>
+<tr><td>399</td><td>Wed Jul 19 17:04:31 2023</td><td>Wed Jul 19 17:51:44 2023</td><td>15537</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>300700010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Arturo, Nick, Arkadiusz, Josh</td></tr>
+<tr><td>398</td><td>Wed Jul 19 16:20:40 2023</td><td>Wed Jul 19 17:00:31 2023</td><td>25124</td><td>True</td><td>momentum scan</td><td>0.89999998</td><td>299800000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>397</td><td>Wed Jul 19 13:35:03 2023</td><td>Wed Jul 19 15:15:01 2023</td><td>0</td><td>True</td><td>momentum scan</td><td>0.89999998</td><td>299800000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>396</td><td>Wed Jul 19 13:04:10 2023</td><td>Wed Jul 19 13:27:39 2023</td><td>15603</td><td>True</td><td>momentum scan</td><td>1.12</td><td>299800000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>395</td><td>Wed Jul 19 12:43:10 2023</td><td>Wed Jul 19 12:46:43 2023</td><td>8637</td><td>True</td><td>momentum scan</td><td>1.125</td><td>299800000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>394</td><td>Wed Jul 19 12:23:55 2023</td><td>Wed Jul 19 12:41:37 2023</td><td>23107</td><td>True</td><td>momentum scan</td><td>1.0599999</td><td>299999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>393</td><td>Wed Jul 19 12:04:40 2023</td><td>Wed Jul 19 12:21:43 2023</td><td>30604</td><td>True</td><td>momentum scan</td><td>1</td><td>299999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>392</td><td>Wed Jul 19 11:49:10 2023</td><td>Wed Jul 19 12:02:34 2023</td><td>24441</td><td>True</td><td>momentum scan</td><td>0.94</td><td>299999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>391</td><td>Wed Jul 19 11:38:26 2023</td><td>Wed Jul 19 11:48:13 2023</td><td>16566</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>299999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>390</td><td>Wed Jul 19 11:23:46 2023</td><td>Wed Jul 19 11:37:05 2023</td><td>21158</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>299999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>389</td><td>Wed Jul 19 10:41:14 2023</td><td>Wed Jul 19 11:21:15 2023</td><td>50493</td><td>True</td><td>momentum scan</td><td>-0.89999998</td><td>302999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>388</td><td>Wed Jul 19 10:03:31 2023</td><td>Wed Jul 19 10:40:52 2023</td><td>62839</td><td>True</td><td>momentum scan</td><td>-1.2</td><td>302999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>387</td><td>Wed Jul 19 09:30:44 2023</td><td>Wed Jul 19 10:02:57 2023</td><td>55446</td><td>True</td><td>momentum scan</td><td>-1.12</td><td>302999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>386</td><td>Wed Jul 19 08:54:50 2023</td><td>Wed Jul 19 09:29:36 2023</td><td>33827</td><td>True</td><td>momentum scan</td><td>-1.0599999</td><td>302999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>385</td><td>Wed Jul 19 08:14:21 2023</td><td>Wed Jul 19 08:50:38 2023</td><td>25466</td><td>True</td><td>momentum scan</td><td>-1</td><td>302999990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit is 1% (3mm) but other collimators are 35mm. Upgraded 
+discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>384</td><td>Wed Jul 19 07:31:43 2023</td><td>Wed Jul 19 08:12:31 2023</td><td>28705</td><td>True</td><td>momentum scan</td><td>-0.94</td><td>299000000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 1% (3mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>383</td><td>Wed Jul 19 07:21:17 2023</td><td>Wed Jul 19 07:30:24 2023</td><td>6346</td><td>True</td><td>momentum scan</td><td>-1.2</td><td>299000000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 1% (3mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV. Dead time is 400 us.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>380</td><td>Wed Jul 19 06:32:01 2023</td><td>Wed Jul 19 07:14:24 2023</td><td>29859</td><td>True</td><td>momentum scan</td><td>-1.12</td><td>302000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV. Dead time decreased to 400 us from 900
+ us</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>379</td><td>Wed Jul 19 06:17:38 2023</td><td>Wed Jul 19 06:26:16 2023</td><td>9272</td><td>True</td><td>momentum scan</td><td>-1.12</td><td>302000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV.</td><td>Akira, Luan, Arturo</td></tr>
+<tr><td>378</td><td>Wed Jul 19 05:32:23 2023</td><td>Wed Jul 19 06:14:12 2023</td><td>46135</td><td>True</td><td>momentum scan</td><td>-1.0599999</td><td>299900010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>377</td><td>Wed Jul 19 04:39:33 2023</td><td>Wed Jul 19 05:27:33 2023</td><td>52510</td><td>True</td><td>momentum scan</td><td>-1</td><td>299900010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>376</td><td>Wed Jul 19 03:52:09 2023</td><td>Wed Jul 19 04:36:33 2023</td><td>48155</td><td>True</td><td>momentum scan</td><td>-0.94</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>375</td><td>Wed Jul 19 03:07:42 2023</td><td>Wed Jul 19 03:49:41 2023</td><td>45275</td><td>True</td><td>momentum scan</td><td>-0.89999998</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>374</td><td>Wed Jul 19 02:03:31 2023</td><td>Wed Jul 19 03:04:57 2023</td><td>65025</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>373</td><td>Wed Jul 19 01:11:15 2023</td><td>Wed Jul 19 02:01:05 2023</td><td>47713</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>372</td><td>Wed Jul 19 00:22:03 2023</td><td>Wed Jul 19 01:06:54 2023</td><td>47282</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>371</td><td>Tue Jul 18 23:48:18 2023</td><td>Wed Jul 19 00:20:28 2023</td><td>34729</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>370</td><td>Tue Jul 18 23:10:36 2023</td><td>Tue Jul 18 23:45:04 2023</td><td>38111</td><td>True</td><td>momentum scan</td><td>0.89999998</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>369</td><td>Tue Jul 18 22:21:39 2023</td><td>Tue Jul 18 23:07:48 2023</td><td>50988</td><td>True</td><td>momentum scan</td><td>0.94</td><td>304000010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Nick &amp; Bruno</td></tr>
+<tr><td>368</td><td>Tue Jul 18 21:47:06 2023</td><td>Tue Jul 18 22:17:48 2023</td><td>34525</td><td>True</td><td>momentum scan</td><td>1</td><td>301100010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Arkadiusz &amp; Josh</td></tr>
+<tr><td>367</td><td>Tue Jul 18 21:15:22 2023</td><td>Tue Jul 18 21:44:41 2023</td><td>33587</td><td>True</td><td>momentum scan</td><td>1.0599999</td><td>299900010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Arkadiusz &amp; Josh</td></tr>
+<tr><td>366</td><td>Tue Jul 18 20:46:02 2023</td><td>Tue Jul 18 21:12:50 2023</td><td>31562</td><td>True</td><td>momentum scan</td><td>1.12</td><td>303299990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Arkadiusz &amp; Josh</td></tr>
+<tr><td>365</td><td>Tue Jul 18 20:17:26 2023</td><td>Tue Jul 18 20:42:44 2023</td><td>33800</td><td>True</td><td>momentum scan</td><td>1.2</td><td>301699990000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Arkadiusz &amp; Josh</td></tr>
+<tr><td>364</td><td>Tue Jul 18 19:38:53 2023</td><td>Tue Jul 18 20:15:27 2023</td><td>37310</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>306900010000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Arkadiusz &amp; Josh</td></tr>
+<tr><td>363</td><td>Tue Jul 18 19:12:59 2023</td><td>Tue Jul 18 19:36:58 2023</td><td>24132</td><td>True</td><td>momentum scan</td><td>1.2</td><td>302200000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Dean &amp; Arturo &amp; Arkadiusz &amp; Josh</td></tr>
+<tr><td>362</td><td>Tue Jul 18 18:11:32 2023</td><td>Tue Jul 18 19:08:47 2023</td><td>27392</td><td>True</td><td>momentum scan</td><td>1.2</td><td>302200000000.0</td><td>1.006</td><td>1.01</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 50mV;</td><td>Dean &amp; Arturo &amp; Arkadiusz &amp; Josh</td></tr>
+<tr><td>361</td><td>Tue Jul 18 15:52:52 2023</td><td>Tue Jul 18 16:05:35 2023</td><td>2434</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>299000000000.0</td><td>1.006</td><td>1.11</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 100mV; trigger testing</td><td>Dean &amp; Arturo &amp; Arkadiusz &amp; Josh</td></tr>
+<tr><td>360</td><td>Tue Jul 18 15:40:18 2023</td><td>Tue Jul 18 15:47:07 2023</td><td>2933</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>302000010000.0</td><td>1.006</td><td>1.11</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 100mV; trigger testing</td><td>Akira &amp; Arturo &amp; Arkadiusz &amp; Josh</td></tr>
+<tr><td>359</td><td>Tue Jul 18 15:03:52 2023</td><td>Tue Jul 18 15:36:44 2023</td><td>5026</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>302000010000.0</td><td>1.006</td><td>1.11</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 100mV</td><td>Akira &amp; Arturo &amp; Arkadiusz &amp; Josh</td></tr>
+<tr><td>358</td><td>Tue Jul 18 14:00:36 2023</td><td>Tue Jul 18 14:34:53 2023</td><td>7470</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>302000010000.0</td><td>1.006</td><td>1.11</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto. Discriminator set to 100mV</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>357</td><td>Tue Jul 18 13:38:04 2023</td><td>Tue Jul 18 13:58:33 2023</td><td>3987</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>302000010000.0</td><td>1.006</td><td>1.11</td><td>
+ momentum slit back to 3% (9mm) but other collimators are thinner 
+(35mm). Upgraded discriminator module for hole counter veto and aerogel 0
+ veto</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>356</td><td>Tue Jul 18 13:25:36 2023</td><td>Tue Jul 18 13:30:50 2023</td><td>2015</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>297999990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 3% (9mm) but other collimators are thinner (35mm). Upgraded discriminator module for hole counter veto</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>355</td><td>Tue Jul 18 12:54:05 2023</td><td>Tue Jul 18 13:19:05 2023</td><td>7945</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>304000010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 3% (9mm) but other collimators are thinner (35mm)</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>354</td><td>Tue Jul 18 11:16:00 2023</td><td>Tue Jul 18 12:53:10 2023</td><td>33909</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>304000010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 3% (9mm) but other collimators are thinner (35mm)</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>353</td><td>Tue Jul 18 10:17:18 2023</td><td>Tue Jul 18 11:14:49 2023</td><td>42034</td><td>True</td><td>momentum scan</td><td>-0.30000001</td><td>304000010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 3% (9mm) but other collimators are thinner (35mm)</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>352</td><td>Tue Jul 18 09:21:56 2023</td><td>Tue Jul 18 10:15:03 2023</td><td>31352</td><td>True</td><td>momentum scan</td><td>-0.28</td><td>303600010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 3% (9mm) but other collimators are thinner (35mm)</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>351</td><td>Tue Jul 18 08:11:03 2023</td><td>Tue Jul 18 09:19:54 2023</td><td>45189</td><td>True</td><td>momentum scan</td><td>-0.25999999</td><td>303600010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 3% (9mm) but other collimators are thinner (35mm)</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>350</td><td>Tue Jul 18 07:23:13 2023</td><td>Tue Jul 18 08:09:13 2023</td><td>28461</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>303600010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 3% (9mm) but other collimators are thinner (35mm)</td><td>Akira &amp; Junjie &amp; Arturo</td></tr>
+<tr><td>349</td><td>Tue Jul 18 06:15:46 2023</td><td>Tue Jul 18 07:19:16 2023</td><td>33728</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>303600010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit back to 2% (6mm) but other collimators are wider (54mm)</td><td>Bruno &amp; Luan</td></tr>
+<tr><td>348</td><td>Tue Jul 18 05:08:22 2023</td><td>Tue Jul 18 06:07:57 2023</td><td>18743</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>303600010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Bruno &amp; Luan</td></tr>
+<tr><td>347</td><td>Tue Jul 18 04:11:32 2023</td><td>Tue Jul 18 05:05:24 2023</td><td>25249</td><td>True</td><td>momentum scan</td><td>-0.23999999</td><td>303600010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Bruno &amp; Luan</td></tr>
+<tr><td>346</td><td>Tue Jul 18 01:35:24 2023</td><td>Tue Jul 18 04:09:47 2023</td><td>52755</td><td>True</td><td>momentum scan</td><td>-0.22</td><td>303600010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Bruno &amp; Luan</td></tr>
+<tr><td>345</td><td>Mon Jul 17 22:59:54 2023</td><td>Tue Jul 18 01:33:27 2023</td><td>40259</td><td>True</td><td>momentum scan</td><td>0.22</td><td>305399990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Bruno &amp; Luan</td></tr>
+<tr><td>344</td><td>Mon Jul 17 20:55:11 2023</td><td>Mon Jul 17 22:41:03 2023</td><td>32956</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>299500010000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Gonzalo, Josh, Arkadiusz</td></tr>
+<tr><td>343</td><td>Mon Jul 17 19:42:11 2023</td><td>Mon Jul 17 20:51:14 2023</td><td>39298</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>301699990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Gonzalo, Josh, Arkadiusz</td></tr>
+<tr><td>342</td><td>Mon Jul 17 18:33:19 2023</td><td>Mon Jul 17 19:39:57 2023</td><td>38917</td><td>True</td><td>momentum scan</td><td>0.28</td><td>35100000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Gonzalo, Josh, Arkadiusz</td></tr>
+<tr><td>341</td><td>Mon Jul 17 17:38:06 2023</td><td>Mon Jul 17 18:26:28 2023</td><td>29915</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>32600001000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Gonzalo, Josh</td></tr>
+<tr><td>340</td><td>Mon Jul 17 16:49:26 2023</td><td>Mon Jul 17 17:35:56 2023</td><td>30529</td><td>True</td><td>momentum scan</td><td>0.34</td><td>302999990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Gonzalo, Josh</td></tr>
+<tr><td>339</td><td>Mon Jul 17 15:55:57 2023</td><td>Mon Jul 17 16:44:53 2023</td><td>22738</td><td>True</td><td>momentum scan</td><td>0.38</td><td>306800000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), after beam retuning</td><td>Gonzalo, Josh</td></tr>
+<tr><td>338</td><td>Mon Jul 17 14:02:01 2023</td><td>Mon Jul 17 15:53:33 2023</td><td>31231</td><td>True</td><td>momentum scan</td><td>1</td><td>299999990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%), beam is under tuning</td><td>Akira, Sirous</td></tr>
+<tr><td>337</td><td>Mon Jul 17 12:42:12 2023</td><td>Mon Jul 17 14:01:06 2023</td><td>3034</td><td>True</td><td>momentum scan</td><td>0.34</td><td>299999990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira, Sirous</td></tr>
+<tr><td>336</td><td>Mon Jul 17 12:21:27 2023</td><td>Mon Jul 17 12:40:39 2023</td><td>1833</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>299999990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira, Sirous</td></tr>
+<tr><td>335</td><td>Mon Jul 17 11:46:58 2023</td><td>Mon Jul 17 12:19:55 2023</td><td>4137</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>299999990000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira, Sirous</td></tr>
+<tr><td>334</td><td>Mon Jul 17 11:04:27 2023</td><td>Mon Jul 17 11:43:37 2023</td><td>5013</td><td>True</td><td>momentum scan</td><td>0.38</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira, Sirous</td></tr>
+<tr><td>333</td><td>Mon Jul 17 10:12:23 2023</td><td>Mon Jul 17 11:02:50 2023</td><td>8485</td><td>True</td><td>momentum scan</td><td>0.34</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira, Sirous</td></tr>
+<tr><td>332</td><td>Mon Jul 17 09:21:54 2023</td><td>Mon Jul 17 10:10:47 2023</td><td>23190</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira, Sirous</td></tr>
+<tr><td>331</td><td>Mon Jul 17 08:47:01 2023</td><td>Mon Jul 17 09:18:43 2023</td><td>28368</td><td>True</td><td>momentum scan</td><td>0.28</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira</td></tr>
+<tr><td>330</td><td>Mon Jul 17 07:31:55 2023</td><td>Mon Jul 17 08:44:39 2023</td><td>44199</td><td>True</td><td>momentum scan</td><td>0.22</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit is 9mm (3%)</td><td>Akira</td></tr>
+<tr><td>329</td><td>Mon Jul 17 06:35:17 2023</td><td>Mon Jul 17 07:29:29 2023</td><td>35786</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td> momentum slit from 6 to 9mm (2% to 3%)</td><td>Akira</td></tr>
+<tr><td>328</td><td>Mon Jul 17 05:27:33 2023</td><td>Mon Jul 17 06:27:23 2023</td><td>34346</td><td>True</td><td>momentum scan</td><td>0.23999999</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td>increase
+ TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 
+mm, removed TOF, momentum slit from 3 to 6 mm: turn on data logger</td><td>Akira</td></tr>
+<tr><td>327</td><td>Mon Jul 17 04:46:36 2023</td><td>Mon Jul 17 05:20:52 2023</td><td>21409</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td>increase
+ TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 
+mm, removed TOF, momentum slit from 3 to 6 mm: turn on data logger</td><td>Akira</td></tr>
+<tr><td>326</td><td>Mon Jul 17 04:44:16 2023</td><td>Mon Jul 17 04:45:53 2023</td><td>1186</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>300200000000.0</td><td>1.006</td><td>1.11</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira</td></tr>
+<tr><td>322</td><td>Sun Jul 16 20:42:11 2023</td><td>Sun Jul 16 21:08:19 2023</td><td>24507</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>300200000000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>321</td><td>Sun Jul 16 20:19:07 2023</td><td>Sun Jul 16 20:39:50 2023</td><td>20031</td><td>True</td><td>momentum scan</td><td>0.34</td><td>300200000000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>320</td><td>Sun Jul 16 20:03:19 2023</td><td>Sun Jul 16 20:18:04 2023</td><td>12531</td><td>True</td><td>momentum scan</td><td>0.38</td><td>300200000000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>319</td><td>Sun Jul 16 19:37:11 2023</td><td>Sun Jul 16 20:00:53 2023</td><td>18134</td><td>True</td><td>momentum scan</td><td>0.40000001</td><td>300200000000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>318</td><td>Sun Jul 16 19:25:09 2023</td><td>Sun Jul 16 19:34:01 2023</td><td>6011</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>300200000000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>317</td><td>Sun Jul 16 19:15:31 2023</td><td>Sun Jul 16 19:23:33 2023</td><td>4302</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>300200000000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>316</td><td>Sun Jul 16 19:07:04 2023</td><td>Sun Jul 16 19:13:34 2023</td><td>1904</td><td>True</td><td>momentum scan</td><td>0.5</td><td>301400000000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>315</td><td>Sun Jul 16 18:54:01 2023</td><td>Sun Jul 16 19:04:02 2023</td><td>2207</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>303699980000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>314</td><td>Sun Jul 16 18:41:28 2023</td><td>Sun Jul 16 18:51:55 2023</td><td>3231</td><td>True</td><td>momentum scan</td><td>-0.46000001</td><td>304900010000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>313</td><td>Sun Jul 16 18:27:04 2023</td><td>Sun Jul 16 18:39:23 2023</td><td>5758</td><td>True</td><td>momentum scan</td><td>-0.41999999</td><td>301900010000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>312</td><td>Sun Jul 16 18:08:11 2023</td><td>Sun Jul 16 18:24:11 2023</td><td>8308</td><td>True</td><td>momentum scan</td><td>-0.40000001</td><td>303299990000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>311</td><td>Sun Jul 16 17:50:19 2023</td><td>Sun Jul 16 18:05:02 2023</td><td>8114</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>305200010000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>310</td><td>Sun Jul 16 17:31:36 2023</td><td>Sun Jul 16 17:47:47 2023</td><td>10439</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>305200010000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh, Gonzalo, Jiri, Nick</td></tr>
+<tr><td>309</td><td>Sun Jul 16 17:06:04 2023</td><td>Sun Jul 16 17:27:41 2023</td><td>13533</td><td>True</td><td>momentum scan</td><td>-0.30000001</td><td>299500010000.0</td><td>1.006</td><td>1.06</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Bruno, Arturo, Josh</td></tr>
+<tr><td>308</td><td>Sun Jul 16 16:01:52 2023</td><td>Sun Jul 16 16:18:27 2023</td><td>10484</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>307</td><td>Sun Jul 16 15:43:25 2023</td><td>Sun Jul 16 16:00:29 2023</td><td>9158</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>306</td><td>Sun Jul 16 15:18:08 2023</td><td>Sun Jul 16 15:41:51 2023</td><td>6050</td><td>True</td><td>momentum scan</td><td>-0.41999999</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>305</td><td>Sun Jul 16 14:56:53 2023</td><td>Sun Jul 16 15:16:36 2023</td><td>3850</td><td>True</td><td>momentum scan</td><td>-0.46000001</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>304</td><td>Sun Jul 16 14:35:17 2023</td><td>Sun Jul 16 14:53:16 2023</td><td>1779</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>303</td><td>Sun Jul 16 14:17:34 2023</td><td>Sun Jul 16 14:33:59 2023</td><td>1302</td><td>True</td><td>momentum scan</td><td>-0.54000002</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>302</td><td>Sun Jul 16 13:50:37 2023</td><td>Sun Jul 16 14:14:01 2023</td><td>1845</td><td>True</td><td>momentum scan</td><td>0.54000002</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>301</td><td>Sun Jul 16 13:11:52 2023</td><td>Sun Jul 16 13:48:53 2023</td><td>11905</td><td>True</td><td>momentum scan</td><td>0.34</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>300</td><td>Sun Jul 16 12:26:24 2023</td><td>Sun Jul 16 13:03:00 2023</td><td>10876</td><td>True</td><td>momentum scan</td><td>0.38</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V, collimator jaw increased from 35 to 54 mm, removed TOF, momentum slit from 3 to 6 mm </td><td>Akira, Sirous</td></tr>
+<tr><td>297</td><td>Sun Jul 16 11:23:25 2023</td><td>Sun Jul 16 12:02:08 2023</td><td>8587</td><td>True</td><td>momentum scan</td><td>0.38</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V</td><td>Akira, Sirous</td></tr>
+<tr><td>296</td><td>Sun Jul 16 09:53:02 2023</td><td>Sun Jul 16 11:22:07 2023</td><td>23825</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V</td><td>Akira, Sirous</td></tr>
+<tr><td>295</td><td>Sun Jul 16 08:56:56 2023</td><td>Sun Jul 16 09:51:20 2023</td><td>19064</td><td>True</td><td>momentum scan</td><td>0.5</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V</td><td>Akira, Sirous</td></tr>
+<tr><td>294</td><td>Sun Jul 16 07:57:20 2023</td><td>Sun Jul 16 08:55:08 2023</td><td>27369</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>increase TOF0-ch2 HV from 1500 to 1550V</td><td>Akira</td></tr>
+<tr><td>293</td><td>Sun Jul 16 06:23:51 2023</td><td>Sun Jul 16 07:51:11 2023</td><td>32652</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Akira</td></tr>
+<tr><td>292</td><td>Sun Jul 16 05:58:28 2023</td><td>Sun Jul 16 06:21:31 2023</td><td>4508</td><td>True</td><td>momentum scan</td><td>0.25999999</td><td>299999990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Akira</td></tr>
+<tr><td>291</td><td>Sat Jul 15 22:15:12 2023</td><td>Sat Jul 15 22:27:12 2023</td><td>3900</td><td>True</td><td>momentum scan</td><td>-0.30000001</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>290</td><td>Sat Jul 15 21:56:38 2023</td><td>Sat Jul 15 22:13:02 2023</td><td>1521</td><td>True</td><td>momentum scan</td><td>-0.34</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>289</td><td>Sat Jul 15 21:41:35 2023</td><td>Sat Jul 15 21:54:46 2023</td><td>1358</td><td>True</td><td>momentum scan</td><td>-0.38</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>288</td><td>Sat Jul 15 21:24:44 2023</td><td>Sat Jul 15 21:39:38 2023</td><td>1329</td><td>True</td><td>momentum scan</td><td>-0.41999999</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>287</td><td>Sat Jul 15 21:15:43 2023</td><td>Sat Jul 15 21:21:56 2023</td><td>1351</td><td>True</td><td>momentum scan</td><td>-0.46000001</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>286</td><td>Sat Jul 15 21:06:18 2023</td><td>Sat Jul 15 21:13:02 2023</td><td>1414</td><td>True</td><td>momentum scan</td><td>-0.5</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>285</td><td>Sat Jul 15 20:57:41 2023</td><td>Sat Jul 15 21:03:42 2023</td><td>1243</td><td>True</td><td>momentum scan</td><td>-0.54000002</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>284</td><td>Sat Jul 15 20:48:35 2023</td><td>Sat Jul 15 20:54:24 2023</td><td>1258</td><td>True</td><td>momentum scan</td><td>-0.60000002</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>283</td><td>Sat Jul 15 20:33:52 2023</td><td>Sat Jul 15 20:45:16 2023</td><td>2662</td><td>True</td><td>momentum scan</td><td>0.30000001</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>282</td><td>Sat Jul 15 19:37:29 2023</td><td>Sat Jul 15 20:28:00 2023</td><td>9045</td><td>True</td><td>momentum scan</td><td>0.34</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>281</td><td>Sat Jul 15 19:28:50 2023</td><td>Sat Jul 15 19:35:27 2023</td><td>1352</td><td>True</td><td>momentum scan</td><td>0.38</td><td>305500000000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>280</td><td>Sat Jul 15 19:19:42 2023</td><td>Sat Jul 15 19:26:16 2023</td><td>1380</td><td>True</td><td>momentum scan</td><td>0.41999999</td><td>301299990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>279</td><td>Sat Jul 15 19:10:52 2023</td><td>Sat Jul 15 19:17:21 2023</td><td>1292</td><td>True</td><td>momentum scan</td><td>0.46000001</td><td>301299990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>278</td><td>Sat Jul 15 19:01:51 2023</td><td>Sat Jul 15 19:07:41 2023</td><td>1226</td><td>True</td><td>momentum scan</td><td>0.5</td><td>297499980000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>277</td><td>Sat Jul 15 18:51:19 2023</td><td>Sat Jul 15 18:57:29 2023</td><td>1253</td><td>True</td><td>momentum scan</td><td>0.54000002</td><td>304199990000.0</td><td>1.006</td><td>1.047</td><td>New momentum</td><td>Bruno</td></tr>
+<tr><td>276</td><td>Sat Jul 15 18:40:06 2023</td><td>Sat Jul 15 18:46:41 2023</td><td>1307</td><td>True</td><td>momentum scan</td><td>0.60000002</td><td>306299990000.0</td><td>1.006</td><td>1.047</td><td>Changed of aerogel boxes</td><td>Bruno</td></tr>
+<tr><td>275</td><td>Sat Jul 15 17:55:07 2023</td><td>Sat Jul 15 17:55:48 2023</td><td>0</td><td>True</td><td>momentum scan</td><td>0</td><td>0</td><td>1.006</td><td>1.015</td><td>checking to see if aerogel pmt's are off </td><td>Sirous, Mahnoor</td></tr>
+<tr><td>274</td><td>Sat Jul 15 17:30:39 2023</td><td>Sat Jul 15 17:37:40 2023</td><td>796</td><td>True</td><td>momentum scan</td><td>-0.66000003</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>273</td><td>Sat Jul 15 17:03:22 2023</td><td>Sat Jul 15 17:11:17 2023</td><td>858</td><td>True</td><td>momentum scan</td><td>-0.83999997</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>272</td><td>Sat Jul 15 16:50:53 2023</td><td>Sat Jul 15 16:59:02 2023</td><td>883</td><td>True</td><td>momentum scan</td><td>-0.60000002</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>271</td><td>Sat Jul 15 16:40:16 2023</td><td>Sat Jul 15 16:48:20 2023</td><td>860</td><td>True</td><td>momentum scan</td><td>-0.69999999</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>270</td><td>Sat Jul 15 16:29:31 2023</td><td>Sat Jul 15 16:36:32 2023</td><td>723</td><td>True</td><td>momentum scan</td><td>-0.74000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>269</td><td>Sat Jul 15 16:28:05 2023</td><td>Sat Jul 15 16:28:46 2023</td><td>77</td><td>True</td><td>momentum scan</td><td>-0.74000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>268</td><td>Sat Jul 15 16:11:49 2023</td><td>Sat Jul 15 16:23:49 2023</td><td>1109</td><td>True</td><td>momentum scan</td><td>-0.80000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>267</td><td>Sat Jul 15 16:01:22 2023</td><td>Sat Jul 15 16:09:39 2023</td><td>809</td><td>True</td><td>momentum scan</td><td>-0.86000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>266</td><td>Sat Jul 15 15:49:16 2023</td><td>Sat Jul 15 15:57:30 2023</td><td>910</td><td>True</td><td>momentum scan</td><td>-0.89999998</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>265</td><td>Sat Jul 15 15:39:18 2023</td><td>Sat Jul 15 15:47:09 2023</td><td>1827</td><td>True</td><td>momentum scan</td><td>-0.94</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>264</td><td>Sat Jul 15 15:31:33 2023</td><td>Sat Jul 15 15:37:58 2023</td><td>1339</td><td>True</td><td>momentum scan</td><td>1</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>263</td><td>Sat Jul 15 15:21:42 2023</td><td>Sat Jul 15 15:29:24 2023</td><td>1393</td><td>True</td><td>momentum scan</td><td>-1</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Sirous, Mahnoor</td></tr>
+<tr><td>262</td><td>Sat Jul 15 15:07:03 2023</td><td>Sat Jul 15 15:19:24 2023</td><td>7131</td><td>True</td><td>momentum scan</td><td>0.66000003</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>261</td><td>Sat Jul 15 14:57:05 2023</td><td>Sat Jul 15 15:05:40 2023</td><td>1800</td><td>True</td><td>momentum scan</td><td>0.83999997</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>260</td><td>Sat Jul 15 14:46:47 2023</td><td>Sat Jul 15 14:54:06 2023</td><td>1350</td><td>True</td><td>momentum scan</td><td>0.94</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>259</td><td>Sat Jul 15 14:16:03 2023</td><td>Sat Jul 15 14:43:33 2023</td><td>3290</td><td>True</td><td>momentum scan</td><td>0.89999998</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>258</td><td>Sat Jul 15 14:01:01 2023</td><td>Sat Jul 15 14:14:14 2023</td><td>6828</td><td>True</td><td>momentum scan</td><td>0.69999999</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>257</td><td>Sat Jul 15 13:50:28 2023</td><td>Sat Jul 15 13:58:27 2023</td><td>3207</td><td>True</td><td>momentum scan</td><td>0.74000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>256</td><td>Sat Jul 15 13:41:48 2023</td><td>Sat Jul 15 13:48:23 2023</td><td>1206</td><td>True</td><td>momentum scan</td><td>0.86000001</td><td>299999990000.0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>255</td><td>Sat Jul 15 13:26:51 2023</td><td>Sat Jul 15 13:39:05 2023</td><td>3464</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015, electron veto with ACT0 is applied</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>254</td><td>Sat Jul 15 13:20:22 2023</td><td>Sat Jul 15 13:24:06 2023</td><td>728</td><td>True</td><td>momentum scan</td><td>0.80000001</td><td>0</td><td>1.006</td><td>1.015</td><td>first momentum scan for n=1.015</td><td>Akira, Sirous, Bruno</td></tr>
+<tr><td>253</td><td>Sat Jul 15 12:38:16 2023</td><td>Sat Jul 15 13:14:03 2023</td><td>7204</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>After beam tuning</td><td>Arturo</td></tr>
+<tr><td>252</td><td>Sat Jul 15 11:55:03 2023</td><td>Sat Jul 15 12:35:50 2023</td><td>7928</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam tunning</td><td>Arturo</td></tr>
+<tr><td>251</td><td>Sat Jul 15 10:46:10 2023</td><td>Sat Jul 15 11:54:51 2023</td><td>19058</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam tunning</td><td>Arturo</td></tr>
+<tr><td>250</td><td>Sat Jul 15 10:31:35 2023</td><td>Sat Jul 15 10:45:48 2023</td><td>9621</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers after second HV change</td><td>Arturo</td></tr>
+<tr><td>249</td><td>Sat Jul 15 10:10:45 2023</td><td>Sat Jul 15 10:12:15 2023</td><td>1118</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers after first HV change</td><td>Arturo</td></tr>
+<tr><td>248</td><td>Sat Jul 15 09:58:05 2023</td><td>Sat Jul 15 10:10:24 2023</td><td>9378</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers after HV change</td><td>Arturo</td></tr>
+<tr><td>247</td><td>Sat Jul 15 08:35:31 2023</td><td>Sat Jul 15 08:36:30 2023</td><td>226</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers before HV change</td><td>Arturo</td></tr>
+<tr><td>246</td><td>Sat Jul 15 07:58:20 2023</td><td>Sat Jul 15 08:34:45 2023</td><td>7183</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers to check online waveforms</td><td>Arturo</td></tr>
+<tr><td>245</td><td>Fri Jul 14 19:34:25 2023</td><td>Fri Jul 14 19:45:44 2023</td><td>1882</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>244</td><td>Fri Jul 14 19:31:02 2023</td><td>Fri Jul 14 19:34:17 2023</td><td>475</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>243</td><td>Fri Jul 14 19:26:51 2023</td><td>Fri Jul 14 19:30:54 2023</td><td>714</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>242</td><td>Fri Jul 14 19:23:52 2023</td><td>Fri Jul 14 19:26:43 2023</td><td>531</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>241</td><td>Fri Jul 14 19:20:55 2023</td><td>Fri Jul 14 19:23:43 2023</td><td>512</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post trigger percent to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>240</td><td>Fri Jul 14 19:18:37 2023</td><td>Fri Jul 14 19:20:30 2023</td><td>374</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Changed post triiger percent for digitizer 0 to shift waveform time</td><td>Arturo</td></tr>
+<tr><td>239</td><td>Fri Jul 14 18:59:22 2023</td><td>Fri Jul 14 19:17:57 2023</td><td>3534</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Testing hole counter veto</td><td>Arturo</td></tr>
+<tr><td>238</td><td>Fri Jul 14 18:55:52 2023</td><td>Fri Jul 14 18:58:31 2023</td><td>537</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Testing hole counter veto</td><td>Arturo</td></tr>
+<tr><td>237</td><td>Fri Jul 14 18:35:18 2023</td><td>Fri Jul 14 18:55:32 2023</td><td>3759</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Testing hole counter veto</td><td>Arturo</td></tr>
+<tr><td>236</td><td>Fri Jul 14 18:20:32 2023</td><td>Fri Jul 14 18:29:19 2023</td><td>1540</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>With hole counter for veto</td><td>Arturo</td></tr>
+<tr><td>235</td><td>Fri Jul 14 17:32:43 2023</td><td>Fri Jul 14 18:18:35 2023</td><td>8245</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Checking saturation (no hole counter for veto)</td><td>Thomas</td></tr>
+<tr><td>234</td><td>Fri Jul 14 15:56:08 2023</td><td>Fri Jul 14 17:31:25 2023</td><td>20715</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>233</td><td>Fri Jul 14 15:22:17 2023</td><td>Fri Jul 14 15:56:01 2023</td><td>6235</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>232</td><td>Fri Jul 14 15:21:53 2023</td><td>Fri Jul 14 15:22:06 2023</td><td>71</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>231</td><td>Fri Jul 14 15:18:25 2023</td><td>Fri Jul 14 15:21:36 2023</td><td>570</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>230</td><td>Fri Jul 14 15:14:33 2023</td><td>Fri Jul 14 15:18:18 2023</td><td>730</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>229</td><td>Fri Jul 14 15:12:34 2023</td><td>Fri Jul 14 15:14:21 2023</td><td>291</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>EVent building test</td><td>Thomas</td></tr>
+<tr><td>228</td><td>Fri Jul 14 15:05:03 2023</td><td>Fri Jul 14 15:12:18 2023</td><td>1862</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Reduced the number of sample for DT5730</td><td>Thomas</td></tr>
+<tr><td>227</td><td>Fri Jul 14 14:56:36 2023</td><td>Fri Jul 14 15:04:41 2023</td><td>1183</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>226</td><td>Fri Jul 14 14:31:19 2023</td><td>Fri Jul 14 14:56:30 2023</td><td>3074</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>225</td><td>Fri Jul 14 14:30:03 2023</td><td>Fri Jul 14 14:30:28 2023</td><td>49</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>224</td><td>Fri Jul 14 12:41:44 2023</td><td>Fri Jul 14 14:29:50 2023</td><td>27835</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>223</td><td>Fri Jul 14 11:52:39 2023</td><td>Fri Jul 14 12:41:33 2023</td><td>17307</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>222</td><td>Fri Jul 14 11:35:19 2023</td><td>Fri Jul 14 11:52:32 2023</td><td>761</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>221</td><td>Fri Jul 14 11:14:36 2023</td><td>Fri Jul 14 11:34:59 2023</td><td>979</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>220</td><td>Fri Jul 14 10:35:33 2023</td><td>Fri Jul 14 11:14:28 2023</td><td>3865</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>217</td><td>Fri Jul 14 09:47:49 2023</td><td>Fri Jul 14 09:48:26 2023</td><td>51</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>TRB3 commissioning</td><td>Thomas</td></tr>
+<tr><td>216</td><td>Fri Jul 14 09:45:40 2023</td><td>Fri Jul 14 09:47:30 2023</td><td>224</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>215</td><td>Fri Jul 14 09:38:19 2023</td><td>Fri Jul 14 09:45:33 2023</td><td>804</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>214</td><td>Fri Jul 14 09:33:11 2023</td><td>Fri Jul 14 09:38:11 2023</td><td>677</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>213</td><td>Fri Jul 14 09:24:49 2023</td><td>Fri Jul 14 09:32:21 2023</td><td>1048</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>1.006</td><td>1.015</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>212</td><td>Fri Jul 14 09:23:53 2023</td><td>Fri Jul 14 09:24:05 2023</td><td>47</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming.  Run for people to analyze</td><td>Thomas</td></tr>
+<tr><td>211</td><td>Fri Jul 14 09:16:25 2023</td><td>Fri Jul 14 09:23:24 2023</td><td>222</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Thomas</td></tr>
+<tr><td>210</td><td>Fri Jul 14 09:08:01 2023</td><td>Fri Jul 14 09:15:57 2023</td><td>0</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Thomas</td></tr>
+<tr><td>209</td><td>Thu Jul 13 21:23:26 2023</td><td>Fri Jul 14 09:07:45 2023</td><td>5444</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>208</td><td>Thu Jul 13 21:15:38 2023</td><td>Thu Jul 13 21:23:16 2023</td><td>1830</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>207</td><td>Thu Jul 13 21:13:54 2023</td><td>Thu Jul 13 21:14:42 2023</td><td>10</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>206</td><td>Thu Jul 13 21:12:24 2023</td><td>Thu Jul 13 21:13:47 2023</td><td>27</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>205</td><td>Thu Jul 13 21:06:59 2023</td><td>Thu Jul 13 21:12:16 2023</td><td>1954</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>204</td><td>Thu Jul 13 21:05:03 2023</td><td>Thu Jul 13 21:06:52 2023</td><td>419</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>203</td><td>Thu Jul 13 21:00:26 2023</td><td>Thu Jul 13 21:04:56 2023</td><td>51</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>202</td><td>Thu Jul 13 20:57:13 2023</td><td>Thu Jul 13 21:00:20 2023</td><td>1576</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>201</td><td>Thu Jul 13 20:52:09 2023</td><td>Thu Jul 13 20:57:01 2023</td><td>1894</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>200</td><td>Thu Jul 13 20:41:30 2023</td><td>Thu Jul 13 20:52:00 2023</td><td>10600</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>199</td><td>Thu Jul 13 20:35:03 2023</td><td>Thu Jul 13 20:41:21 2023</td><td>3785</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>198</td><td>Thu Jul 13 20:21:13 2023</td><td>Thu Jul 13 20:34:56 2023</td><td>13710</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>197</td><td>Thu Jul 13 20:14:44 2023</td><td>Thu Jul 13 20:21:06 2023</td><td>5245</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>196</td><td>Thu Jul 13 20:14:07 2023</td><td>Thu Jul 13 20:14:37 2023</td><td>992</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Beam triggers coming, all equipment powered</td><td>Everyone</td></tr>
+<tr><td>195</td><td>Thu Jul 13 18:07:31 2023</td><td>Thu Jul 13 20:13:39 2023</td><td>1022390</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>194</td><td>Thu Jul 13 18:03:14 2023</td><td>Thu Jul 13 18:07:24 2023</td><td>33284</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>193</td><td>Thu Jul 13 18:00:12 2023</td><td>Thu Jul 13 18:03:08 2023</td><td>38325</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>192</td><td>Thu Jul 13 17:54:33 2023</td><td>Thu Jul 13 18:00:01 2023</td><td>43833</td><td>False</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>191</td><td>Thu Jul 13 17:23:47 2023</td><td>Thu Jul 13 17:54:23 2023</td><td>8360</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>Maybe beam triggers</td><td>Thomas</td></tr>
+<tr><td>190</td><td>Thu Jul 13 17:19:17 2023</td><td>Thu Jul 13 17:23:30 2023</td><td>190688</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>189</td><td>Thu Jul 13 16:59:20 2023</td><td>Thu Jul 13 17:19:10 2023</td><td>1047546</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>188</td><td>Thu Jul 13 16:47:38 2023</td><td>Thu Jul 13 16:59:13 2023</td><td>606811</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>187</td><td>Thu Jul 13 16:47:22 2023</td><td>Thu Jul 13 16:47:31 2023</td><td>5592</td><td>True</td><td>commissioning</td><td>1</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam started</td><td>Thomas</td></tr>
+<tr><td>186</td><td>Thu Jul 13 16:30:42 2023</td><td>Thu Jul 13 16:46:33 2023</td><td>803465</td><td>True</td><td>commissioning</td><td>0</td><td>0</td><td>0</td><td>0</td><td>comissioning; beam might be started</td><td>Thomas</td></tr>
+<tr><td>185</td><td>Thu Jul 13 16:09:46 2023</td><td>Thu Jul 13 16:30:25 2023</td><td>1093505</td><td>False</td><td>commissioning</td><td>0</td><td>0</td><td></td><td></td><td>comissioning</td><td>Thomas</td></tr>
+<tr><td>184</td><td>Thu Jul 13 16:08:41 2023</td><td>Thu Jul 13 16:09:27 2023</td><td>24812</td><td>False</td><td>commissioning</td><td>0</td><td>0</td><td></td><td></td><td>comissioning</td><td>Thomas</td></tr>
+<tr><td>183</td><td>Thu Jul 13 15:48:42 2023</td><td>Thu Jul 13 16:08:33 2023</td><td>1044008</td><td>False</td><td>commissioning</td><td>0</td><td>0</td><td></td><td></td><td>comissioning</td><td>Thomas</td></tr>
+<tr><td>579</td><td>Wed Jul 26 08:42:01 2023</td><td>Wed Jul 26 08:41:13 2023</td><td>53303</td><td>True</td><td>momentum scan</td><td>0.40000001</td><td>305100030000.0</td><td>1.006</td><td>1.06</td><td>
+	Target 3, momentum slit is 3% (9mm) but other collimators are 35mm. 
+Upgraded discriminator module for hole counter veto and aerogel 0 veto. 
+Discriminator set to 50mV. Dead time is 250 (read from nim crate) us</td><td>Alie, Jan</td></tr>
+</tbody></table>
+</div> 
+
+</body></html>
