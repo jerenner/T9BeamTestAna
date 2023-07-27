@@ -14,7 +14,9 @@ MeV = 1.
 
 lst = {-1 : 2, 1: 1}
 mst = {-1 : 21, 1: 8}
-cols = { 'e' : ROOT.kRed, 'mu' : ROOT.kBlue, 'pi' : ROOT.kGreen+2}
+cols = { 'e' : ROOT.kRed, 'mu' : ROOT.kBlue, 'pi' : ROOT.kGreen+2, 'p' : ROOT.kBlack, 'mu+pi' : ROOT.kMagenta}
+psymb = { 'e' : 'e', 'mu' : '#mu', 'pi' : '#pi', 'p' : 'p', 'mu+pi' : '#mu+#pi'}
+
 
 ####################################################################################
 
@@ -192,7 +194,7 @@ def main(argv):
                     sgnstr = '-'
                 print(f'  ...plotting {part}')
                 gr.Draw('PL')
-                leg.AddEntry(gr, f'{part} {sgnstr}', 'PL')
+                leg.AddEntry(gr, f'{psymb[part]} {sgnstr}', 'PL')
         leg.Draw()
         txt.Draw()
         stuff.append([txt, leg])
