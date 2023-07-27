@@ -304,11 +304,13 @@ void MakeDataPlots_new(string fileName, int momentum, TString peakMode = "") {
     bool onePeakInPbGlass = (reader[18] -> nPeaks == 1);
     if (debug)      cout << "point b" << endl;
 
+    // this is WCTE TB 2023 Run1 (4xACTSm trigger tofs lead glas; no hodoscope) specific!
     // to be updated for the highest peak
     // so all [0] need to be changed to appropriate PeakID
     for(int j = 0; j < nChannels; j++) {
       if (j < 16) {
         onePeakInAll = onePeakInAll && (reader[j] -> nPeaks == 1);
+	// by All we mean trigger tofs and ACTs, not leadglas nor hole counters
         moreThanOnePeakInAll = moreThanOnePeakInAll && (reader[j] -> nPeaks > 1);
       }
       if (j < 8) {
@@ -320,11 +322,11 @@ void MakeDataPlots_new(string fileName, int momentum, TString peakMode = "") {
         moreThanOnePeakInAllToFs = moreThanOnePeakInAllToFs && (reader[j] -> nPeaks > 1);
       }
       // dirty add-on to select electrons
-      if (j == 18){
+      if (j == 18) {
         PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (reader[j] -> PeakVoltage[0] > PbGlassElectronThreshA);
         PbGlassAboveElectronLevel = PbGlassAboveElectronLevel && (reader[j] -> PeakVoltage[0] < PbGlassElectronUpperThreshA);
       }
-      if (j == 4){
+      if (j == 4) {
         ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((reader[j] -> PeakVoltage[0] + reader[j+1] -> PeakVoltage[0] + reader[j+2] -> PeakVoltage[0] + reader[j+3] -> PeakVoltage[0])/2. > ACTC23ElectronThreshA);
 
         ACT23AboveElectronLevel = ACT23AboveElectronLevel && ((reader[j] -> PeakVoltage[0] + reader[j+1] -> PeakVoltage[0] + reader[j+2] -> PeakVoltage[0] + reader[j+3] -> PeakVoltage[0])/2. < ACTC23ElectronUpperThreshA);
@@ -358,22 +360,23 @@ void MakeDataPlots_new(string fileName, int momentum, TString peakMode = "") {
     map<TString,double> PeakTimes; // time
 
     // read all channels information for all waveforms!
-    
+
     for (int ich = 0; ich < nChannels; ++ich) {
       TString chname = treeNames[ich];
       if (debug)      cout << "point c, " << chname.Data() << endl;
 
       PeakID[chname] = getHighestPeakIndex(readerMap[chname]);
-      if ( PeakID[chname] >= 0 && PeakID[chname] < readerMap[chname] -> nPeaks) {
-	Amplitudes[chname] = readerMap[chname] -> PeakVoltage[PeakID[chname]];
-	Charges[chname] = readerMap[chname] -> IntCharge[PeakID[chname]];
-	PeakTimes[chname] = readerMap[chname] -> SignalTime[PeakID[chname]];
+      int ipeak = PeakID[chname];
+      if ( ipeak >= 0 && ipeak < readerMap[chname] -> nPeaks) {
+	Amplitudes[chname] = readerMap[chname] -> PeakVoltage[ipeak];
+	Charges[chname] = readerMap[chname] -> IntCharge[ipeak];
+	PeakTimes[chname] = readerMap[chname] -> SignalTime[ipeak];
 	
 	// histograms over all channels
 	// can be simplified using the above maps
-    	hCharge.at(ich).Fill(reader[ich] -> IntCharge[PeakID[chname]]);
-	hVoltage.at(ich).Fill(reader[ich] -> PeakVoltage[PeakID[chname]]);
-	hTime.at(ich).Fill(reader[ich] -> SignalTime[PeakID[chname]]);
+    	hCharge.at(ich).Fill(reader[ich] -> IntCharge[ipeak]);
+	hVoltage.at(ich).Fill(reader[ich] -> PeakVoltage[ipeak]);
+	hTime.at(ich).Fill(reader[ich] -> SignalTime[ipeak]);
 	//hNbPeaks.at(ich).Fill(reader[ich] -> nPeaks);
 	hPedestalSigma.at(ich).Fill(reader[ich] -> PedestalSigma);
 	hnPeaks.at(ich).Fill(reader[ich] -> nPeaks);
