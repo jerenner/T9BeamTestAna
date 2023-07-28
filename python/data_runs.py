@@ -6,6 +6,15 @@
 
 from data_runs_dicts import *
 
+
+####################################################################
+
+def getTarget(run):
+    if run >= 537:
+        return 'Target3'
+    else:
+        return 'Target1'
+
 ####################################################################
 
 def getMergedMomentum(srun):

@@ -7,6 +7,7 @@ from data_runs_dicts import *
 
 
 dryRun = True
+#dryRun = False
 
 for p in pnrunsDict:
     for n in pnrunsDict[p]:
