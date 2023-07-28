@@ -28,7 +28,7 @@ double GetBeta(double mass, double momentum) {
 // ______________________________________________________________
 // peakMode: "", a, b, c, d, e, f
 
-void MakeDataPlots(string fileName, int momentum, double actThresh = .5, TString peakMode = "") {
+void MakeDataPlots(string fileName, int momentum, double x0_cut = 4.9, double y0_cut = 6, double act23_pi_minA =0.4, double act23_pi_maxA = 2.4, double pb_min = 0.1, double actThresh = .5, TString peakMode = "") {
 
   const int nMaxChannels = 32;
   const int nChannels = 19; // UPDATE THIS FOR HODOSCOPE PMTs! to e.g. 32!
@@ -86,6 +86,15 @@ void MakeDataPlots(string fileName, int momentum, double actThresh = .5, TString
   TH1D hTOFAllWide("hTOFAllWide", ";t_{TOF}^{All} [ns]", 2*ntofbins, tofmin, 2*tofmax);
   TH1D hTOFEl("hTOFEl", ";t_{TOF}^{e} [ns]", ntofbins, tofmin, tofmax);
   TH1D hTOFOther("hTOFOther", ";t_{TOF}^{non-e} [ns]", ntofbins, tofmin, tofmax);
+
+  double tofmax_particle = 40;
+
+  TH1D hTOFMuACT23pb("hTOFMuACT23pb", ";t_{TOF} [ns]", ntofbins, tofmin, tofmax_particle);
+  TH1D hTOFElACT23pb("hTOFElACT23pb", ";t_{TOF} [ns]", ntofbins, tofmin, tofmax_particle);
+  TH1D hTOFPiACT23pb("hTOFPiACT23pb", ";t_{TOF} [ns]", ntofbins, tofmin, tofmax_particle);
+  TH1D hTOFpACT23pb("hTOFpACT23pb", ";t_{TOF} [ns]", ntofbins, tofmin, tofmax_particle);
+  TH1D hTOFdACT23pb("hTOFdACT23pb", ";t_{TOF} [ns]", ntofbins, tofmin, tofmax_particle);
+
 
 
   TH1D hTOFAllLow("hTOFAllLow", ";t_{TOF}^{All} [ns]", ntofbinslow, tofminlow, tofmaxlow);
@@ -486,22 +495,78 @@ void MakeDataPlots(string fileName, int momentum, double actThresh = .5, TString
     bool pass = true;
     bool isEl = false;
 
+    bool isElACT23pb = false;
+    bool isMuACT23pb = false;
+    bool isPiACT23pb = false;
+    bool ispACT23pb = false;
+    bool isdACT23pb = false;
+
+
+
     bool passed_act1a_cuts = false;
     bool passed_act2a_cuts = false;
 
     switch(momentum)	  {
+
+    //new populations for number of particle analysis
 
       case 320: { //; jk
         // placeholder for momentum dependent cuts
         break;
       } // 320
 
-      default: {
-        if (i < 10)
-          cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
-        if ( pbc > 0.55 || pbc < 0.1 || act1c > 0.4) { // custom electron removal cut (act2a + act3a)/2.
-          isEl = true;
+      case 900: {
+
+        if (tof >= y0_cut && onePeakInAllToFs) {
+          isdACT23pb = true;
         }
+
+        else if (tof >= x0_cut && onePeakInAllToFs){
+          ispACT23pb = true;
+        }
+
+        else if ((act2a+act3a)/2 < act23_pi_minA && tof <= x0_cut && onePeakInAllToFs) {
+          if (tof >= 13){
+            std::cout << tof << std::endl;
+          }
+          isMuACT23pb = true;
+        }
+
+        else if ((act2a+act3a)/2 > act23_pi_minA && tof <= x0_cut && onePeakInAllToFs) {
+          isElACT23pb = true;
+        }
+
+
+      }
+
+
+
+      default: {
+        // if (i < 10)
+        //   cout << "WARNING: Using default settings for the " << momentum << " MeV/c beam" << endl;
+        // if ( pbc > 0.9 || pbc < 0.1 || act1c > 0.25) { // custom electron removal cut (act2a + act3a)/2.
+        //   isEl = true;
+        // }
+        //
+        // if ((act2a+act3a)/2 > y0_cut - y0_cut/x0_cut * pba && pba > pb_min && onePeakInAllToFs) {
+        //   std::cout << onePeakInAllToFs << std::endl;
+        //   isElACT23pb = true;
+        // }
+        //
+        // else if ( (act2a+act3a)/2 > act23_pi_maxA && pba > pb_min && onePeakInAllToFs) {
+        //   isMuACT23pb = true;
+        //
+        // }
+        // else if ( (act2a+act3a)/2 > act23_pi_minA && pba > pb_min && onePeakInAllToFs) {
+        //   isPiACT23pb = true;
+        //
+        // }
+        //
+        // else if ( pba < pb_min && !onePeakInAllToFs) {
+        //   ispACT23pb = true;
+        // }
+        //
+
       } // default
     } // case
 
@@ -512,7 +577,34 @@ void MakeDataPlots(string fileName, int momentum, double actThresh = .5, TString
       hTOFEl.Fill(tof);
       hTOFElLow.Fill(tof);
     }
-    else {
+
+    if (isElACT23pb) {
+      // electrons
+      hTOFElACT23pb.Fill(tof);
+      //hTOFElLow.Fill(tof);
+    }
+
+    if (isMuACT23pb) {
+      // muons
+      hTOFMuACT23pb.Fill(tof);
+      //hTOFElLow.Fill(tof);
+    }
+
+    if (isPiACT23pb) {
+      // pions
+      hTOFPiACT23pb.Fill(tof);
+      //hTOFElLow.Fill(tof);
+    }
+
+    if (ispACT23pb) {
+      hTOFpACT23pb.Fill(tof);
+    }
+
+    if (isdACT23pb) {
+      hTOFdACT23pb.Fill(tof);
+    }
+
+    if (!isEl || !isElACT23pb) {
       // non-electrons
       hTOFOther.Fill(tof);
       hTOFOtherLow.Fill(tof);
