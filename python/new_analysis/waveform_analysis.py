@@ -43,6 +43,10 @@ class WaveformAnalysis:
         self.signal_times = None
         self.integrated_charges = None
         self.is_over_threshold = None
+        self.pulse_peak_voltages = None
+        self.pulse_peak_times = None
+        self.pulse_signal_times = None
+        self.pulse_charges = None
 
     def find_pedestals(self):
         """Finds the pedestal of each waveform by taking the mean in the pedestal window. Also finds the standard deviation"""
@@ -138,7 +142,7 @@ class WaveformAnalysis:
             passed_integration_threshold &= ~pass_pulse_threshold[:, i]  # after passing pulse threshold, don't consider it passed integration threshold until it passes again
             pulse_time_thresholds[new_peak_indices] = self.peak_rise_time_fraction*self.pulse_peak_voltages[new_peak_indices,n_peaks[new_peak_indices]]
             signal_time_indices = np.where((n_peaks>=0) & (analysis_waveform[:, i] > pulse_time_thresholds) & (my_pulse_times == -1))[0]
-            my_pulse_times[signal_time_indices] = i
+            my_pulse_times[signal_time_indices] = i + self.analysis_bins[0]
             if i > 0:
                 signal_time_high = analysis_waveform[signal_time_indices, i]
                 signal_time_low = analysis_waveform[signal_time_indices, i - 1]
