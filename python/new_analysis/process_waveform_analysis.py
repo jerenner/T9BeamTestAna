@@ -48,6 +48,9 @@ def process_waveforms(argv):
 
 
 def process_file(root_filename, config, output_file):
+    #monitor pedestal fluctuations
+    runNb = int(root_filename[14:20])
+    pedestal_list = [runNb]
     print(f"Processing root file {root_filename}")
     run_file = ur.open(root_filename)
     digitizers = ["midas_data_D300", "midas_data_D301", "midas_data_D302", "midas_data_D303"]
@@ -68,6 +71,27 @@ def process_file(root_filename, config, output_file):
         return
     print(f"All {n_channels} active channels have {n_events} events")
     for i, c in enumerate(channels):
+        print(f"Processing {c}")
+        waveforms = run_file[c].array()
+        waveform_analysis = WaveformAnalysis(waveforms,
+                                             threshold=config["Thresholds"][i],
+                                             analysis_window=(config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
+                                             pedestal_window=(config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
+                                             reverse_polarity=(config["Polarity"][i] == 0),
+                                             voltage_scale=config["VoltageScale"],
+                                             time_offset=config["TimeOffset"][i])
+        waveform_analysis.run_analysis()
+        pedestals[:, i] = waveform_analysis.pedestals.squeeze()
+        pedestal_sigmas[:, i] = waveform_analysis.pedestal_sigmas.squeeze()
+        peak_voltages[:, i] = waveform_analysis.peak_voltages
+        peak_times[:, i] = waveform_analysis.peak_times
+        signal_times[:, i] = waveform_analysis.signal_times
+        integrated_charges[:, i] = waveform_analysis.integrated_charges
+        n_peaks[:, i] = waveform_analysis.n_peaks
+        #print("pedestals", waveform_analysis.pedestals.squeeze(), waveform_analysis.my_pedestals)
+        pedestal_list.append(waveform_analysis.my_pedestals)
+        pedestal_list.append(waveform_analysis.my_pedestal_sigmas)
+    print("Pedestals: ", pedestal_list)
         channel_name = cm.channel_names[i]
         print(f"Processing {c} into {channel_name}")
         for batch, report in run_file[c].iterate(step_size="100 MB", report=True):
@@ -89,7 +113,6 @@ def process_file(root_filename, config, output_file):
         "EventNumber": run_file[digitizers[0]]["eventNumber"].array(),
         "SpillNumber": run_file[digitizers[0]]["spillNumber"].array()
     }
-    run_file.close()
 
 
 def process_batch(waveforms, channel, output_file, config_args):
@@ -117,6 +140,12 @@ def process_batch(waveforms, channel, output_file, config_args):
         output_file.mktree(channel, branch_types, counter_name=(lambda s: "nPeaks"), field_name=(lambda s, f: f))
     output_file[channel].extend(branches)
 
+    if True:
+        #chekcing the stability of pedestal
+        import csv
+        with open(r'pedestalStabilityChecks.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(pedestal_list)
 
 if __name__ == "__main__":
     # execute only if run as a script"
