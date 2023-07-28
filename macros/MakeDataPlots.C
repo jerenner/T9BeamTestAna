@@ -76,8 +76,8 @@ void MakeDataPlots(string fileName, int momentum, double x0_cut = 4.9, double y0
   if (peakMode != "")
     peakModeTag = "_" + peakMode;
   TString outFileName = TString(fileName.substr(0, fileName.size()-5).c_str()) + "_plots" + peakModeTag + ".root";
-  outFileName = outFileName.ReplaceAll("output/", "histos/");
   outFileName = outFileName.ReplaceAll("data/", "histos/");
+  outFileName = outFileName.ReplaceAll("output/", "histos/").ReplaceAll("ntuple_files/","histos/");
 
   TFile outFile(outFileName.Data(), "RECREATE");
   outFile.cd();
@@ -130,7 +130,7 @@ void MakeDataPlots(string fileName, int momentum, double x0_cut = 4.9, double y0
   TH2D hPbACT23A("hRef_pbA_act23A", "; Pb-glass Amplitude ; (ACT2+ACT3)/2 Amplitude", 400, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
   TH2D hPbACT1A("hRef_pbA_act1A", "; Pb-glass Amplitude ; ACT1 mean Amplitude", 400, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
   TH2D hPbACT23C("hRef_pbC_act23C", "; Pb-glass Charge ; (ACT2+ACT3)/2 Charge)", 400, 0., actChargeMax, 400, 0., actAmplitudeMax);
-  TH2D hPbCCT1C("hRef_pbA_act1C", "; Pb-glass Charge (nC) ; ACT1 mean Charge (nC)", 400,  actChargeMin, actChargeMax, 400, actChargeMin, actChargeMax);
+  TH2D hPbCACT1C("hRef_pbA_act1C", "; Pb-glass Charge (nC) ; ACT1 mean Charge (nC)", 400,  actChargeMin, actChargeMax, 400, actChargeMin, actChargeMax);
 
 
   //ACT2+ACT3/2 vs TOF plots
@@ -139,9 +139,11 @@ void MakeDataPlots(string fileName, int momentum, double x0_cut = 4.9, double y0
 
 
   //TOF vs Pb-glass plots
-  TH2D hPbATOF("hRef_PbATOF", "; Pb-glass Amplitude; t_{1}-t_{0} [ns]", 400, 0., actAmplitudeMax/2, ntofbins2d, tofmin, tofmax);
-  TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 400, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
+  TH2D hPbATOF("hRef_PbATOF", "; Pb-glass Amplitude; t_{1}-t_{0} [ns]", 200, 0., actAmplitudeMax/2, ntofbins2d, tofmin, tofmax);
+  TH2D hPbCTOF("hRef_PbCTOF", "; Pb-glass Charge; t_{1}-t_{0} [ns]", 200, 0., actChargeMax, ntofbins2d, tofmin, tofmax);
+  TH2D hTOFPbA("hRef_TOFPbA", "; t_{1}-t_{0} [ns]; Pb-glass Amplitude", ntofbins2d, tofmin, tofmax, 200, 0., actAmplitudeMax/2);
 
+  
   //acraplet - investigate "weird electrons"
   TH2D hHC0AHC1A("hweirdE_HC0AHC1A", "; Hole Counter 0 Amplitude; Hole Counter 1 Amplitude", 200, 0., 1000, 200, 0., 1000.);
 
@@ -426,7 +428,8 @@ void MakeDataPlots(string fileName, int momentum, double x0_cut = 4.9, double y0
     hPbACT1A.Fill(pba, (act1a));
     hTOFACT23A.Fill(tof, (act2a+act3a) / 2.);
     hPbATOF.Fill(pba, tof);
-
+    hTOFPbA.Fill(tof, pba);
+    
     double act0c = intCharge[0][0] + intCharge[1][0];
     double act1c = intCharge[2][0] + intCharge[3][0];
     double act2c = intCharge[4][0] + intCharge[5][0];
@@ -442,7 +445,7 @@ void MakeDataPlots(string fileName, int momentum, double x0_cut = 4.9, double y0
     hTOFACT2C.Fill(tof, act2c);
     hTOFACT3C.Fill(tof, act3c);
 
-    hPbCCT1C.Fill(pbc, (act1c));
+    hPbCACT1C.Fill(pbc, (act1c));
 
     hPbACT23C.Fill(pbc, (act2c+act3c) / 2.);
     hTOFACT23C.Fill(tof, (act2c+act3c) / 2.);
