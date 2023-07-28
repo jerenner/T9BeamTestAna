@@ -73,7 +73,9 @@ save the https://wcte-daq/?cmd=custom&page=RunLog as html do Downloads on the da
 then in your local analysis directory, get the file to share/:
 cd share/ ; ./get.sh ; cd ../
 Now you can run parse script to get/update run-momenta dictionary:
-./python/parseWcteDaqRunsHtml.py > python/data_runs_dicts.py 
+./python/parseWcteDaqRunsHtml.py and possibly modify to update data_runs_dicts.py
+This also generates a C++ version of the run-momenta map: include/data_runs_dicts.h
+
 Also
 Add a list of bad runs based on length of files in output/:
 First check it:

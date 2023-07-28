@@ -42,7 +42,7 @@ for xlistname in  os.popen('cd output/ ; ls ntuple_*.root'):
 
     momentum = getMomentum(srun)
 
-    cmd='root -l -b -q "scripts/MakeDataPlots.C(\\"output/{}\\", {})"'.format(rfilename,momentum)
+    cmd='root -l -b -q "macros/MakeDataPlots.C(\\"output/{}\\", {})"'.format(rfilename,momentum)
     print(cmd)
     #if not dryrun:
     #    os.system(cmd)

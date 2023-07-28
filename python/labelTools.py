@@ -13,10 +13,10 @@ ChNames =  {0: 'ACT-00', 1: 'ACT-01', 2: 'ACT-10', 3: 'ACT-11', 4: 'ACT-20', 5: 
 
 def makeMomentumLabel(srun, x = 0.12, y = 0.86, size = 0.04, addn = True, addSlit = True):
     momentum = getMomentum(srun)
-    tag = 'Pos'
+    tag = '+'
     if momentum < 0:
-        tag = 'Neg'
-    txt = f'WCTE TB2023 run {srun}, p={abs(momentum)} MeV/c {tag}'
+        tag = '-'
+    txt = f'WCTE TB2023 run {srun}, p={tag}{abs(momentum)} MeV/c'
     if addn:
         n = -1
         try:
