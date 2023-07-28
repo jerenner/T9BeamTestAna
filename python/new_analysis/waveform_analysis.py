@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.signal as signal
+import awkward as ak
 
 
 def find_mode(values, n_bins, range_width):
@@ -42,6 +43,10 @@ class WaveformAnalysis:
         self.signal_times = None
         self.integrated_charges = None
         self.is_over_threshold = None
+        self.pulse_peak_voltages = None
+        self.pulse_peak_times = None
+        self.pulse_signal_times = None
+        self.pulse_charges = None
 
     def find_pedestals(self):
         """Finds the pedestal of each waveform by taking the mean in the pedestal window. Also finds the standard deviation"""
@@ -69,7 +74,7 @@ class WaveformAnalysis:
         if self.waveforms is None:
             self.find_pedestals()
         self.peak_locations = np.argmax(self.waveforms[:, self.analysis_bins], axis=1, keepdims=True) + self.analysis_bins[0]
-        self.peak_times = (self.peak_locations + 0.5)*self.ns_per_sample
+        self.peak_times = (self.peak_locations + 0.5)*self.ns_per_sample + self.time_offset
         self.peak_voltages = np.take_along_axis(self.waveforms, self.peak_locations, axis=1).reshape(self.peak_locations.shape)
         return self.peak_times, self.peak_voltages
 
@@ -79,16 +84,96 @@ class WaveformAnalysis:
             self.find_primary_peaks()
         self.smoothed_waveforms = signal.savgol_filter(self.waveforms, 5, 2, mode='nearest')
         analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
-        pass_threshold1 = np.diff(analysis_waveform > np.maximum(0.05*self.peak_voltages, 3*self.my_pedestal_sigmas), axis=1, prepend=0) == 1
-        pass_threshold2 = np.diff(analysis_waveform > np.maximum(0.2*self.peak_voltages, 3*self.my_pedestal_sigmas), axis=1, prepend=0) == 1
-        passed_threshold1 = False
-        new_peak = np.empty_like(analysis_waveform, dtype=bool)
+        over_integration_threshold = analysis_waveform > np.maximum(0.05*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        over_pulse_threshold = analysis_waveform > np.maximum(0.2*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        pass_integration_threshold = np.diff(over_integration_threshold, axis=1, prepend=0) == 1
+        pass_pulse_threshold = np.diff(over_pulse_threshold, axis=1, prepend=0) == 1
+        passed_integration_threshold = False
+        self.n_peaks = np.zeros(self.waveforms.shape[0], dtype=int)
         for i in range(0, analysis_waveform.shape[1]):  # scan over waveform samples, quicker than iterating over waveforms
-            passed_threshold1 = passed_threshold1 | pass_threshold1[:, i]  # check if passed threshold1
-            new_peak[:, i] = pass_threshold2[:, i] & passed_threshold1  # there's a new peak when it passes threshold2 and has passed threshold 1
-            passed_threshold1 &= ~pass_threshold2[:, i]  # t1 is lower than t2, so after passing t2, don't consider it passed t1 until it passes again
-        self.n_peaks = np.count_nonzero(new_peak, axis=1)
+            passed_integration_threshold = passed_integration_threshold | pass_integration_threshold[:, i]  # check if passed integration threshold
+            self.n_peaks += pass_pulse_threshold[:, i] & passed_integration_threshold  # there's a new peak when it passes pulse threshold and has passed integration threshold
+            passed_integration_threshold &= ~pass_pulse_threshold[:, i]  # after passing pulse threshold, don't consider it passed integration threshold until it passes again
         return self.n_peaks
+
+    def find_all_peak_voltages(self):
+        if self.n_peaks is None:
+            self.count_peaks()
+        analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
+        over_integration_threshold = analysis_waveform > np.maximum(0.05*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        over_pulse_threshold = analysis_waveform > np.maximum(0.2*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        pass_integration_threshold = np.diff(over_integration_threshold, axis=1, prepend=0) == 1
+        pass_pulse_threshold = np.diff(over_pulse_threshold, axis=1, prepend=0) == 1
+        passed_integration_threshold = False
+        pulse_peak_times = -np.ones((self.waveforms.shape[0], self.n_peaks.max()))
+        pulse_peak_voltages = -np.ones((self.waveforms.shape[0], self.n_peaks.max()))
+        my_pulse_voltages = -np.ones(self.waveforms.shape[0])
+        n_peaks = -np.ones(self.waveforms.shape[0], dtype=int)
+        for i in range(0, analysis_waveform.shape[1]):  # scan over waveform samples, quicker than iterating over waveforms
+            passed_integration_threshold = passed_integration_threshold | pass_integration_threshold[:, i]  # check if passed integration threshold
+            n_peaks += pass_pulse_threshold[:, i] & passed_integration_threshold  # there's a new peak when it passes pulse threshold and has passed integration threshold
+            passed_integration_threshold &= ~pass_pulse_threshold[:, i]  # after passing pulse threshold, don't consider it passed integration threshold until it passes again
+            pulse_peak_indices = np.where(over_pulse_threshold[:, i] & (analysis_waveform[:, i] > my_pulse_voltages))[0]
+            my_pulse_voltages[pulse_peak_indices] = analysis_waveform[pulse_peak_indices, i]
+            pulse_peak_voltages[pulse_peak_indices, n_peaks[pulse_peak_indices]] = my_pulse_voltages[pulse_peak_indices]
+            pulse_peak_times[pulse_peak_indices, n_peaks[pulse_peak_indices]] = (i+0.5)*self.ns_per_sample + self.time_offset
+            my_pulse_voltages[~over_integration_threshold[:, i]] = -1
+        self.pulse_peak_times = ak.drop_none(np.ma.MaskedArray(pulse_peak_times, pulse_peak_times==-1))
+        self.pulse_peak_voltages = ak.drop_none(np.ma.MaskedArray(pulse_peak_voltages, pulse_peak_voltages==-1))
+
+    def calculate_all_signal_times(self):
+        if self.pulse_peak_voltages is None:
+            self.find_all_peak_voltages()
+        analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
+        over_integration_threshold = analysis_waveform > np.maximum(0.05*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        over_pulse_threshold = analysis_waveform > np.maximum(0.2*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        pass_integration_threshold = np.diff(over_integration_threshold, axis=1, prepend=0) == 1
+        pass_pulse_threshold = np.diff(over_pulse_threshold, axis=1, prepend=0) == 1
+        passed_integration_threshold = False
+        pulse_times = -np.ones((self.waveforms.shape[0], self.n_peaks.max()))
+        my_pulse_times = -np.ones(self.waveforms.shape[0])
+        pulse_time_thresholds = np.zeros(self.waveforms.shape[0])
+        n_peaks = -np.ones(self.waveforms.shape[0], dtype=int)
+        for i in range(0, analysis_waveform.shape[1]):  # scan over waveform samples, quicker than iterating over waveforms
+            passed_integration_threshold = passed_integration_threshold | pass_integration_threshold[:, i]  # check if passed integration threshold
+            new_peak_indices = np.where(pass_pulse_threshold[:, i] & passed_integration_threshold)[0]
+            n_peaks[new_peak_indices] += 1  # there's a new peak when it passes pulse threshold and has passed integration threshold
+            my_pulse_times[new_peak_indices] = -1
+            passed_integration_threshold &= ~pass_pulse_threshold[:, i]  # after passing pulse threshold, don't consider it passed integration threshold until it passes again
+            pulse_time_thresholds[new_peak_indices] = self.peak_rise_time_fraction*self.pulse_peak_voltages[new_peak_indices,n_peaks[new_peak_indices]]
+            signal_time_indices = np.where((n_peaks>=0) & (analysis_waveform[:, i] > pulse_time_thresholds) & (my_pulse_times == -1))[0]
+            my_pulse_times[signal_time_indices] = i + self.analysis_bins[0]
+            if i > 0:
+                signal_time_high = analysis_waveform[signal_time_indices, i]
+                signal_time_low = analysis_waveform[signal_time_indices, i - 1]
+                diff = signal_time_high - signal_time_low
+                is_nonzero = diff != 0
+                nonzero_indices = signal_time_indices[is_nonzero]
+                my_pulse_times[nonzero_indices] -= (signal_time_high[is_nonzero] - pulse_time_thresholds[nonzero_indices]) / diff[is_nonzero]
+            pulse_times[signal_time_indices, n_peaks[signal_time_indices]] = my_pulse_times[signal_time_indices]*self.ns_per_sample + self.time_offset
+        self.pulse_signal_times = ak.drop_none(np.ma.MaskedArray(pulse_times, pulse_times == -1))
+
+    def calculate_all_pulse_charges(self):
+        if self.n_peaks is None:
+            self.count_peaks()
+        analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
+        over_integration_threshold = analysis_waveform > np.maximum(0.05*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        over_pulse_threshold = analysis_waveform > np.maximum(0.2*self.peak_voltages, 3*self.my_pedestal_sigmas)
+        integration_threshold_diff = np.diff(over_integration_threshold, axis=1, prepend=0)
+        pass_pulse_threshold = np.diff(over_pulse_threshold, axis=1, prepend=0) == 1
+        passed_integration_threshold = False
+        pulse_charges = np.zeros((self.waveforms.shape[0], self.n_peaks.max()))
+        my_pulse_charges = np.zeros(self.waveforms.shape[0])
+        n_peaks = -np.ones(self.waveforms.shape[0], dtype=int)
+        for i in range(0, analysis_waveform.shape[1]):  # scan over waveform samples, quicker than iterating over waveforms
+            passed_integration_threshold = passed_integration_threshold | (integration_threshold_diff[:, i] == 1)  # check if passed integration threshold
+            n_peaks += pass_pulse_threshold[:, i] & passed_integration_threshold  # there's a new peak when it passes pulse threshold and has passed integration threshold
+            passed_integration_threshold &= ~pass_pulse_threshold[:, i]  # after passing pulse threshold, don't consider it passed integration threshold until it passes again
+            my_pulse_charges[integration_threshold_diff[:, i] == 1] = 0
+            my_pulse_charges[over_integration_threshold[:, i]] += analysis_waveform[over_integration_threshold[:,i],i]
+            end_of_pulse = np.where(((integration_threshold_diff[:, i] == -1) | (i == analysis_waveform.shape[1]-1)) & (~passed_integration_threshold))[0]
+            pulse_charges[end_of_pulse, n_peaks[end_of_pulse]] = my_pulse_charges[end_of_pulse]*self.ns_per_sample/self.impedance
+        self.pulse_charges = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
 
     def calculate_signal_times(self):
         """Finds the signal time of each waveform as the interpolated time before the peak when the voltage passes 0.4*[peak voltage]"""
@@ -122,3 +207,7 @@ class WaveformAnalysis:
         self.calculate_signal_times()
         self.integrate_charges()
         self.is_over_threshold = self.peak_voltages > self.threshold
+        self.count_peaks()
+        self.find_all_peak_voltages()
+        self.calculate_all_signal_times()
+        self.calculate_all_pulse_charges()
