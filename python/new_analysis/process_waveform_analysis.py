@@ -68,7 +68,7 @@ def process_file(root_filename, config, output_file):
         return
     print(f"All {n_channels} active channels have {n_events} events")
     for i, c in enumerate(channels):
-        channel_name = cm.channel_numbers_to_names[i]
+        channel_name = cm.channel_names[i]
         print(f"Processing {c} into {channel_name}")
         for batch, report in run_file[c].iterate(step_size="100 MB", report=True):
             print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")

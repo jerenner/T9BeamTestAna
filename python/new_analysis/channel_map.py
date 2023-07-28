@@ -1,25 +1,23 @@
-import numpy as np
+channel_names = [
+    "ACT0L",
+    "ACT0R",
+    "ACT1L",
+    "ACT1R",
+    "ACT2L",
+    "ACT2R",
+    "ACT3L",
+    "ACT3R",
+    "TOF00",
+    "TOF01",
+    "TOF02",
+    "TOF03",
+    "TOF10",
+    "TOF11",
+    "TOF12",
+    "TOF13",
+    "Hole0",
+    "Hole1",
+    "PbGlass",
+]
 
-channel_numbers_to_names = {
-    0: "ACT0L",
-    1: "ACT0R",
-    2: "ACT1L",
-    3: "ACT1R",
-    4: "ACT2L",
-    5: "ACT2R",
-    6: "ACT3L",
-    7: "ACT3R",
-    8: "TOF00",
-    9: "TOF01",
-    10: "TOF02",
-    11: "TOF03",
-    12: "TOF10",
-    13: "TOF11",
-    14: "TOF12",
-    15: "TOF13",
-    16: "Hole0",
-    17: "Hole1",
-    18: "PbGlass",
-}
-
-channel_names_to_numbers = {v: k for k, v in channel_numbers_to_names.items()}
+channel_numbers = {c: i for i, c in enumerate(channel_names)}
