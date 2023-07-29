@@ -1,0 +1,71 @@
+{
+	"WaveAnalysis" :
+	{
+        "NumberOfChannels"   : 32,
+        "VoltageScale"       : 0.00012207,
+	"comment" 	: "Previous voltage scale: 0.000610351",
+
+        "comment"            : "Enable/disable channels NOTE: remove the false for future hodoscope PMT channels!!!",
+            "comment"            : "ACT0-R CH ACT0-L ACT1-R ACT1-L ACT3-R ACT3-L TriggerScint TOF0CH0 TOF0CH1 TOF0CH2 TOF0CH3TOF1 TOF1CH1 TOF1CH2 TOF1CH3 Lead Glass HDCH8 HDCH9 HDCH10 HDCH11 HDCH12 HDCH13 HDCH14 HDCH0 HDCH1 HDCH2 HDCH3 HDCH4 HDCH5 HDCH6 HDCH7",
+            "ActiveChannels"     : [true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true],
+	    
+        "comment"            : "Measure charge (integral of signal-pedestal in the analysis window)",
+            "ChargeMeasurements" : [true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true],
+
+        "comment"            : "Threshold w.r.t pedestal in V",
+            "Thresholds"         : [0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+				    0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+				    0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01,
+				    0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01],
+
+        "comment"            : "Measure time of the signal (only needed for TOF detectors)",
+            "TimeMeasurements"   : [true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true,
+				    true, true, true, true, true, true, true, true],
+
+        "comment"            : "Signal polarity: 0 - negative, 1 - positive.",
+            "Polarity"           : [0, 0, 0, 0, 0, 0, 0, 0,
+				    0, 0, 0, 0, 0, 0, 0, 0,
+				    0, 0, 0, 0, 0, 0, 0, 0,
+				    0, 0, 0, 0, 0, 0, 0, 0],
+
+        "comment"            : "Pedestal is estimated inside the pedestal bin window.",
+	"comment"	     : "The peak is centered at 50ns, instead of using the begining of the pusle to define the pedestal (which is very short) we will use the end of the waveform instead. The only case in which this doesn't work is for the hole counter for which the pulse ringing is too wide, there we will look at the begining of the pulse instead. Also note that the window durations are different for digitised zero (420 for digi0, 540 for the others)",
+
+            "PedestalWindowLow"  : [200, 200, 200, 200, 200, 200, 200, 200,
+				    300, 300, 300, 300, 300, 300, 300, 300,
+				    0, 300, 300, 300, 300, 300, 300, 300,
+				    300, 300, 300, 300, 300, 300, 300, 300],
+            "PedestalWindowHigh" : [420, 420, 420, 420, 420, 420, 420, 420,
+				    420, 420, 420, 420, 420, 420, 420, 420,
+				    80, 420, 420, 420, 420, 420, 420, 420,
+				    420, 420, 420, 420, 420, 420, 420, 420],
+
+        "comment" : "Analysis is done on the data in the analysis bin window.",
+            "AnalysisWindowLow"  : [ 0, 0, 0, 0, 0, 0, 0, 0,
+				    0, 0, 0, 0, 0, 0, 0, 0,
+				    80, 0, 0, 0, 0, 0, 0, 0,
+				    0, 0, 0, 0, 0, 0, 0, 0],
+            "AnalysisWindowHigh" : [200, 200, 200, 200, 200, 200, 200, 200,
+				    200, 200, 200, 200, 200, 200, 200, 200,
+				    200, 200, 200, 200, 200, 200, 200, 200,
+				    200, 200, 200, 200, 200, 200, 200, 200],
+
+		"comment" : "Timing calibration offsets for TOF",
+			"TimeOffset" : [ 0, 0, 0, 0, 0, 0, 0, 0,
+					0, 4.5538, 0.1996, 4.0006, -1.439, -0.13, -0.7766, -0.4064,
+					0, 0, 0, 0, 0, 0, 0, 0,
+					0, 0, 0, 0, 0, 0, 0, 0],
+
+		"comment" : "Previous calibration items,  0, 4.74776054315298, -0.1234580870906623, 4.171101270711057, -1.136279397422881, 0, -0.5336003405241031, -0.29412106806623584,"
+
+	}
+}
+
