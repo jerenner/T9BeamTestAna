@@ -75,10 +75,11 @@ def process_file(root_filename, config, output_file):
         optional_branch_names = [b for b in ["timeStamp", "triggerTime"] if b in run_file[d].keys()]
         channels = digitizer_channels[d]
         branch_names = list(channels.keys()) + optional_branch_names
-        for batch, report in run_file[d].iterate(branch_names, step_size=100000, report=True):
-            print(f"Reading digitizer {d} events {report.tree_entry_start} to {report.tree_entry_stop}")
+        print(f"Reading digitizer {d}")
+        for batch, report in run_file[d].iterate(branch_names, step_size="100 MB", report=True):
+            print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")
             for c, i in channels.items():
-                print(f"... processing {d}/{c} into {config['ChannelNames'][i]}", end="", flush=True)
+                print(f"... ... processing {d}/{c} into {config['ChannelNames'][i]}", end="", flush=True)
                 config_args = {
                     "threshold": config["Thresholds"][i],
                     "analysis_window": (config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
