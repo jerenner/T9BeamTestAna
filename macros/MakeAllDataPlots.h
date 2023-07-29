@@ -43,7 +43,7 @@ class MakeAllDataPlots
   map<TString,int> PeakID;
   map<TString,double> Amplitudes; // amplitude
   map<TString,double> Charges; // charge
-  map<TString,double> PeakTimes; // time
+  map<TString,double> SignalTimes; // time
     
   
   string _fileName;

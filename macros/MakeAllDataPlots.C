@@ -469,7 +469,7 @@ void MakeAllDataPlots::ReadChannels()
       if ( ipeak >= 0 && ipeak < _readerMap[chname] -> nPeaks) {
 	Amplitudes[chname] = _readerMap[chname] -> PeakVoltage[ipeak];
 	Charges[chname] = _readerMap[chname] -> IntCharge[ipeak];
-	PeakTimes[chname] = _readerMap[chname] -> SignalTime[ipeak];
+	SignalTimes[chname] = _readerMap[chname] -> SignalTime[ipeak];
 	
 	// histograms over all channels
 	// can be simplified using the above maps
@@ -482,7 +482,7 @@ void MakeAllDataPlots::ReadChannels()
       } else {
 	Amplitudes[chname] = 0.;
 	Charges[chname] = 0.;
-	PeakTimes[chname] = 0.;
+	SignalTimes[chname] = 0.;
       }
       if (_debug)      cout << "point d" << endl;
 
@@ -495,15 +495,15 @@ void MakeAllDataPlots::FillTofHistos()
 
   // TOF trigger scintilators
 
-    double t00 = PeakTimes["TOF00"];
-    double t01 = PeakTimes["TOF01"];
-    double t02 = PeakTimes["TOF02"];
-    double t03 = PeakTimes["TOF03"];
+    double t00 = SignalTimes["TOF00"];
+    double t01 = SignalTimes["TOF01"];
+    double t02 = SignalTimes["TOF02"];
+    double t03 = SignalTimes["TOF03"];
 
-    double t10 = PeakTimes["TOF10"];
-    double t11 = PeakTimes["TOF11"];
-    double t12 = PeakTimes["TOF12"];
-    double t13 = PeakTimes["TOF13"];
+    double t10 = SignalTimes["TOF10"];
+    double t11 = SignalTimes["TOF11"];
+    double t12 = SignalTimes["TOF12"];
+    double t13 = SignalTimes["TOF13"];
     
     // JK's time resolution of 2022, diagonal combinations
     double t0a = (t00 + t03) / 2.;
