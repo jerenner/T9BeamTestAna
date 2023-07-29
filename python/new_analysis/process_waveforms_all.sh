@@ -9,7 +9,7 @@ for i in `cd $datadir/$dir ; ls root_run_*.root` ; do
     config="/home/wcte/np/T9BeamTestAna/config/config_hodoscope.json"
     run_number=${i//[^0-9]/}
     if [ $run_number -lt 579 ] ; then
-      config="${config%.json}_noHodoscope.json"
+      config="${config/hodoscope/noHodoscope}"
     fi
     echo "${script} ${datadir}/${dir}/${i} ${config} ${outfile}"
     $script "${datadir}/${dir}/${i}" "${config}" "${outfile}"
