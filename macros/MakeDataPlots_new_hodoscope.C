@@ -321,7 +321,7 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
     map<TString,int> PeakID;
     map<TString,double> Amplitudes; // amplitude
     map<TString,double> Charges; // charge
-    map<TString,double> PeakTimes; // time
+    map<TString,double> SignalTimes; // time
 
     // read all channels information for all waveforms!
 
@@ -334,7 +334,7 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
       if ( ipeak >= 0 && ipeak < readerMap[chname] -> nPeaks) {
 	Amplitudes[chname] = readerMap[chname] -> PeakVoltage[ipeak];
 	Charges[chname] = readerMap[chname] -> IntCharge[ipeak];
-	PeakTimes[chname] = readerMap[chname] -> SignalTime[ipeak];
+	SignalTimes[chname] = readerMap[chname] -> SignalTime[ipeak];
 	
 	// histograms over all channels
 	// can be simplified using the above maps
@@ -348,7 +348,7 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
       } else {
 	Amplitudes[chname] = 0.;
 	Charges[chname] = 0.;
-	PeakTimes[chname] = 0.;
+	SignalTimes[chname] = 0.;
       }
       if (debug)      cout << "point d" << endl;
 
@@ -396,15 +396,15 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
     
     // TOF trigger scintilators
 
-    double t00 = PeakTimes["TOF00"];
-    double t01 = PeakTimes["TOF01"];
-    double t02 = PeakTimes["TOF02"];
-    double t03 = PeakTimes["TOF03"];
+    double t00 = SignalTimes["TOF00"];
+    double t01 = SignalTimes["TOF01"];
+    double t02 = SignalTimes["TOF02"];
+    double t03 = SignalTimes["TOF03"];
 
-    double t10 = PeakTimes["TOF10"];
-    double t11 = PeakTimes["TOF11"];
-    double t12 = PeakTimes["TOF12"];
-    double t13 = PeakTimes["TOF13"];
+    double t10 = SignalTimes["TOF10"];
+    double t11 = SignalTimes["TOF11"];
+    double t12 = SignalTimes["TOF12"];
+    double t13 = SignalTimes["TOF13"];
     
     // JK's time resolution of 2022
     // diagonal combinations
