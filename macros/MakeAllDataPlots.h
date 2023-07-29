@@ -31,6 +31,7 @@ class MakeAllDataPlots
  private:
 
   bool _isHodoscopeRun;
+  bool _noAct1Cuts; // for ToF fits
   
   Double_t peakVoltage[nMaxChannels][1];
   Double_t peakTime[nMaxChannels][1];
@@ -44,7 +45,28 @@ class MakeAllDataPlots
   map<TString,double> Amplitudes; // amplitude
   map<TString,double> Charges; // charge
   map<TString,double> SignalTimes; // time
-    
+  map<TString,double> NPeaks; // time
+
+  // ranges
+  double tofmin;
+  double tofmax;
+  int ntofbins;
+
+  double tofminlow;
+  double tofmaxlow;
+  int ntofbinslow;
+
+  int ntofbins2d;
+
+  double actChargeMin;
+  double actChargeMax;
+  double actAmplitudeMax;
+
+  
+  // cuts
+  map<int, map<TString,double > > _cutsMap;
+
+  // IO
   
   string _fileName;
   int _momentum;
@@ -75,6 +97,25 @@ class MakeAllDataPlots
   double _t0;
   double _t1;
   double _tof;
+
+  // for peak multiplicity:
+  bool _onePeakInAllACTs;
+  bool _onePeakInAllToFs;
+  bool _onePeakInAll;
+  bool _onePeakInPbGlass;
+  
+  bool _moreThanOnePeakInAllACTs;
+  bool _moreThanOnePeakInAllToFs;
+  bool _moreThanOnePeakInAll;
+  
+  bool _PbGlassAboveElectronLevel;
+  bool _ACT23AboveElectronLevel;
+
+  // for tof fit:
+  bool _isdACT23pb;
+  bool _ispACT23pb;
+  bool _isMuACT23pb;
+  bool _isElACT23pb;
   
  public:
   
@@ -82,8 +123,9 @@ class MakeAllDataPlots
   ~MakeAllDataPlots();
 
   int getHighestPeakIndex(channelReadClass *reader);
-  void Init();
+  void Init(bool noAct1Cuts);
   void InitReaders();
+  void InitTofHistos();
   void InitGeneralHistos();
   void InitChargedHistos();
   void InitHodoscopeHistos();
