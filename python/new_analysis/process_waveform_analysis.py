@@ -13,7 +13,6 @@ import numpy as np
 import uproot as ur
 import json5
 from waveform_analysis import WaveformAnalysis
-import channel_map as cm
 import awkward as ak
 
 
@@ -52,13 +51,15 @@ def process_file(root_filename, config, output_file):
     run_file = ur.open(root_filename)
     digitizers = ["midas_data_D300", "midas_data_D301", "midas_data_D302", "midas_data_D303"]
     channels_per_digitizer = config["NumberOfChannels"] // len(digitizers)
-    digitizer_channels = {d: [] for d in digitizers}
-    for c in range(config["NumberOfChannels"]):
-        channel = f"Channel{c % channels_per_digitizer}"
-        digitizer = digitizers[c // channels_per_digitizer]
-        if config["ActiveChannels"][c]:
-            digitizer_channels[digitizer].append(f"{channel}")
-        print(f"{digitizer}/{channel} is {'active' if config['ActiveChannels'][c] else 'not active'}")
+    digitizer_channels = {d: {} for d in digitizers}
+    for i in range(config["NumberOfChannels"]):
+        channel = f"Channel{i % channels_per_digitizer}"
+        digitizer = digitizers[i // channels_per_digitizer]
+        if config["ActiveChannels"][i]:
+            if config['ChannelNames'][i] is None:
+                raise ValueError(f"Channel number {i}: {digitizer}/{channel} is active, but has no channel name in the config file.")
+            digitizer_channels[digitizer][f"{channel}"] = i
+        print(f"Channel number {i}: {digitizer}/{channel} is {'active' if config['ActiveChannels'][i] else 'not active'}")
     active_digitizers = [d for d in digitizers if len(digitizer_channels[d]) > 0]
     events_per_digitizer = [run_file[d].num_entries for d in active_digitizers]
     if min(events_per_digitizer) != max(events_per_digitizer):
@@ -70,25 +71,25 @@ def process_file(root_filename, config, output_file):
         print(f"WARNING: The digitizers in {root_filename} have zero events. Skipping this file.")
         return
     print(f"All {n_channels} active channels have {n_events} events")
-    i = 0
-    optional_branches = ["timeStamp", "triggerTime"]
-    for i, (d, c) in enumerate((d, c) for d, channels in digitizer_channels.items() for c in channels):
-        channel_name = cm.channel_names[i]
-        print(f"Processing {d}/{c} into {channel_name}")
-        branches = [c] + [b for b in optional_branches if b in run_file[d].keys()]
-        for batch, report in run_file[d].iterate(branches, step_size="100 MB", report=True):
-            print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")
-            config_args = {
-                "threshold": config["Thresholds"][i],
-                "analysis_window": (config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
-                "pedestal_window": (config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
-                "reverse_polarity": (config["Polarity"][i] == 0),
-                "voltage_scale": config["VoltageScale"],
-                "time_offset": config["TimeOffset"][i],
-            }
-            waveforms = batch[c]
-            extra_branches = {b: batch[b] for b in branches if b != c}
-            process_batch(waveforms, extra_branches, channel_name, output_file, config_args)
+    for d in active_digitizers:
+        optional_branch_names = [b for b in ["timeStamp", "triggerTime"] if b in run_file[d].keys()]
+        channels = digitizer_channels[d]
+        branch_names = list(channels.keys()) + optional_branch_names
+        for batch, report in run_file[d].iterate(branch_names, step_size=100000, report=True):
+            print(f"Reading digitizer {d} events {report.tree_entry_start} to {report.tree_entry_stop}")
+            for c, i in channels.items():
+                print(f"... processing {d}/{c} into {config['ChannelNames'][i]}", end="", flush=True)
+                config_args = {
+                    "threshold": config["Thresholds"][i],
+                    "analysis_window": (config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
+                    "pedestal_window": (config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
+                    "reverse_polarity": (config["Polarity"][i] == 0),
+                    "voltage_scale": config["VoltageScale"],
+                    "time_offset": config["TimeOffset"][i],
+                }
+                waveforms = batch[c]
+                optional_branches = {b: batch[b] for b in optional_branch_names}
+                process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args)
 
     run_number = int(root_filename[-11:-5])
     print(f"Saving event info for run {run_number}")
@@ -100,7 +101,7 @@ def process_file(root_filename, config, output_file):
     run_file.close()
 
 
-def process_batch(waveforms, extra_branches, channel, output_file, config_args):
+def process_batch(waveforms, optional_branches, channel, output_file, config_args):
     waveform_analysis = WaveformAnalysis(waveforms, **config_args)
     waveform_analysis.run_analysis()
     pedestals = ak.Array(waveform_analysis.pedestals.squeeze())
@@ -118,9 +119,9 @@ def process_batch(waveforms, extra_branches, channel, output_file, config_args):
     branches = {"Pedestal": pedestals,
                 "PedestalSigma": pedestal_sigmas,
                 "Peaks": peaks,
-                **extra_branches}
+                **optional_branches}
 
-    print(f"... writing {channel} to {output_file.file_path}")
+    print(f" ... writing {channel} to {output_file.file_path}")
     if channel not in output_file.keys():
         branch_types = {name: branch.type for name, branch in branches.items()}
         output_file.mktree(channel, branch_types, counter_name=(lambda s: "nPeaks"), field_name=(lambda s, f: f))

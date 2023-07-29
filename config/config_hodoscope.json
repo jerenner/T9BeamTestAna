@@ -5,9 +5,14 @@
         "VoltageScale"       : 0.00012207,
 	"comment" 	: "Previous voltage scale: 0.000610351",
 
+		"ChannelNames" : ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT3L", "ACT3R", "TriggerScint", null,
+						  "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13",
+						  "PbGlass", "HD8", "HD9", "HD10", "HD11", "HD12", "HD13", "HD14",
+						  "HD0", "HD1", "HD2", "HD3", "HD4", "HD5", "HD6", "HD7"],
+
         "comment"            : "Enable/disable channels NOTE: remove the false for future hodoscope PMT channels!!!",
-            "comment"            : "ACT0-R CH ACT0-L ACT1-R ACT1-L ACT3-R ACT3-L TriggerScint TOF0CH0 TOF0CH1 TOF0CH2 TOF0CH3TOF1 TOF1CH1 TOF1CH2 TOF1CH3 Lead Glass HDCH8 HDCH9 HDCH10 HDCH11 HDCH12 HDCH13 HDCH14 HDCH0 HDCH1 HDCH2 HDCH3 HDCH4 HDCH5 HDCH6 HDCH7",
-            "ActiveChannels"     : [true, true, true, true, true, true, true, true,
+            "comment"            : "ACT0-R ACT0-L ACT1-R ACT1-L ACT3-R ACT3-L TriggerScint [None] TOF0CH0 TOF0CH1 TOF0CH2 TOF0CH3 TOF1CH0 TOF1CH1 TOF1CH2 TOF1CH3 LeadGlass HDCH8 HDCH9 HDCH10 HDCH11 HDCH12 HDCH13 HDCH14 HDCH0 HDCH1 HDCH2 HDCH3 HDCH4 HDCH5 HDCH6 HDCH7",
+            "ActiveChannels"     : [true, true, true, true, true, true, true, false,
 				    true, true, true, true, true, true, true, true,
 				    true, true, true, true, true, true, true, true,
 				    true, true, true, true, true, true, true, true],
