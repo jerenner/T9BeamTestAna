@@ -13,6 +13,8 @@ import numpy as np
 import uproot as ur
 import json5
 from waveform_analysis import WaveformAnalysis
+import channel_map as cm
+import awkward as ak
 
 
 def print_usage(argv):
@@ -46,6 +48,9 @@ def process_waveforms(argv):
 
 
 def process_file(root_filename, config, output_file):
+    #monitor pedestal fluctuations
+    runNb = int(root_filename[14:20])
+    pedestal_list = [runNb]
     print(f"Processing root file {root_filename}")
     run_file = ur.open(root_filename)
     digitizers = ["midas_data_D300", "midas_data_D301", "midas_data_D302", "midas_data_D303"]
@@ -65,14 +70,6 @@ def process_file(root_filename, config, output_file):
         print(f"WARNING: The channels in {root_filename} have zero events. Skipping this file.")
         return
     print(f"All {n_channels} active channels have {n_events} events")
-    pedestals = np.zeros((n_events, n_channels))
-    pedestal_sigmas = np.zeros((n_events, n_channels))
-    n_peaks = 1
-    peak_voltages = np.zeros((n_events, n_channels, n_peaks))
-    peak_times = np.zeros((n_events, n_channels, n_peaks))
-    signal_times = np.zeros((n_events, n_channels, n_peaks))
-    integrated_charges = np.zeros((n_events, n_channels, n_peaks))
-    n_peaks = np.zeros((n_events, n_channels))
     for i, c in enumerate(channels):
         print(f"Processing {c}")
         waveforms = run_file[c].array()
@@ -91,24 +88,64 @@ def process_file(root_filename, config, output_file):
         signal_times[:, i] = waveform_analysis.signal_times
         integrated_charges[:, i] = waveform_analysis.integrated_charges
         n_peaks[:, i] = waveform_analysis.n_peaks
-    run_file.close()
+        #print("pedestals", waveform_analysis.pedestals.squeeze(), waveform_analysis.my_pedestals)
+        pedestal_list.append(waveform_analysis.my_pedestals)
+        pedestal_list.append(waveform_analysis.my_pedestal_sigmas)
+    print("Pedestals: ", pedestal_list)
+        channel_name = cm.channel_names[i]
+        print(f"Processing {c} into {channel_name}")
+        for batch, report in run_file[c].iterate(step_size="100 MB", report=True):
+            print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")
+            config_args = {
+                "threshold": config["Thresholds"][i],
+                "analysis_window": (config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
+                "pedestal_window": (config["PedestalWindowLow"][i], config["PedestalWindowHigh"][i]),
+                "reverse_polarity": (config["Polarity"][i] == 0),
+                "voltage_scale": config["VoltageScale"],
+                "time_offset": config["TimeOffset"][i],
+            }
+            process_batch(batch[batch.fields[0]], channel_name, output_file, config_args)
 
-    print(f"Writing to {output_file.file_path}")
-    branches = {
-            "nChannels": np.repeat(n_channels, n_events),
-            "Pedestal": pedestals,
-            "PedestalSigma": pedestal_sigmas,
-            "nPeaks": n_peaks,
-            "PeakVoltage": peak_voltages,
-            "PeakTime": peak_times,
-            "SignalTime": signal_times,
-            "IntCharge": integrated_charges,
-        }
-    if "anaTree" not in output_file.keys():
-        output_file["anaTree"] = branches
-    else:
-        output_file["anaTree"].extend(branches)
+    run_number = int(root_filename[-11:-5])
+    print(f"Saving event info for run {run_number}")
+    output_file["EventInfo"] = {
+        "RunNumber": np.repeat(run_number, n_events),
+        "EventNumber": run_file[digitizers[0]]["eventNumber"].array(),
+        "SpillNumber": run_file[digitizers[0]]["spillNumber"].array()
+    }
 
+
+def process_batch(waveforms, channel, output_file, config_args):
+    waveform_analysis = WaveformAnalysis(waveforms, **config_args)
+    waveform_analysis.run_analysis()
+    pedestals = waveform_analysis.pedestals.squeeze()
+    pedestal_sigmas = waveform_analysis.pedestal_sigmas.squeeze()
+    peak_voltages = waveform_analysis.pulse_peak_voltages
+    peak_times = waveform_analysis.pulse_peak_times
+    signal_times = waveform_analysis.pulse_signal_times
+    integrated_charges = waveform_analysis.pulse_charges
+
+    peaks = ak.zip({"PeakVoltage": peak_voltages,
+                    "PeakTime": peak_times,
+                    "SignalTime": signal_times,
+                    "IntCharge": integrated_charges})
+
+    branches = {"Pedestal": pedestals,
+                "PedestalSigma": pedestal_sigmas,
+                "Peaks": peaks}
+
+    print(f"... writing {channel} to {output_file.file_path}")
+    if channel not in output_file.keys():
+        branch_types = {"Pedestal": "float64", "PedestalSigma": "float64", "Peaks": peaks.type}
+        output_file.mktree(channel, branch_types, counter_name=(lambda s: "nPeaks"), field_name=(lambda s, f: f))
+    output_file[channel].extend(branches)
+
+    if True:
+        #chekcing the stability of pedestal
+        import csv
+        with open(r'pedestalStabilityChecks.csv', 'a') as f:
+            writer = csv.writer(f)
+            writer.writerow(pedestal_list)
 
 if __name__ == "__main__":
     # execute only if run as a script"
