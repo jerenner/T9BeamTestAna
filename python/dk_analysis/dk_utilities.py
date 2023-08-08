@@ -28,9 +28,12 @@ def get_signal_times(run, config):
         return time_bin_crossing, tsf, quad_fit
 
     # get baseline means and standard deviations
-    run503 = Run.open_file("C:/Users/Karlen/Documents/temp/run_000503.dk")
-    baseline_means = run503.user['baseline_means']
-    baseline_stds = run503.user['baseline_stds']
+    if run.user['n_channels'] == 19:
+        run_baseline = Run.open_file("C:/Users/Karlen/Documents/temp/run_000503.dk")
+    else:
+        run_baseline = Run.open_file("C:/Users/Karlen/Documents/temp/run_000592.dk")
+    baseline_means = run_baseline.user['baseline_means']
+    baseline_stds = run_baseline.user['baseline_stds']
 
     signal_times = []  # channels, events, peaks
     for channel in range(run.user['n_channels']):
