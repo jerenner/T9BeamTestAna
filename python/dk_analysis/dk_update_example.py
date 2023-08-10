@@ -3,8 +3,14 @@ from Run import Run
 import json5
 import numpy as np
 import sys
+import uproot as ur
 
-run503 = Run.open_file("C:/Users/Karlen/Documents/temp/run_000503.dk")
+run_number = 503
+dk_filename = "C:/Users/Karlen/Documents/temp/run_000"+str(run_number)+".dk"
+filename = "C:/Users/Karlen/Documents/temp/root_run_000"+str(run_number)+".root"
+run_file = ur.open(filename)
+
+run503 = Run.open_file(dk_filename)
 
 xxx=1
 
@@ -14,4 +20,4 @@ xxx=1
 
 #run474.user['n_peaks'] = n_peaks
 
-run474.save_file("C:/Users/Karlen/Documents/temp/run474_update.dk")
+#run474.save_file("C:/Users/Karlen/Documents/temp/run474_update.dk")

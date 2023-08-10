@@ -20,9 +20,18 @@ class Run:
         self.config = config
         self.analyses = []
         self.user = {}
+        self.times = {}
 
         # read data, one channel at a time, do standard analysis on that channel
         run_file = ur.open(filename)
+
+        # save triggerTime and timeStamp information
+        if 'triggerTime' in run_file['midas_data_D300']:
+            for digi in range(4):
+                self.times[digi] = {}
+                for field in ['spillNumber','timeStamp','triggerTime']:
+                    self.times[digi][field] = run_file['midas_data_D30' + str(digi)][field].array().to_numpy()
+
         n_channels = self.config["NumberOfChannels"]
         for i_c in range(n_channels):
             digitizer_id = int(i_c / 8)
@@ -39,10 +48,12 @@ class Run:
                                         voltage_scale=config["VoltageScale"],
                                         time_offset=config["TimeOffset"][i_c])
 
-            analysis.find_peaks()
-            analysis.calculate_signal_times()
-            analysis.integrate_charges()
-            analysis.is_over_threshold = analysis.peak_voltages > analysis.threshold
+            # disable for hodoscope running - fails
+            if n_channels == 19:
+                analysis.find_peaks()
+                analysis.calculate_signal_times()
+                analysis.integrate_charges()
+                analysis.is_over_threshold = analysis.peak_voltages > analysis.threshold
 
             # remove large copies of data - keep raw_waveforms in int32
             del analysis.smoothed_waveforms

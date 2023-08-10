@@ -239,6 +239,28 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
     hnPeaks.push_back(temp6);
   }
 
+
+  
+  // hodoscope runs
+  // lead glass A vs hodoscope occupancy with some amplitude cuts
+  // subject to mV callibration!!
+  // jiri on shift 28.7.2023
+  TString name = "LeadGlassPhotonAVsPositronHodoOcc";
+  TString title = name + ";HD Channel ID;A^{#gamma}_{Pb}";
+  TH2D LeadGlassPhotonAVsPositronHodoOcc(name, title, 15, 0, 15, 125, 0, 5);
+
+  name = "LeadGlassPhotonAVsPositronMaxHodoOcc";
+  title = name + ";HD Max. Channel ID;A^{#gamma}_{Pb}";
+  TH2D LeadGlassPhotonAVsPositronMaxHodoOcc(name, title, 15, 0, 15, 125, 0, 5);
+
+  name = "HodoOccScatter";
+  title = name + ";HD channel;HD channel;entries";
+  TH2D HodoOccScatter(name, title, 15, 0, 15, 15, 0, 15);
+   
+  name = "HodoOccScatterFrac";
+  title = name + ";HD channel;HD channel;fractions";
+  TH2D HodoOccScatterFrac(name, title, 15, 0, 15, 15, 0, 15);
+   
   // +-------------------------------+
   // |         event loop            |
   // +-------------------------------+
@@ -266,7 +288,9 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
       reader[ich] -> GetEntry(ientry);
     }
     if (debug)      cout << "done" << endl;
-    
+
+
+  
     //    vector<int> indices(nChannels, 0);
 
     bool onePeakInAllACTs = true;
@@ -297,7 +321,7 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
     map<TString,int> PeakID;
     map<TString,double> Amplitudes; // amplitude
     map<TString,double> Charges; // charge
-    map<TString,double> PeakTimes; // time
+    map<TString,double> SignalTimes; // time
 
     // read all channels information for all waveforms!
 
@@ -310,7 +334,7 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
       if ( ipeak >= 0 && ipeak < readerMap[chname] -> nPeaks) {
 	Amplitudes[chname] = readerMap[chname] -> PeakVoltage[ipeak];
 	Charges[chname] = readerMap[chname] -> IntCharge[ipeak];
-	PeakTimes[chname] = readerMap[chname] -> SignalTime[ipeak];
+	SignalTimes[chname] = readerMap[chname] -> SignalTime[ipeak];
 	
 	// histograms over all channels
 	// can be simplified using the above maps
@@ -324,23 +348,63 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
       } else {
 	Amplitudes[chname] = 0.;
 	Charges[chname] = 0.;
-	PeakTimes[chname] = 0.;
+	SignalTimes[chname] = 0.;
       }
       if (debug)      cout << "point d" << endl;
 
     }
+
+
+    // jiri, hodoscope
+    double pbanew = reader[16] -> PeakVoltage[0];
+    int maxhdchid = -1;
+    double maxA = -1;
+    bool hits[15];
+    for(int j = 0; j < 15; ++j)
+      hits[j] = false;
+    for(int j = 0; j < nChannels; j++) {
+      if (j < 17)
+	continue;
+      int hdchid = -1;
+      double Aj = reader[j] -> PeakVoltage[0];
+      if (j >= 17 && j < 24) {
+	hdchid = j - 9;
+      } else {
+	hdchid = j - 24;
+      }
+      if (Aj > 1.5) {
+	hits[hdchid] = true;
+	LeadGlassPhotonAVsPositronHodoOcc.Fill(hdchid, pbanew);
+	if (Aj > maxA) {
+	  maxA = Aj;
+	  maxhdchid = hdchid;
+	}
+      }  // A cut
+    } // channels
+    
+    if (maxhdchid >= 0)
+      LeadGlassPhotonAVsPositronMaxHodoOcc.Fill(maxhdchid, pbanew);
+    for(int j = 0; j < 15; ++j) {
+      for(int k = 0; k <= j; ++k) {
+	if (hits[j] && hits[k])
+	  HodoOccScatter.Fill(j,k); 
+      }
+    }
+    
+    
+    
     
     // TOF trigger scintilators
 
-    double t00 = PeakTimes["TOF00"];
-    double t01 = PeakTimes["TOF01"];
-    double t02 = PeakTimes["TOF02"];
-    double t03 = PeakTimes["TOF03"];
+    double t00 = SignalTimes["TOF00"];
+    double t01 = SignalTimes["TOF01"];
+    double t02 = SignalTimes["TOF02"];
+    double t03 = SignalTimes["TOF03"];
 
-    double t10 = PeakTimes["TOF10"];
-    double t11 = PeakTimes["TOF11"];
-    double t12 = PeakTimes["TOF12"];
-    double t13 = PeakTimes["TOF13"];
+    double t10 = SignalTimes["TOF10"];
+    double t11 = SignalTimes["TOF11"];
+    double t12 = SignalTimes["TOF12"];
+    double t13 = SignalTimes["TOF13"];
     
     // JK's time resolution of 2022
     // diagonal combinations
@@ -406,6 +470,20 @@ void MakeDataPlots_new_hodoscope(string fileName, int momentum) {
     // HACK!
     //    pba = readerMap["PbGlass"] -> PeakVoltage[0];
 
+
+    
+    // acraplet, hodoscope setup
+    std::vector<int> channelToHodoscope = {8, 9, 10, 11, 12, 13, 14, 0, 1, 2, 3, 4, 5, 6, 7};
+    double threshHodoscopeHit = 1.5; //Threshold estimated by hand using the online hist as reference 
+    //each channel has a different 1pe peak (in particular ch11 has a low one) 
+    // the online analysis threshold of 400mV corresponds to 1.9 in these units but we are cutting a lot of hits especially in channel 11, using 1.5 is better there  
+    //careful ! position of the detectors on the digitiser have moved!!!
+    for (int i=0; i<15; i++){
+      if (peakVoltage[17+i][0] >= threshHodoscopeHit){
+	hnHitsHodoscope.Fill(channelToHodoscope[i]);
+      }
+    }
+    
  
     // amplitudes vs tof
     hTOFACT0A.Fill(tof, act0a);
