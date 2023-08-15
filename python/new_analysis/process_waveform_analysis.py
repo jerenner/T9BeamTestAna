@@ -91,7 +91,7 @@ def process_file(root_filename, config, output_file):
         #print("pedestals", waveform_analysis.pedestals.squeeze(), waveform_analysis.my_pedestals)
         pedestal_list.append(waveform_analysis.my_pedestals)
         pedestal_list.append(waveform_analysis.my_pedestal_sigmas)
-    print("Pedestals: ", pedestal_list)
+        print("Pedestals: ", pedestal_list)
         channel_name = cm.channel_names[i]
         print(f"Processing {c} into {channel_name}")
         for batch, report in run_file[c].iterate(step_size="100 MB", report=True):
