@@ -41,10 +41,13 @@ quick simple plotting 1D:
 python3 ./python/quickPlots1d.py histos/output_list_root_run_000222_plots.root
 then close by File -> Quit ROOT in any of the Canvases that appear
 
+more plots:
+python3 ./python/slowPlots1d.py histos/output_list_root_run_000222_plots.root
+
 
 July 17th 2023:
 
-New default way will be: instead of getting the midas-to-ROOT converted files, for those not interested in waveforms, get the already waveform-analyzed ntuples with the anaTree from the wctePC:
+New default way: instead of getting the midas-to-ROOT converted files, for those not interested in waveforms, get the already waveform-analyzed ntuples with the anaTree from the wctePC:
 
 cd output/ ; ./get.sh; cd ../
 
@@ -58,6 +61,11 @@ and choose what to run, e.g.
 
 ./python/run_mkplots.py | grep "quick"
 
+./python/run_mkplots.py | grep "slow"
+
+2023 SHIFTER:
+./shifter/CheckRun.sh XYZ
+
 
 More detailed:
 
@@ -65,7 +73,9 @@ save the https://wcte-daq/?cmd=custom&page=RunLog as html do Downloads on the da
 then in your local analysis directory, get the file to share/:
 cd share/ ; ./get.sh ; cd ../
 Now you can run parse script to get/update run-momenta dictionary:
-./python/parseWcteDaqRunsHtml.py > python/data_runs_dicts.py 
+./python/parseWcteDaqRunsHtml.py and possibly modify to update data_runs_dicts.py
+This also generates a C++ version of the run-momenta map: include/data_runs_dicts.h
+
 Also
 Add a list of bad runs based on length of files in output/:
 First check it:

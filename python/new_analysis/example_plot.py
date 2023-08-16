@@ -3,26 +3,24 @@ import uproot as ur
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-import channel_map as cm
 
-# Read signal times and amplitudes from the run ntuple file
+# read channels from file
 file = ur.open("ntuple_file.root")
-signal_times = file["anaTree"]["SignalTime"].array().to_numpy()
-signal_charges = file["anaTree"]["PeakVoltage"].array().to_numpy()
-n_peaks = file["anaTree"]["nPeaks"].array().to_numpy()
+tof_0 = [file[c].arrays() for c in ["TOF00", "TOF01", "TOF02", "TOF03"]]
+tof_1 = [file[c].arrays() for c in ["TOF10", "TOF11", "TOF12", "TOF13"]]
+act_2_and_3 = [file[c].arrays() for c in ["ACT2L", "ACT2R", "ACT3L", "ACT3R"]]
+all_channels = tof_0+tof_1+act_2_and_3
 
 # find events where all ACT2+3 and all TOF have signal over threshold, and number of peaks is 1 in all these waveforms
-over_threshold = signal_charges[:, :, 0] > 0.2
-good_events = (np.all(over_threshold[:, cm.ACT2and3], axis=1) &
-               np.all(over_threshold[:, cm.TOF0and1], axis=1) &
-               np.all(n_peaks[:, cm.ACT2and3]==1, axis=1) &
-               np.all(n_peaks[:, cm.ACT2and3]==1, axis=1))
+single_pulses = np.where(np.all([c["nPeaks"] == 1 for c in all_channels], axis=0))[0]
+is_over_threshold = np.all([c["PeakVoltage"][single_pulses, 0] > 0.2 for c in all_channels], axis=0)
+good_events = single_pulses[is_over_threshold]
 
 # calculate the mean TOF times for each event
-tof0_times = signal_times[good_events, cm.TOF0, 0].mean(axis=1)
-tof1_times = signal_times[good_events, cm.TOF1, 0].mean(axis=1)
+tof0_times = np.mean([c["SignalTime"][good_events, 0] for c in tof_0], axis=0)
+tof1_times = np.mean([c["SignalTime"][good_events, 0] for c in tof_1], axis=0)
 # calculate the sum of ACT2+ACT3 amplitudes for each event
-act23_sum = signal_charges[good_events, cm.ACT2and3, 0].sum(axis=1)
+act23_sum = np.sum([c["PeakVoltage"][good_events, 0] for c in act_2_and_3], axis=0)
 
 # plot 2d and 1d histograms
 fig, axs = plt.subplots(2,2, constrained_layout=True, figsize=(12, 10))

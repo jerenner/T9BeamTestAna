@@ -23,6 +23,9 @@ enum class EventRegion
     mupi_1pulse = 0,
     e_npulses = 1,
     mupi_npulses = 2,
+    zeroPeak = 3,
+    onePeak = 4,
+    multiPeaks = 5,
     EventRegionCount
 };
 
@@ -31,6 +34,9 @@ std::unordered_map<EventRegion, std::string, EnumClassHash> EventRegionNames =
    {EventRegion::mupi_1pulse, "mupi_1plike"},
    {EventRegion::e_npulses, "e_nplike"},
    {EventRegion::mupi_npulses, "mupi_nplike"},   
+   {EventRegion::zeroPeak, "zeroPeak"},   
+   {EventRegion::onePeak, "onePeak"},   
+   {EventRegion::multiPeaks, "multiPeaks"},   
   };
 
 enum class DetChannels

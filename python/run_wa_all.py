@@ -58,7 +58,7 @@ for xlistname in  os.popen('cd data/ ; ls root_run_*.root'):
     if not dryrun:
         os.system(cmd)
 
-    cmd='root -l -b -q "scripts/MakeDataPlots.C(\\"output/output_{}.root\\", {})"'.format(base,momentum)
+    cmd='root -l -b -q "macros/MakeDataPlots.C(\\"output/output_{}.root\\", {})"'.format(base,momentum)
     print(cmd)
     if not dryrun:
         os.system(cmd)
