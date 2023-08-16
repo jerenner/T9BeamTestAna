@@ -69,7 +69,18 @@ def process_file(root_filename, config, output_file):
     if n_events == 0:
         print(f"WARNING: The channels in {root_filename} have zero events. Skipping this file.")
         return
+
     print(f"All {n_channels} active channels have {n_events} events")
+    pedestals = np.zeros((n_events, n_channels))
+    pedestal_sigmas = np.zeros((n_events, n_channels))
+    n_peaks = 1
+    peak_voltages = np.zeros((n_events, n_channels, n_peaks))
+    peak_times = np.zeros((n_events, n_channels, n_peaks))
+    signal_times = np.zeros((n_events, n_channels, n_peaks))
+    integrated_charges = np.zeros((n_events, n_channels, n_peaks))
+    n_peaks = np.zeros((n_events, n_channels))
+    pedestal_list = []
+    pedestal_list_sigmas = []
     for i, c in enumerate(channels):
         print(f"Processing {c}")
         waveforms = run_file[c].array()
@@ -89,9 +100,11 @@ def process_file(root_filename, config, output_file):
         integrated_charges[:, i] = waveform_analysis.integrated_charges
         n_peaks[:, i] = waveform_analysis.n_peaks
         #print("pedestals", waveform_analysis.pedestals.squeeze(), waveform_analysis.my_pedestals)
+        #This is saving for each event the value of the pedestal and its width: useful for monitoring the
+        #PMT stability.
         pedestal_list.append(waveform_analysis.my_pedestals)
-        pedestal_list.append(waveform_analysis.my_pedestal_sigmas)
-        print("Pedestals: ", pedestal_list)
+        pedestal_list_sigmas.append(waveform_analysis.my_pedestal_sigmas)
+        # print("Pedestals: ", pedestal_list)
         channel_name = cm.channel_names[i]
         print(f"Processing {c} into {channel_name}")
         for batch, report in run_file[c].iterate(step_size="100 MB", report=True):
@@ -140,8 +153,8 @@ def process_batch(waveforms, channel, output_file, config_args):
         output_file.mktree(channel, branch_types, counter_name=(lambda s: "nPeaks"), field_name=(lambda s, f: f))
     output_file[channel].extend(branches)
 
-    if True:
-        #chekcing the stability of pedestal
+    if False:
+        #chekcing the stability of pedestal -  we do not need it anymore
         import csv
         with open(r'pedestalStabilityChecks.csv', 'a') as f:
             writer = csv.writer(f)
