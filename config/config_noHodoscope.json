@@ -4,6 +4,9 @@
         "NumberOfChannels"   : 32,
         "VoltageScale"       : 0.00012207,
 	"comment" 	: "Previous voltage scale: 0.000610351",
+		"ChannelNames" : ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R",
+						  "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13",
+						  "Hole0", "Hole1", "PbGlass"],
 
         "comment"            : "Enable/disable channels NOTE: remove the false for future hodoscope PMT channels!!!",
         "comment"            : "0-ACT00, 1-ACT01, 2-ACT10, 3-ACT11, 4-ACT20, 5-ACT21, 6-LGC, 7-TOF03, 8-TOF00, 9-TOF01, 10-TOF02, 11-TOF03, 12-TOF10, 13-TOF11, 14-TOF12, 15-TOF13, 16-ACT00, 17-ACT01, 18-ACT10, 19-ACT11, 20-ACT20, 21-ACT21, 22-LGC, 23-TOF03, 24-TOF00, 25-TOF01, 26-TOF02, 27-TOF03, 28-TOF10, 29-TOF11, 30-TOF12, 31-TOF13",
