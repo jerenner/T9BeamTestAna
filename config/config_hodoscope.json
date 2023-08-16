@@ -2,6 +2,7 @@
 	"WaveAnalysis" :
 	{
         "NumberOfChannels"   : 32,
+    
         "VoltageScale"       : 0.00012207,
 	"comment" 	: "Previous voltage scale: 0.000610351",
 
