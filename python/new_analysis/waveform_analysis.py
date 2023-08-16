@@ -184,8 +184,11 @@ class WaveformAnalysis:
         indices = np.arange(self.waveforms.shape[1])
         after_peak_rise = np.cumsum(((indices < self.peak_locations) & below_threshold)[:, ::-1], axis=1)[:, ::-1] == 0
         peak_rise_location = np.sum(after_peak_rise == 0, axis=1, keepdims=True)  # count how many samples are before the peak rise
+        self.signal_times = peak_rise_location.astype(np.float64)
         amp_range = np.take_along_axis(self.waveforms, np.column_stack([peak_rise_location - 1, peak_rise_location]), axis=1)
-        self.signal_times = peak_rise_location - (amp_range[:, [1]] - thresholds)/np.diff(amp_range)  # interpolate
+        diff = np.diff(amp_range)
+        is_nonzero = diff != 0
+        self.signal_times[is_nonzero] -= (amp_range[is_nonzero.squeeze(), [1]] - thresholds[is_nonzero]) / diff[is_nonzero]  # interpolate
         self.signal_times = self.signal_times*self.ns_per_sample + self.time_offset
         return self.signal_times
 
