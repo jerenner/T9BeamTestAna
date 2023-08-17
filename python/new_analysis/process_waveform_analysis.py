@@ -77,7 +77,7 @@ def process_file(root_filename, config, output_file):
         channels = digitizer_channels[d]
         branch_names = list(channels.keys()) + optional_branch_names
         print(f"Reading digitizer {d}")
-        for batch, report in run_file[d].iterate(branch_names, step_size="100 MB", report=True):
+        for batch, report in run_file[d].iterate(branch_names, step_size="1000 MB", report=True):
             print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")
             for c, i in channels.items():
                 print(f"... ... processing {d}/{c} into {config['ChannelNames'][i]}", end="", flush=True)
