@@ -47,6 +47,8 @@ class WaveformAnalysis:
         self.pulse_peak_times = None
         self.pulse_signal_times = None
         self.pulse_charges = None
+        #new - window integration
+        self.window_int_charge = None
 
     def find_pedestals(self):
         """Finds the pedestal of each waveform by taking the mean in the pedestal window. Also finds the standard deviation"""
@@ -175,6 +177,15 @@ class WaveformAnalysis:
             pulse_charges[end_of_pulse, n_peaks[end_of_pulse]] = my_pulse_charges[end_of_pulse]*self.ns_per_sample/self.impedance
         self.pulse_charges = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
 
+    def integrate_charge_in_window(self, windowLow, windowHigh):
+        """using a window of known position and width to integrate - this will only be meaningful for the ACT data"""
+        analysis_waveform = self.smoothed_waveforms[:, [windowLow+self.time_offset, windowHigh+self.time_offset]]
+        self.window_int_charge = analysis_waveform.sum(axis=1)
+        return self.window_int_charge
+
+
+
+
     def calculate_signal_times(self):
         """Finds the signal time of each waveform as the interpolated time before the peak when the voltage passes 0.4*[peak voltage]"""
         if self.peak_locations is None:
@@ -214,3 +225,4 @@ class WaveformAnalysis:
         self.find_all_peak_voltages()
         self.calculate_all_signal_times()
         self.calculate_all_pulse_charges()
+        self.integrate_charge_in_window(10, 20)
