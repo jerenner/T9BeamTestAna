@@ -124,10 +124,12 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
                 **optional_branches}
 
     print(f" ... writing {channel} to {output_file.file_path}")
-    if channel not in output_file.keys():
+    try:
+        output_file[channel].extend(branches)
+    except KeyError:
         branch_types = {name: branch.type for name, branch in branches.items()}
         output_file.mktree(channel, branch_types, counter_name=(lambda s: "nPeaks"), field_name=(lambda s, f: f))
-    output_file[channel].extend(branches)
+        output_file[channel].extend(branches)
 
 if __name__ == "__main__":
     # execute only if run as a script"
