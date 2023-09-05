@@ -4,6 +4,9 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 
+from scipy.optimize import curve_fit
+from scipy.stats import norm, moyal
+
 # Define the custom order for the keys
 custom_order = [
     'ACT0L', 'ACT0R', 'ACT1L', 'ACT1R', 'ACT3L', 'ACT3R',
@@ -458,44 +461,96 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
 
     return final_df
 
-def gamma_peak_plot(final_df, low_radiation = False):
+def gaussian(x, amplitude, mean, stddev):
+        return amplitude * norm.pdf(x, loc=mean, scale=stddev)
+
+def gamma_peak_plot(final_df, run, nbins, range, timing_cuts = False, low_radiation = False):
     """
-    Make the gamma peak plot.
+    Analyze the gamma peaks.
     """
 
-    if(low_radiation):
-        cuts_all = (final_df.total_hits == 1) & (final_df.hit_ACT0 == 1) & \
-                   (final_df.hit_ACT1 == 1) & (final_df.nohit_ACT3 == 1) & \
-                   (final_df.hit_TOF0 == 1) & (final_df.hit_TOF1 == 1) & (final_df.hit_T2 == 1)
+    # Apply timing cuts if specified.
+    if(timing_cuts):
+
+        if(low_radiation):
+            cuts = (final_df.total_hits == 1) & (final_df.hit_ACT0 == 1) & \
+                        (final_df.hit_ACT1 == 1) & (final_df.nohit_ACT3 == 1) & \
+                        (final_df.hit_TOF0 == 1) & (final_df.hit_TOF1 == 1) & (final_df.hit_T2 == 1)
+        else:
+            cuts = (final_df.total_hits == 1) & \
+                (final_df.hit_ACT1 == 1) & (final_df.nohit_ACT3 == 1) & \
+                (final_df.hit_TOF0 == 1) & (final_df.hit_T2 == 1)
     else:
-        cuts_all = (final_df.total_hits == 1) & \
-            (final_df.hit_ACT1 == 1) & (final_df.nohit_ACT3 == 1) & \
-            (final_df.hit_TOF0 == 1) & (final_df.hit_T2 == 1)
+        cuts = (final_df.total_hits == 1)
 
-    nbins = 80
-    cuts = cuts_all
+    # Get the charge arrays
+    chg_hd14 = final_df[(final_df.hit_HD14 == 1) & cuts]['IntCharge'].values
+    chg_hd13 = final_df[(final_df.hit_HD13 == 1) & cuts]['IntCharge'].values
+    chg_hd12 = final_df[(final_df.hit_HD12 == 1) & cuts]['IntCharge'].values
+    chg_hd11 = final_df[(final_df.hit_HD11 == 1) & cuts]['IntCharge'].values
+    chg_hd10 = final_df[(final_df.hit_HD10 == 1) & cuts]['IntCharge'].values
+    chg_hd9 = final_df[(final_df.hit_HD9 == 1) & cuts]['IntCharge'].values
+    chg_hd8 = final_df[(final_df.hit_HD8 == 1) & cuts]['IntCharge'].values
+    chg_hd7 = final_df[(final_df.hit_HD7 == 1) & cuts]['IntCharge'].values
+    chg_hd6 = final_df[(final_df.hit_HD6 == 1) & cuts]['IntCharge'].values
+    chg_hd5 = final_df[(final_df.hit_HD5 == 1) & cuts]['IntCharge'].values
+    chg_hd4 = final_df[(final_df.hit_HD4 == 1) & cuts]['IntCharge'].values
+    chg_hd3 = final_df[(final_df.hit_HD3 == 1) & cuts]['IntCharge'].values
+    chg_hd2 = final_df[(final_df.hit_HD2 == 1) & cuts]['IntCharge'].values
+    chg_hd1 = final_df[(final_df.hit_HD1 == 1) & cuts]['IntCharge'].values
+    chg_hd0 = final_df[(final_df.hit_HD0 == 1) & cuts]['IntCharge'].values
+
+    chg_arrays = [chg_hd0, chg_hd1, chg_hd2, chg_hd3, chg_hd4, chg_hd5, chg_hd6, chg_hd7, chg_hd8,
+                  chg_hd9, chg_hd10, chg_hd11, chg_hd12, chg_hd13, chg_hd14]
+    labels = ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H12", "H13", "H14"]
 
     fig = plt.figure(figsize=(14,7))
-    plt.hist(final_df[(final_df.hit_HD14 == 1) & (final_df.total_hits == 1)]['IntCharge'],bins=nbins,label="HD14, no timing cuts",range=[0,0.5],density=False)
-    plt.hist(final_df[(final_df.hit_HD14 == 1) & cuts]['IntCharge'],bins=nbins,label="HD14, timing cuts",density=True,range=[0,0.5])
-    print("H14 with",len(final_df[(final_df.hit_HD14 == 1) & cuts]),"events",
-        "and",len(final_df[(final_df.hit_HD14 == 1) & cuts & (final_df.IntCharge < 0.1) & (final_df.IntCharge > 0.01)]),"tail events")
-    plt.hist(final_df[(final_df.hit_HD13 == 1) & cuts]['IntCharge'],bins=nbins,label="HD13")
-    plt.hist(final_df[(final_df.hit_HD12 == 1) & cuts]['IntCharge'],bins=nbins,label="HD12")
-    plt.hist(final_df[(final_df.hit_HD11 == 1) & cuts]['IntCharge'],bins=nbins,label="HD11")
-    plt.hist(final_df[(final_df.hit_HD10 == 1) & cuts]['IntCharge'],bins=nbins,label="HD10")
-    plt.hist(final_df[(final_df.hit_HD9 == 1) & cuts]['IntCharge'],bins=nbins,label="HD9")
-    plt.hist(final_df[(final_df.hit_HD8 == 1) & cuts]['IntCharge'],bins=nbins,label="HD8")
-    plt.hist(final_df[(final_df.hit_HD7 == 1) & cuts]['IntCharge'],bins=nbins,label="HD7")
-    plt.hist(final_df[(final_df.hit_HD6 == 1) & cuts]['IntCharge'],bins=nbins,label="HD6")
-    plt.hist(final_df[(final_df.hit_HD5 == 1) & cuts]['IntCharge'],bins=nbins,label="HD5")
-    plt.hist(final_df[(final_df.hit_HD4 == 1) & cuts]['IntCharge'],bins=nbins,label="HD4")
-    plt.hist(final_df[(final_df.hit_HD3 == 1) & cuts]['IntCharge'],bins=nbins,label="HD3")
-    plt.hist(final_df[(final_df.hit_HD2 == 1) & cuts]['IntCharge'],bins=nbins,label="HD2")
-    plt.hist(final_df[(final_df.hit_HD1 == 1) & cuts]['IntCharge'],bins=nbins,label="HD1")
-    plt.hist(final_df[(final_df.hit_HD0 == 1) & cuts]['IntCharge'],bins=nbins,label="HD0")
-    plt.xlabel("Lead glass charge",fontsize=14)
-    plt.ylabel("Counts/bin",fontsize=14)
-    plt.title("RUN 000735, p = + 0.8 GeV/c",fontsize=20)
-    plt.legend()
+    initial_params = [1000, np.mean(chg_hd14), np.std(chg_hd14)]
+    for arr,label in zip(chg_arrays[::-1],labels[::-1]):
+
+        # Make the histogram for this hodoscope element
+        hist, bin_edges = np.histogram(arr, bins=nbins, range=range)
+        bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+        # Gaussian fit
+        print("Fitting gamma peak",label,"with initial params",*initial_params)
+        popt, _ = curve_fit(gaussian, bin_centers, hist, p0=initial_params)
+        fit_curve = gaussian(bin_centers, *popt)
+        print("-- fit result",*popt)
+        initial_params = popt
+
+        # Plot the histogram
+        lbl = '{} $\sigma$/$\mu$ = {:.2f}'.format(label, popt[2]/popt[1])
+        plt.hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range);
+        plt.plot(bin_centers, fit_curve, 'r-', alpha=0.6)
+
+        plt.legend()
+        
+        plt.xlabel('Lead Glass (charge)',fontsize=20);
+        plt.ylabel('Counts/bin',fontsize=20);
+        plt.title("Run {}, p = +500 MeV/c".format(run),fontsize=20);
+
+
+    #plt.hist(final_df[(final_df.hit_HD14 == 1) & (final_df.total_hits == 1)]['IntCharge'],bins=nbins,label="HD14, no timing cuts",range=[0,0.5],density=False)
+    # plt.hist(chg_hd14,bins=nbins,label="HD14, timing cuts",density=True,range=[0,0.5])
+    #print("H14 with",len(final_df[(final_df.hit_HD14 == 1) & cuts]),"events",
+    #    "and",len(final_df[(final_df.hit_HD14 == 1) & cuts & (final_df.IntCharge < 0.1) & (final_df.IntCharge > 0.01)]),"tail events")
+    # plt.hist(,bins=nbins,label="HD13")
+    # plt.hist(final_df[(final_df.hit_HD12 == 1) & cuts]['IntCharge'],bins=nbins,label="HD12")
+    # plt.hist(final_df[(final_df.hit_HD11 == 1) & cuts]['IntCharge'],bins=nbins,label="HD11")
+    # plt.hist(final_df[(final_df.hit_HD10 == 1) & cuts]['IntCharge'],bins=nbins,label="HD10")
+    # plt.hist(final_df[(final_df.hit_HD9 == 1) & cuts]['IntCharge'],bins=nbins,label="HD9")
+    # plt.hist(final_df[(final_df.hit_HD8 == 1) & cuts]['IntCharge'],bins=nbins,label="HD8")
+    # plt.hist(final_df[(final_df.hit_HD7 == 1) & cuts]['IntCharge'],bins=nbins,label="HD7")
+    # plt.hist(final_df[(final_df.hit_HD6 == 1) & cuts]['IntCharge'],bins=nbins,label="HD6")
+    # plt.hist(final_df[(final_df.hit_HD5 == 1) & cuts]['IntCharge'],bins=nbins,label="HD5")
+    # plt.hist(final_df[(final_df.hit_HD4 == 1) & cuts]['IntCharge'],bins=nbins,label="HD4")
+    # plt.hist(final_df[(final_df.hit_HD3 == 1) & cuts]['IntCharge'],bins=nbins,label="HD3")
+    # plt.hist(final_df[(final_df.hit_HD2 == 1) & cuts]['IntCharge'],bins=nbins,label="HD2")
+    # plt.hist(final_df[(final_df.hit_HD1 == 1) & cuts]['IntCharge'],bins=nbins,label="HD1")
+    # plt.hist(final_df[(final_df.hit_HD0 == 1) & cuts]['IntCharge'],bins=nbins,label="HD0")
+    # plt.xlabel("Lead glass charge",fontsize=14)
+    # plt.ylabel("Counts/bin",fontsize=14)
+    # plt.title("RUN 000735, p = + 0.8 GeV/c",fontsize=20)
+    # plt.legend()
 
