@@ -16,6 +16,23 @@ custom_order = [
     'HD0', 'HD1', 'HD2', 'HD3', 'HD4', 'HD5', 'HD6', 'HD7', 'HD8', 'HD9', 'HD10', 'HD11', 'HD12', 'HD13', 'HD14'
 ]
 
+# Define the computed electron energy for hitting each hodoscope element.
+elec_hit_momenta = {0: 0.15058755351819803,
+                    1: 0.1632022173955016,
+                    2: 0.16454507453432862,
+                    3: 0.17837784731694356,
+                    4: 0.18160773326593496,
+                    5: 0.1968708412789219,
+                    6: 0.20286783238767242,
+                    7: 0.21983444684589068,
+                    8: 0.22999315900645517,
+                    9: 0.24902380087408993,
+                    10: 0.26566623596454925,
+                    11: 0.28724821930912336,
+                    12: 0.31449359776978913,
+                    13: 0.3393035715640493,
+                    14: 0.38511992183555954}
+
 def ntuple_to_pd(filename):
     """
     Converts an ntuple to a single Pandas dataframe containing information about the largest peaks
@@ -464,7 +481,7 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
 def gaussian(x, amplitude, mean, stddev):
         return amplitude * norm.pdf(x, loc=mean, scale=stddev)
 
-def gamma_peak_plot(final_df, run, nbins, range, timing_cuts = False, low_radiation = False):
+def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = False, low_radiation = False):
     """
     Analyze the gamma peaks.
     """
@@ -504,8 +521,13 @@ def gamma_peak_plot(final_df, run, nbins, range, timing_cuts = False, low_radiat
                   chg_hd9, chg_hd10, chg_hd11, chg_hd12, chg_hd13, chg_hd14]
     labels = ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H12", "H13", "H14"]
 
-    fig = plt.figure(figsize=(14,7))
+    # Set up the figure.
+    fig, axes = plt.subplots(2, 2, figsize=(28, 14))
+    flat_axes = axes.ravel()
+
+    # Fit all gamma peaks.
     initial_params = [1000, np.mean(chg_hd14), np.std(chg_hd14)]
+    fit_means, fit_smeans, fit_sigmas = [], [], []
     for arr,label in zip(chg_arrays[::-1],labels[::-1]):
 
         # Make the histogram for this hodoscope element
@@ -514,21 +536,35 @@ def gamma_peak_plot(final_df, run, nbins, range, timing_cuts = False, low_radiat
 
         # Gaussian fit
         print("Fitting gamma peak",label,"with initial params",*initial_params)
-        popt, _ = curve_fit(gaussian, bin_centers, hist, p0=initial_params)
+        popt, pcov = curve_fit(gaussian, bin_centers, hist, p0=initial_params)
+        perr = np.sqrt(np.diag(pcov))
         fit_curve = gaussian(bin_centers, *popt)
-        print("-- fit result",*popt)
+        print("-- fit result",*popt,"with errors",perr)
         initial_params = popt
+        fit_means.append(popt[1])
+        fit_smeans.append(perr[1])
+        fit_sigmas.append(popt[2])
 
         # Plot the histogram
         lbl = '{} $\sigma$/$\mu$ = {:.2f}'.format(label, popt[2]/popt[1])
-        plt.hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range);
-        plt.plot(bin_centers, fit_curve, 'r-', alpha=0.6)
+        flat_axes[0].hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range);
+        flat_axes[0].plot(bin_centers, fit_curve, 'r-', alpha=0.6)
 
-        plt.legend()
+        flat_axes[0].legend()
         
-        plt.xlabel('Lead Glass (charge)',fontsize=20);
-        plt.ylabel('Counts/bin',fontsize=20);
-        plt.title("Run {}, p = +500 MeV/c".format(run),fontsize=20);
+        flat_axes[0].set_xlabel('Lead Glass (charge)',fontsize=20);
+        flat_axes[0].set_ylabel('Counts/bin',fontsize=20);
+        flat_axes[0].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20);
+    
+    # Plot the lead glass charge vs. expected energy.
+    elec_hit_momenta_values = [v for v in elec_hit_momenta.values()]
+    e_gamma_expected = [run_momentum - i*1000 for i in elec_hit_momenta_values[::-1]]
+    flat_axes[2].errorbar(fit_means, e_gamma_expected, yerr=fit_smeans, fmt='o')
+    flat_axes[2].set_xlabel('Lead Glass Charge [Arbitrary Unit]')
+    flat_axes[2].set_ylabel('Tagged Photon Expected Momentum [MeV/c]')
+    flat_axes[2].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20)
+
+    # 
 
 
     #plt.hist(final_df[(final_df.hit_HD14 == 1) & (final_df.total_hits == 1)]['IntCharge'],bins=nbins,label="HD14, no timing cuts",range=[0,0.5],density=False)
