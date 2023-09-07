@@ -34,21 +34,21 @@ elec_hit_momenta = {0: 0.15058755351819803,
                     14: 0.38511992183555954}
 
 # Define the computed momentum range for each hodoscope element.
-momentum_range = {0: 0.0031051281139485853,
-                    1: 0.003114919302005442,
-                    2: 0.0034382955838926366,
-                    3: 0.0034408819264981905,
-                    4: 0.0038381271425452224,
-                    5: 0.0038316739460842186,
-                    6: 0.004327591713230411,
-                    7: 0.004309503367494583,
-                    8: 0.004941827153372019,
-                    9: 0.0049082258326052786,
-                    10: 0.005737451010544847,
-                    11: 0.005682106590518321,
-                    12: 0.006811855613720219,
-                    13: 0.006723880407884519,
-                    14: 0.008347864712857922}
+momentum_range = {0: 0.0063047132725456145,
+                    1: 0.006932943602899561,
+                    2: 0.007724812094032252,
+                    3: 0.00845980150260986,
+                    4: 0.009627122746240724,
+                    5: 0.010498277293921526,
+                    6: 0.01225191220751115,
+                    7: 0.013300445377746856,
+                    8: 0.016009392120709398,
+                    9: 0.017294611862594872,
+                    10: 0.02164736408549034,
+                    11: 0.023256557966043867,
+                    12: 0.030648203744867764,
+                    13: 0.03271156068397968,
+                    14: 0.04630141916160452}
 
 def ntuple_to_pd(filename):
     """
@@ -634,8 +634,8 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
     mconv, merr = popt[0], perr[0]
     bconv, berr = popt[1], perr[1]
     fit_means_MeV = (fit_means - bconv)/mconv
-    fit_sigmas_MeV = fit_sigmas/mconv
-    fit_ssigmas_MeV = fit_ssigmas/mconv
+    fit_sigmas_MeV = (fit_sigmas/fit_means)*fit_means_MeV
+    fit_ssigmas_MeV = (fit_ssigmas/fit_means)*fit_means_MeV
 
     # Subtract the momentum ranges from the fit sigmas in quadrature
     momentum_range_values = [v for v in momentum_range.values()]
@@ -645,7 +645,7 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
     # Plot the momentum range vs. energy
     #flat_axes[3].plot(fit_means_MeV,lg_sigmas,'o',label='LG resolution',color='blue')
     flat_axes[3].plot(fit_means_MeV,momentum_sigmas*1000,'^',label='Computed HD momentum range',color='blue')
-    flat_axes[3].errorbar(fit_means_MeV,fit_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='s',label='LG + HD sigma',color='green')
+    flat_axes[3].errorbar(fit_means_MeV,fit_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='s',label='$(\sigma/\mu)$ x $\mu$ (calibrated)',color='green')
     flat_axes[3].set_ylabel('Resolution [MeV]',fontsize=ax_lbl_font_size)
     flat_axes[3].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
     flat_axes[3].tick_params(axis="x", labelsize=ax_tick_font_size)
