@@ -33,6 +33,23 @@ elec_hit_momenta = {0: 0.15058755351819803,
                     13: 0.3393035715640493,
                     14: 0.38511992183555954}
 
+# Define the computed momentum spread for each hodoscope element.
+momentum_spread = {0: 0.0031051281139485853,
+                    1: 0.003114919302005442,
+                    2: 0.0034382955838926366,
+                    3: 0.0034408819264981905,
+                    4: 0.0038381271425452224,
+                    5: 0.0038316739460842186,
+                    6: 0.004327591713230411,
+                    7: 0.004309503367494583,
+                    8: 0.004941827153372019,
+                    9: 0.0049082258326052786,
+                    10: 0.005737451010544847,
+                    11: 0.005682106590518321,
+                    12: 0.006811855613720219,
+                    13: 0.006723880407884519,
+                    14: 0.008347864712857922}
+
 def ntuple_to_pd(filename):
     """
     Converts an ntuple to a single Pandas dataframe containing information about the largest peaks
@@ -478,6 +495,10 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
 
     return final_df
 
+def line(x, m, b):
+    y = m*x + b
+    return y
+
 def gaussian(x, amplitude, mean, stddev):
         return amplitude * norm.pdf(x, loc=mean, scale=stddev)
 
@@ -485,6 +506,10 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     """
     Analyze the gamma peaks.
     """
+
+    ax_lbl_font_size = 20
+    ax_tick_font_size = 14
+    ax_legend_font_size = 20
 
     # Apply timing cuts if specified.
     if(timing_cuts):
@@ -524,10 +549,11 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     # Set up the figure.
     fig, axes = plt.subplots(2, 2, figsize=(28, 14))
     flat_axes = axes.ravel()
+    fig.suptitle("Run {}, p = +{} MeV/c".format(run,run_momentum), fontsize=32, y=1.00)
 
     # Fit all gamma peaks.
     initial_params = [1000, np.mean(chg_hd14), np.std(chg_hd14)]
-    fit_means, fit_smeans, fit_sigmas = [], [], []
+    fit_means, fit_smeans, fit_sigmas, fit_ssigmas = [], [], [], []
     for arr,label in zip(chg_arrays[::-1],labels[::-1]):
 
         # Make the histogram for this hodoscope element
@@ -535,58 +561,88 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
         bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
 
         # Gaussian fit
-        print("Fitting gamma peak",label,"with initial params",*initial_params)
+        #print("Fitting gamma peak",label,"with initial params",*initial_params)
         popt, pcov = curve_fit(gaussian, bin_centers, hist, p0=initial_params)
         perr = np.sqrt(np.diag(pcov))
         fit_curve = gaussian(bin_centers, *popt)
-        print("-- fit result",*popt,"with errors",perr)
+        #print("-- fit result",*popt,"with errors",perr)
         initial_params = popt
         fit_means.append(popt[1])
         fit_smeans.append(perr[1])
         fit_sigmas.append(popt[2])
+        fit_ssigmas.append(perr[2])
 
         # Plot the histogram
         lbl = '{} $\sigma$/$\mu$ = {:.2f}'.format(label, popt[2]/popt[1])
-        flat_axes[0].hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range);
+        flat_axes[0].hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range)
         flat_axes[0].plot(bin_centers, fit_curve, 'r-', alpha=0.6)
 
         flat_axes[0].legend()
         
-        flat_axes[0].set_xlabel('Lead Glass (charge)',fontsize=20);
-        flat_axes[0].set_ylabel('Counts/bin',fontsize=20);
-        flat_axes[0].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20);
+        flat_axes[0].set_xlabel('Lead Glass Charge [Arbitrary Units]',fontsize=ax_lbl_font_size)
+        flat_axes[0].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
+        flat_axes[0].tick_params(axis="x", labelsize=ax_tick_font_size)
+        flat_axes[0].tick_params(axis="y", labelsize=ax_tick_font_size)
+        #flat_axes[0].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20);
+    fit_means = np.array(fit_means)
+    fit_smeans = np.array(fit_smeans)
+    fit_sigmas = np.array(fit_sigmas)
+    fit_ssigmas = np.array(fit_ssigmas)
+    # -----------------------------------------------------------------------------------
+
+    # -----------------------------------------------------------------------------------
+    # Plot the energy resolution sigma/mean vs. mean
+    err_sigma_over_mean = np.sqrt(fit_smeans**2 + fit_ssigmas**2)
+    flat_axes[1].errorbar(fit_means,fit_sigmas/fit_means,fmt='o',yerr=err_sigma_over_mean)
+    flat_axes[1].set_xlabel('Lead Glass Charge [Arbitrary Units]',fontsize=ax_lbl_font_size)
+    flat_axes[1].set_ylabel('Gamma peak sigma/mean',fontsize=ax_lbl_font_size)
+    flat_axes[1].tick_params(axis="x", labelsize=ax_tick_font_size)
+    flat_axes[1].tick_params(axis="y", labelsize=ax_tick_font_size)
+    # -----------------------------------------------------------------------------------
     
+    # -----------------------------------------------------------------------------------
     # Plot the lead glass charge vs. expected energy.
     elec_hit_momenta_values = [v for v in elec_hit_momenta.values()]
-    e_gamma_expected = [run_momentum - i*1000 for i in elec_hit_momenta_values[::-1]]
-    flat_axes[2].errorbar(fit_means, e_gamma_expected, yerr=fit_smeans, fmt='o')
-    flat_axes[2].set_xlabel('Lead Glass Charge [Arbitrary Unit]')
-    flat_axes[2].set_ylabel('Tagged Photon Expected Momentum [MeV/c]')
-    flat_axes[2].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20)
+    e_gamma_expected = [run_momentum - mval*1000 for mval in elec_hit_momenta_values[::-1]]
+    flat_axes[2].errorbar(e_gamma_expected, fit_means, yerr=fit_smeans, fmt='o')
+    flat_axes[2].set_ylabel('Lead Glass Charge [Arbitrary Units]',fontsize=ax_lbl_font_size)
+    flat_axes[2].set_xlabel('Tagged Photon Expected Momentum [MeV/c]',fontsize=ax_lbl_font_size)
+    flat_axes[2].tick_params(axis="x", labelsize=ax_tick_font_size)
+    flat_axes[2].tick_params(axis="y", labelsize=ax_tick_font_size)
+    #flat_axes[2].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20)
 
-    # 
+    # Fit to a line
+    p0 = [(e_gamma_expected[-1] - e_gamma_expected[0])/(fit_means[-1] - fit_means[0]),e_gamma_expected[0]]
+    popt, pcov = curve_fit(line, e_gamma_expected, fit_means, p0, sigma=fit_smeans)
+    x = np.linspace(e_gamma_expected[0], e_gamma_expected[-1], 1000)
+    y = line(x, *popt)
+    perr = np.sqrt(np.diag(pcov))
+    flat_axes[2].plot(x, y, label='E = $({:.2f} \pm {:.2f}) x 10^{{-4}} \cdot $C + $({:.2f} \pm {:.2f})$'.format(popt[0]*10000,perr[0]*10000,popt[1],perr[1]), color='red', alpha=0.8, linewidth=3, linestyle=':')
+    flat_axes[2].legend(loc=2,fontsize=20)
+    # -----------------------------------------------------------------------------------
 
+    # -----------------------------------------------------------------------------------
+    # Plot the lead glass resolution.
 
-    #plt.hist(final_df[(final_df.hit_HD14 == 1) & (final_df.total_hits == 1)]['IntCharge'],bins=nbins,label="HD14, no timing cuts",range=[0,0.5],density=False)
-    # plt.hist(chg_hd14,bins=nbins,label="HD14, timing cuts",density=True,range=[0,0.5])
-    #print("H14 with",len(final_df[(final_df.hit_HD14 == 1) & cuts]),"events",
-    #    "and",len(final_df[(final_df.hit_HD14 == 1) & cuts & (final_df.IntCharge < 0.1) & (final_df.IntCharge > 0.01)]),"tail events")
-    # plt.hist(,bins=nbins,label="HD13")
-    # plt.hist(final_df[(final_df.hit_HD12 == 1) & cuts]['IntCharge'],bins=nbins,label="HD12")
-    # plt.hist(final_df[(final_df.hit_HD11 == 1) & cuts]['IntCharge'],bins=nbins,label="HD11")
-    # plt.hist(final_df[(final_df.hit_HD10 == 1) & cuts]['IntCharge'],bins=nbins,label="HD10")
-    # plt.hist(final_df[(final_df.hit_HD9 == 1) & cuts]['IntCharge'],bins=nbins,label="HD9")
-    # plt.hist(final_df[(final_df.hit_HD8 == 1) & cuts]['IntCharge'],bins=nbins,label="HD8")
-    # plt.hist(final_df[(final_df.hit_HD7 == 1) & cuts]['IntCharge'],bins=nbins,label="HD7")
-    # plt.hist(final_df[(final_df.hit_HD6 == 1) & cuts]['IntCharge'],bins=nbins,label="HD6")
-    # plt.hist(final_df[(final_df.hit_HD5 == 1) & cuts]['IntCharge'],bins=nbins,label="HD5")
-    # plt.hist(final_df[(final_df.hit_HD4 == 1) & cuts]['IntCharge'],bins=nbins,label="HD4")
-    # plt.hist(final_df[(final_df.hit_HD3 == 1) & cuts]['IntCharge'],bins=nbins,label="HD3")
-    # plt.hist(final_df[(final_df.hit_HD2 == 1) & cuts]['IntCharge'],bins=nbins,label="HD2")
-    # plt.hist(final_df[(final_df.hit_HD1 == 1) & cuts]['IntCharge'],bins=nbins,label="HD1")
-    # plt.hist(final_df[(final_df.hit_HD0 == 1) & cuts]['IntCharge'],bins=nbins,label="HD0")
-    # plt.xlabel("Lead glass charge",fontsize=14)
-    # plt.ylabel("Counts/bin",fontsize=14)
-    # plt.title("RUN 000735, p = + 0.8 GeV/c",fontsize=20)
-    # plt.legend()
+    # Convert gamma peak means and sigmas to MeV
+    mconv = popt[0]
+    bconv = popt[1]
+    fit_means_MeV = (fit_means - bconv)/mconv
+    fit_sigmas_MeV = fit_sigmas/mconv
+
+    # Subtract the momentum spreads from the fit sigmas in quadrature
+    momentum_spread_values = [v for v in momentum_spread.values()]
+    momentum_sigmas = np.array([mval for mval in momentum_spread_values[::-1]])
+    lg_sigmas = (fit_sigmas_MeV**2 - (momentum_sigmas*1000)**2)**0.5
+
+    # Plot the momentum spread vs. energy
+    #flat_axes[3].plot(fit_means_MeV,lg_sigmas,'o',label='LG resolution',color='blue')
+    flat_axes[3].plot(fit_means_MeV,momentum_sigmas*1000,'^',label='Computed HD spread',color='blue')
+    flat_axes[3].plot(fit_means_MeV,fit_sigmas_MeV,'s',label='LG + HD spread',color='green')
+    flat_axes[3].set_ylabel('Resolution (sigma) [MeV]',fontsize=ax_lbl_font_size)
+    flat_axes[3].set_xlabel('Tagged Photon Expected Momentum [MeV/c]',fontsize=ax_lbl_font_size)
+    flat_axes[3].tick_params(axis="x", labelsize=ax_tick_font_size)
+    flat_axes[3].tick_params(axis="y", labelsize=ax_tick_font_size)
+    flat_axes[3].legend(fontsize=20)
+    # -----------------------------------------------------------------------------------
 
