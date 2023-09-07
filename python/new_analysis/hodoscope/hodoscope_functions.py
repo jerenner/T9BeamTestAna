@@ -33,8 +33,8 @@ elec_hit_momenta = {0: 0.15058755351819803,
                     13: 0.3393035715640493,
                     14: 0.38511992183555954}
 
-# Define the computed momentum spread for each hodoscope element.
-momentum_spread = {0: 0.0031051281139485853,
+# Define the computed momentum range for each hodoscope element.
+momentum_range = {0: 0.0031051281139485853,
                     1: 0.003114919302005442,
                     2: 0.0034382955838926366,
                     3: 0.0034408819264981905,
@@ -325,12 +325,12 @@ def get_num_duplicates(arr):
     u, c = np.unique(arr, return_counts=True)
     return np.sum(c[c > 1])
 
-def filter_range(name,df,key,rng,drop=False):
+def filter_range(name,df,key,rng,drop=False,debug=False):
     
     # Perform the filter.
     df_filtered = df[df[key].between(*rng)]
     nduplicates = get_num_duplicates(df_filtered['event'].values)
-    print(f"{name} filter passed",len(df_filtered),"of",len(df),"with",nduplicates,"duplicates")
+    if(debug): print(f"{name} filter passed",len(df_filtered),"of",len(df),"with",nduplicates,"duplicates")
     
     # Handle duplicates.
     if(nduplicates > 0):
@@ -343,24 +343,25 @@ def filter_range(name,df,key,rng,drop=False):
             idx = df_filtered.groupby('event')['IntCharge'].idxmax()
             df_filtered = df_filtered.loc[idx]
         
-    print("--> returning",len(df_filtered),"events")
+    if(debug): print("--> returning",len(df_filtered),"events")
     return df_filtered
 
 def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_range, 
                     tof1_timing_range, tof1_charge_range, t2_timing_range, t2_charge_range,
                     act0_timing_range, act0_charge_range, act1_timing_range, act1_charge_range,
-                    act3_timing_range, hd_timing_ranges, hd_charge_ranges, low_radiation = False):
+                    act3_timing_range, hd_timing_ranges, hd_charge_ranges, low_radiation = False,
+                    debug = False):
     
     # Filter lead glass
-    pb_filtered = filter_range("PbGlass",df_dict['PbGlass'],'PeakTime',pb_timing_range)
+    pb_filtered = filter_range("PbGlass",df_dict['PbGlass'],'PeakTime',pb_timing_range,debug=debug)
 
     # Filter TOF elements
     # --------------------------------------------------------------------------------------------
     # TOF0
-    tof00_filtered = filter_range("TOF00",df_dict['TOF00'],'PeakTime',tof0_timing_range)
-    tof01_filtered = filter_range("TOF01",df_dict['TOF01'],'PeakTime',tof0_timing_range)
-    tof02_filtered = filter_range("TOF02",df_dict['TOF02'],'PeakTime',tof0_timing_range)
-    tof03_filtered = filter_range("TOF03",df_dict['TOF03'],'PeakTime',tof0_timing_range)
+    tof00_filtered = filter_range("TOF00",df_dict['TOF00'],'PeakTime',tof0_timing_range,debug=debug)
+    tof01_filtered = filter_range("TOF01",df_dict['TOF01'],'PeakTime',tof0_timing_range,debug=debug)
+    tof02_filtered = filter_range("TOF02",df_dict['TOF02'],'PeakTime',tof0_timing_range,debug=debug)
+    tof03_filtered = filter_range("TOF03",df_dict['TOF03'],'PeakTime',tof0_timing_range,debug=debug)
 
     combined_00_01 = tof00_filtered.merge(tof01_filtered, on='event', suffixes=('_00', '_01'))
     combined_00_01_02 = combined_00_01.merge(tof02_filtered, on='event')
@@ -372,15 +373,15 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
                                     + tof0_combined['IntCharge_02']
                                     + tof0_combined['IntCharge_03'])
 
-    tof0_valid = filter_range("TOF0_combined",tof0_combined,'combined_charge',tof0_charge_range)
+    tof0_valid = filter_range("TOF0_combined",tof0_combined,'combined_charge',tof0_charge_range,debug=debug)
     tof0_valid.loc[:,'hit_TOF0'] = 1
-    print()
+    if(debug): print()
 
     # TOF1
-    tof10_filtered = filter_range("TOF10",df_dict['TOF10'],'PeakTime',tof1_timing_range)
-    tof11_filtered = filter_range("TOF11",df_dict['TOF11'],'PeakTime',tof1_timing_range)
-    tof12_filtered = filter_range("TOF12",df_dict['TOF12'],'PeakTime',tof1_timing_range)
-    tof13_filtered = filter_range("TOF13",df_dict['TOF13'],'PeakTime',tof1_timing_range)
+    tof10_filtered = filter_range("TOF10",df_dict['TOF10'],'PeakTime',tof1_timing_range,debug=debug)
+    tof11_filtered = filter_range("TOF11",df_dict['TOF11'],'PeakTime',tof1_timing_range,debug=debug)
+    tof12_filtered = filter_range("TOF12",df_dict['TOF12'],'PeakTime',tof1_timing_range,debug=debug)
+    tof13_filtered = filter_range("TOF13",df_dict['TOF13'],'PeakTime',tof1_timing_range,debug=debug)
 
     combined_10_11 = tof10_filtered.merge(tof11_filtered, on='event', suffixes=('_10', '_11'))
     combined_10_11_12 = combined_10_11.merge(tof12_filtered, on='event')
@@ -392,37 +393,37 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
                                     + tof1_combined['IntCharge_12']
                                     + tof1_combined['IntCharge_13'])
 
-    tof1_valid = filter_range("TOF1_combined",tof1_combined,'combined_charge',tof1_charge_range)
+    tof1_valid = filter_range("TOF1_combined",tof1_combined,'combined_charge',tof1_charge_range,debug=debug)
     if(not low_radiation): tof1_valid.loc[:,'hit_TOF1'] = 1
-    print()
+    if(debug): print()
 
     # T2
-    t2_filtered = filter_range("T2",df_dict['TriggerScint'],'PeakTime',t2_timing_range)
-    t2_valid = filter_range("T2",t2_filtered,'IntCharge',t2_charge_range)
+    t2_filtered = filter_range("T2",df_dict['TriggerScint'],'PeakTime',t2_timing_range,debug=debug)
+    t2_valid = filter_range("T2",t2_filtered,'IntCharge',t2_charge_range,debug=debug)
     t2_valid.loc[:,'hit_T2'] = 1
-    print()
+    if(debug): print()
     # --------------------------------------------------------------------------------------------
 
     # ACT elements
     # --------------------------------------------------------------------------------------------
     # ACT0
-    act0l_filtered = filter_range("ACT0L",df_dict['ACT0L'],'PeakTime',act0_timing_range)
-    act0r_filtered = filter_range("ACT0R",df_dict['ACT0R'],'PeakTime',act0_timing_range)
+    act0l_filtered = filter_range("ACT0L",df_dict['ACT0L'],'PeakTime',act0_timing_range,debug=debug)
+    act0r_filtered = filter_range("ACT0R",df_dict['ACT0R'],'PeakTime',act0_timing_range,debug=debug)
 
     act0_combined = act0l_filtered.merge(act0r_filtered, on='event', suffixes=('_L', '_R'))
     act0_combined['combined_charge'] = act0_combined['IntCharge_L'] + act0_combined['IntCharge_R']
 
-    act0_valid = filter_range("ACT0_combined",act0_combined,'combined_charge',act0_charge_range)
+    act0_valid = filter_range("ACT0_combined",act0_combined,'combined_charge',act0_charge_range,debug=debug)
     if(not low_radiation): act0_valid.loc[:,'hit_ACT0'] = 1
 
     # ACT1
-    act1l_filtered = filter_range("ACT1L",df_dict['ACT1L'],'PeakTime',act1_timing_range)
-    act1r_filtered = filter_range("ACT1R",df_dict['ACT1R'],'PeakTime',act1_timing_range)
+    act1l_filtered = filter_range("ACT1L",df_dict['ACT1L'],'PeakTime',act1_timing_range,debug=debug)
+    act1r_filtered = filter_range("ACT1R",df_dict['ACT1R'],'PeakTime',act1_timing_range,debug=debug)
 
     act1_combined = act1l_filtered.merge(act1r_filtered, on='event', suffixes=('_L', '_R'))
     act1_combined['combined_charge'] = act1_combined['IntCharge_L'] + act1_combined['IntCharge_R']
 
-    act1_valid = filter_range("ACT1_combined",act1_combined,'combined_charge',act1_charge_range)
+    act1_valid = filter_range("ACT1_combined",act1_combined,'combined_charge',act1_charge_range,debug=debug)
     act1_valid.loc[:,'hit_ACT1'] = 1
 
     # ACT3
@@ -432,7 +433,7 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
     act3_combined = act3l_filtered.merge(act3r_filtered, on='event', suffixes=('_L', '_R'))
     act3_valid = act3_combined.copy()
     act3_valid.loc[:,'nohit_ACT3'] = 1
-    print("ACT3 total number of valid events:",len(act3_valid))
+    if(debug): print("ACT3 total number of valid events:",len(act3_valid))
     # --------------------------------------------------------------------------------------------
 
     # Hodoscope elements
@@ -449,7 +450,7 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
         # Filtering
         filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
                                 (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
-        print(f"HD{i}: {len(filtered)} of {len(df_dict[hd_key])} events after filter")
+        if(debug): print(f"HD{i}: {len(filtered)} of {len(df_dict[hd_key])} events after filter")
         
         # Assign a binary value indicating a hit
         if not filtered.empty:
@@ -478,7 +479,7 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
     hd_valid_events = combined_hd_df[combined_hd_df['total_hits'] == 1]
 
     u, c = np.unique(combined_hd_df['event'].values, return_counts=True)
-    print("Duplicates in combined HD dataframe:",np.sum(c[c > 1]))
+    if(debug): print("Duplicates in combined HD dataframe:",np.sum(c[c > 1]))
     # --------------------------------------------------------------------------------------------
 
     # Merge all relevant dataframes
@@ -502,10 +503,15 @@ def line(x, m, b):
 def gaussian(x, amplitude, mean, stddev):
         return amplitude * norm.pdf(x, loc=mean, scale=stddev)
 
-def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = False, low_radiation = False):
+def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", timing_cuts = False, low_radiation = False):
     """
     Analyze the gamma peaks.
     """
+
+    # Set up the output directory
+    out_dir = f"{base_dir}/{run}"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
 
     ax_lbl_font_size = 20
     ax_tick_font_size = 14
@@ -514,7 +520,7 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     # Apply timing cuts if specified.
     if(timing_cuts):
 
-        if(low_radiation):
+        if(not low_radiation):
             cuts = (final_df.total_hits == 1) & (final_df.hit_ACT0 == 1) & \
                         (final_df.hit_ACT1 == 1) & (final_df.nohit_ACT3 == 1) & \
                         (final_df.hit_TOF0 == 1) & (final_df.hit_TOF1 == 1) & (final_df.hit_T2 == 1)
@@ -549,7 +555,7 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     # Set up the figure.
     fig, axes = plt.subplots(2, 2, figsize=(28, 14))
     flat_axes = axes.ravel()
-    fig.suptitle("Run {}, p = +{} MeV/c".format(run,run_momentum), fontsize=32, y=1.00)
+    fig.suptitle("Run {}, p = +{} MeV/c".format(run,run_momentum), fontsize=32, y=0.95)
 
     # Fit all gamma peaks.
     initial_params = [1000, np.mean(chg_hd14), np.std(chg_hd14)]
@@ -577,9 +583,9 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
         flat_axes[0].hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range)
         flat_axes[0].plot(bin_centers, fit_curve, 'r-', alpha=0.6)
 
-        flat_axes[0].legend()
+        flat_axes[0].legend(fontsize=12)
         
-        flat_axes[0].set_xlabel('Lead Glass Charge [Arbitrary Units]',fontsize=ax_lbl_font_size)
+        flat_axes[0].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
         flat_axes[0].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
         flat_axes[0].tick_params(axis="x", labelsize=ax_tick_font_size)
         flat_axes[0].tick_params(axis="y", labelsize=ax_tick_font_size)
@@ -594,7 +600,7 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     # Plot the energy resolution sigma/mean vs. mean
     err_sigma_over_mean = np.sqrt(fit_smeans**2 + fit_ssigmas**2)
     flat_axes[1].errorbar(fit_means,fit_sigmas/fit_means,fmt='o',yerr=err_sigma_over_mean)
-    flat_axes[1].set_xlabel('Lead Glass Charge [Arbitrary Units]',fontsize=ax_lbl_font_size)
+    flat_axes[1].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
     flat_axes[1].set_ylabel('Gamma peak sigma/mean',fontsize=ax_lbl_font_size)
     flat_axes[1].tick_params(axis="x", labelsize=ax_tick_font_size)
     flat_axes[1].tick_params(axis="y", labelsize=ax_tick_font_size)
@@ -605,8 +611,8 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     elec_hit_momenta_values = [v for v in elec_hit_momenta.values()]
     e_gamma_expected = [run_momentum - mval*1000 for mval in elec_hit_momenta_values[::-1]]
     flat_axes[2].errorbar(e_gamma_expected, fit_means, yerr=fit_smeans, fmt='o')
-    flat_axes[2].set_ylabel('Lead Glass Charge [Arbitrary Units]',fontsize=ax_lbl_font_size)
-    flat_axes[2].set_xlabel('Tagged Photon Expected Momentum [MeV/c]',fontsize=ax_lbl_font_size)
+    flat_axes[2].set_ylabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+    flat_axes[2].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
     flat_axes[2].tick_params(axis="x", labelsize=ax_tick_font_size)
     flat_axes[2].tick_params(axis="y", labelsize=ax_tick_font_size)
     #flat_axes[2].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20)
@@ -617,7 +623,7 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     x = np.linspace(e_gamma_expected[0], e_gamma_expected[-1], 1000)
     y = line(x, *popt)
     perr = np.sqrt(np.diag(pcov))
-    flat_axes[2].plot(x, y, label='E = $({:.2f} \pm {:.2f}) x 10^{{-4}} \cdot $C + $({:.2f} \pm {:.2f})$'.format(popt[0]*10000,perr[0]*10000,popt[1],perr[1]), color='red', alpha=0.8, linewidth=3, linestyle=':')
+    flat_axes[2].plot(x, y, label='C = $({:.2f} \pm {:.2f}) x 10^{{-4}} \cdot $p + $({:.3f} \pm {:.3f})$'.format(popt[0]*10000,perr[0]*10000,popt[1],perr[1]), color='red', alpha=0.8, linewidth=3, linestyle=':')
     flat_axes[2].legend(loc=2,fontsize=20)
     # -----------------------------------------------------------------------------------
 
@@ -625,24 +631,29 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, timing_cuts = Fal
     # Plot the lead glass resolution.
 
     # Convert gamma peak means and sigmas to MeV
-    mconv = popt[0]
-    bconv = popt[1]
+    mconv, merr = popt[0], perr[0]
+    bconv, berr = popt[1], perr[1]
     fit_means_MeV = (fit_means - bconv)/mconv
     fit_sigmas_MeV = fit_sigmas/mconv
+    fit_ssigmas_MeV = fit_ssigmas/mconv
 
-    # Subtract the momentum spreads from the fit sigmas in quadrature
-    momentum_spread_values = [v for v in momentum_spread.values()]
-    momentum_sigmas = np.array([mval for mval in momentum_spread_values[::-1]])
+    # Subtract the momentum ranges from the fit sigmas in quadrature
+    momentum_range_values = [v for v in momentum_range.values()]
+    momentum_sigmas = np.array([mval for mval in momentum_range_values[::-1]])
     lg_sigmas = (fit_sigmas_MeV**2 - (momentum_sigmas*1000)**2)**0.5
 
-    # Plot the momentum spread vs. energy
+    # Plot the momentum range vs. energy
     #flat_axes[3].plot(fit_means_MeV,lg_sigmas,'o',label='LG resolution',color='blue')
-    flat_axes[3].plot(fit_means_MeV,momentum_sigmas*1000,'^',label='Computed HD spread',color='blue')
-    flat_axes[3].plot(fit_means_MeV,fit_sigmas_MeV,'s',label='LG + HD spread',color='green')
-    flat_axes[3].set_ylabel('Resolution (sigma) [MeV]',fontsize=ax_lbl_font_size)
-    flat_axes[3].set_xlabel('Tagged Photon Expected Momentum [MeV/c]',fontsize=ax_lbl_font_size)
+    flat_axes[3].plot(fit_means_MeV,momentum_sigmas*1000,'^',label='Computed HD momentum range',color='blue')
+    flat_axes[3].errorbar(fit_means_MeV,fit_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='s',label='LG + HD sigma',color='green')
+    flat_axes[3].set_ylabel('Resolution [MeV]',fontsize=ax_lbl_font_size)
+    flat_axes[3].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
     flat_axes[3].tick_params(axis="x", labelsize=ax_tick_font_size)
     flat_axes[3].tick_params(axis="y", labelsize=ax_tick_font_size)
     flat_axes[3].legend(fontsize=20)
     # -----------------------------------------------------------------------------------
 
+    plt.savefig(f"{out_dir}/gamma_peaks.pdf", bbox_inches='tight')
+    plt.close()
+
+    return mconv, merr, bconv, berr
