@@ -136,7 +136,7 @@ void MakeDataPlots(string fileName, int momentum, double x0_cut = 4.9, double y0
 
   TH2D hPbACT0A("hRef_pbA_act0A", "; Pb-glass Amplitude ; ACT0 Amplitude", 200, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
   TH2D hPbACT0C("hRef_pbC_act0C", "; Pb-glass Charge ; ACT1 Charge)", 200, 0., actChargeMax, 400, 0., actAmplitudeMax);
-  TH2D hPbACT1A("hRef_pbA_act1A", "; Pb-glass Amplitude ; ACT1 Amplitude", 200, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
+  // TH2D hPbACT1A("hRef_pbA_act1A", "; Pb-glass Amplitude ; ACT1 Amplitude", 200, 0., actAmplitudeMax, 400, 0., actAmplitudeMax);
   TH2D hPbACT1C("hRef_pbC_act1C", "; Pb-glass Charge ; ACT1 Charge)", 200, 0., actChargeMax, 400, 0., actAmplitudeMax);
 
 
