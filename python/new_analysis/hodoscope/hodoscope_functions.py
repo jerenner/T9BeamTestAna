@@ -503,6 +503,9 @@ def line(x, m, b):
 def gaussian(x, amplitude, mean, stddev):
         return amplitude * norm.pdf(x, loc=mean, scale=stddev)
 
+def resfxn(x, F, C):
+        return F * x**0.5 + C
+
 def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", timing_cuts = False, low_radiation = False):
     """
     Analyze the gamma peaks.
@@ -639,21 +642,34 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
 
     # Subtract the momentum ranges from the fit sigmas in quadrature
     momentum_range_values = [v for v in momentum_range.values()]
-    momentum_sigmas = np.array([mval for mval in momentum_range_values[::-1]])
-    lg_sigmas = (fit_sigmas_MeV**2 - (momentum_sigmas*1000)**2)**0.5
+    momentum_sigmas = np.array([mval for mval in momentum_range_values[::-1]]) #/12**0.5
+    lg_sigmas_MeV = (fit_sigmas_MeV**2 - (momentum_sigmas*1000)**2)**0.5
+
+    # Fit the fit_means_MeV vs. lg_sigmas_MeV to a F*sqrt(E) + C
+    p0 = [lg_sigmas_MeV[1]/fit_means_MeV[1]**0.5,0.]
+    popt, pcov = curve_fit(resfxn, fit_means_MeV[1:], lg_sigmas_MeV[1:], p0=p0, sigma=fit_ssigmas_MeV[1:])
+    x_res = np.linspace(np.min(fit_means_MeV), np.max(fit_means_MeV), 1000)
+    y_res = resfxn(x_res, *popt)
+    res_err = np.sqrt(np.diag(pcov))
+    fres = popt[0]
+    cres = popt[1]
+    ferr = res_err[0]
+    cerr = res_err[1]
 
     # Plot the momentum range vs. energy
     #flat_axes[3].plot(fit_means_MeV,lg_sigmas,'o',label='LG resolution',color='blue')
     flat_axes[3].plot(fit_means_MeV,momentum_sigmas*1000,'^',label='Computed HD momentum range',color='blue')
     flat_axes[3].errorbar(fit_means_MeV,fit_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='s',label='$(\sigma/\mu)$ x $\mu$ (calibrated)',color='green')
+    flat_axes[3].errorbar(fit_means_MeV,lg_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='o',label='LG resolution (calibrated)',color='red')
+    flat_axes[3].plot(x_res, y_res, label='R = $({:.1f} \pm {:.1f}) \sqrt{{p}} + ({:.1f} \pm {:.1f})$'.format(fres,ferr,cres,cerr), color='red', alpha=0.8, linewidth=3, linestyle=':')
     flat_axes[3].set_ylabel('Resolution [MeV]',fontsize=ax_lbl_font_size)
     flat_axes[3].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
     flat_axes[3].tick_params(axis="x", labelsize=ax_tick_font_size)
     flat_axes[3].tick_params(axis="y", labelsize=ax_tick_font_size)
-    flat_axes[3].legend(fontsize=20)
+    flat_axes[3].legend(fontsize=16)
     # -----------------------------------------------------------------------------------
 
     plt.savefig(f"{out_dir}/gamma_peaks.pdf", bbox_inches='tight')
     plt.close()
 
-    return mconv, merr, bconv, berr
+    return mconv, merr, bconv, berr, fres, ferr, cres, cerr
