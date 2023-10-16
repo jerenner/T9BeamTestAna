@@ -20,7 +20,7 @@ class WaveformAnalysis:
     use_global_pedestal = True  # assume pedestal is stable and use one value for all waveforms for the channel
 
     def __init__(self, waveforms, df, window_lower_bound = -15, window_upper_bound = 35, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
-                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0, window_time_offset=0, ):
+                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0, window_time_offset=0, PMTgain = 1):
         self.raw_waveforms = np.array(waveforms)
         self.threshold = threshold
         self.reverse_polarity = reverse_polarity
@@ -52,9 +52,13 @@ class WaveformAnalysis:
         self.pulse_peak_times = None
         self.pulse_signal_times = None
         self.pulse_charges = None
+        self.pulse_pe = None
         #new - window integration
         self.window_int_charge = None
+        self.window_int_pe = None
         self.df = df
+        self.max_voltage = None
+        self.PMTgain = PMTgain
 
     def find_pedestals(self):
         """Finds the pedestal of each waveform by taking the mean in the pedestal window. Also finds the standard deviation"""
@@ -84,6 +88,8 @@ class WaveformAnalysis:
         self.peak_locations = np.argmax(self.waveforms[:, self.analysis_bins], axis=1, keepdims=True) + self.analysis_bins[0]
         self.peak_times = (self.peak_locations + 0.5)*self.ns_per_sample + self.time_offset
         self.peak_voltages = np.take_along_axis(self.waveforms, self.peak_locations, axis=1).reshape(self.peak_locations.shape)
+
+        self.max_voltage = np.take_along_axis(self.waveforms, self.peak_locations, axis=1).reshape(self.peak_locations.shape)
         return self.peak_times, self.peak_voltages
 
     def count_peaks(self):
@@ -116,6 +122,8 @@ class WaveformAnalysis:
         pulse_peak_times = -np.ones((self.waveforms.shape[0], self.n_peaks.max()))
         pulse_peak_voltages = -np.ones((self.waveforms.shape[0], self.n_peaks.max()))
         my_pulse_voltages = -np.ones(self.waveforms.shape[0])
+
+
         n_peaks = -np.ones(self.waveforms.shape[0], dtype=int)
         for i in range(0, analysis_waveform.shape[1]):  # scan over waveform samples, quicker than iterating over waveforms
             passed_integration_threshold = passed_integration_threshold | pass_integration_threshold[:, i]  # check if passed integration threshold
@@ -178,6 +186,7 @@ class WaveformAnalysis:
         pass_pulse_threshold = np.diff(over_pulse_threshold, axis=1, prepend=0) == 1
         passed_integration_threshold = False
         pulse_charges = np.zeros((self.waveforms.shape[0], self.n_peaks.max()))
+        pulse_pe = np.zeros((self.waveforms.shape[0], self.n_peaks.max()))
         my_pulse_charges = np.zeros(self.waveforms.shape[0])
         n_peaks = -np.ones(self.waveforms.shape[0], dtype=int)
         for i in range(0, analysis_waveform.shape[1]):  # scan over waveform samples, quicker than iterating over waveforms
@@ -188,7 +197,9 @@ class WaveformAnalysis:
             my_pulse_charges[over_integration_threshold[:, i]] += analysis_waveform[over_integration_threshold[:,i],i]
             end_of_pulse = np.where(((integration_threshold_diff[:, i] == -1) | (i == analysis_waveform.shape[1]-1)) & (~passed_integration_threshold))[0]
             pulse_charges[end_of_pulse, n_peaks[end_of_pulse]] = my_pulse_charges[end_of_pulse]*self.ns_per_sample/self.impedance
+            pulse_pe[end_of_pulse, n_peaks[end_of_pulse]] = my_pulse_charges[end_of_pulse]/self.PMTgain
         self.pulse_charges = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
+        self.pulse_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
         print(self.pulse_charges)
 
 
@@ -211,6 +222,9 @@ class WaveformAnalysis:
 
         # print(sum(self.df["nPeaks"]))
         pulse_charges = np.zeros((self.waveforms.shape[0], max(self.df["nPeaks"])))
+        pulse_pe = np.zeros((self.waveforms.shape[0], max(self.df["nPeaks"])))
+
+        print(self.df, 'The dataframe')
 
         for i in range(max(self.df["nPeaks"])):
             over_integration_threshold = False
@@ -229,7 +243,6 @@ class WaveformAnalysis:
             over_integration_threshold = over_integration_threshold | ((allAnalysisBins > rangeLow) & (allAnalysisBins < rangeHigh))
 
 
-            print(len(over_integration_threshold))
             #purely copy-pasted, we do the same thing with a different integration window
             #we just changed over_pusle_threshold for over_integration_threshold
             integration_threshold_diff = np.diff(over_integration_threshold, axis=1, prepend=0)
@@ -246,9 +259,11 @@ class WaveformAnalysis:
                 my_pulse_charges[over_integration_threshold[:, k]] += analysis_waveform[over_integration_threshold[:,k],k]
                 end_of_pulse = np.where(((integration_threshold_diff[:, k] == -1) | (k == analysis_waveform.shape[1]-1)) & (~passed_integration_threshold))[0]
                 pulse_charges[end_of_pulse, i] = my_pulse_charges[end_of_pulse]*self.ns_per_sample/self.impedance
+                pulse_pe[end_of_pulse, i] = my_pulse_charges[end_of_pulse]/self.PMTgain
                 # print(pulse_charges, end_of_pulse)
 
             self.window_int_charge = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
+            self.window_int_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
 
         # print(len(self.window_int_charge))
         #needed to reshape to save to the same zip output
@@ -263,14 +278,15 @@ class WaveformAnalysis:
             #making subplots for each event
             plt.subplot(int(len(list_events)/2)+(int((len(list_events)+1)/2)-int(len(list_events)/2)), int(len(list_events)/2), i+1)
 
-            plt.plot(np.array(self.analysis_bins) * self.ns_per_sample, analysis_waveform[event, :], 'x--', label = 'Event %i\nPedestalSigma%.2e\n PeakIntCharge %s \n WindowIntCharge %s \n Peak Times %s'%(event, self.my_pedestal_sigmas, self.pulse_charges[event], self.window_int_charge[event], self.pulse_signal_times[event]))
+            plt.plot(np.array(self.analysis_bins) * self.ns_per_sample, analysis_waveform[event, :]/self.PMTgain, 'x--', label = 'Event %i\nPedestalSigma%.2e\n PeakIntPE %s \n WindowIntPE %s \n Peak Times %s'%(event, self.my_pedestal_sigmas, self.pulse_pe[event], self.window_int_pe[event], self.pulse_signal_times[event]))
 
             for hit in range(max(self.df["nPeaks"])):
                 if list_low[hit][event] != -9999:
-                    plt.fill_betweenx([min(analysis_waveform[event, :]), max(analysis_waveform[event, :])], list_low[hit][event] * self.ns_per_sample, list_high[hit][event]*self.ns_per_sample, alpha = 0.3, label = "Hit %i Window (%.1f, %.1f)"%(hit, list_low[hit][event]*self.ns_per_sample, list_high[hit][event]*self.ns_per_sample))
+                    plt.fill_betweenx([min(analysis_waveform[event, :]/self.PMTgain), max(analysis_waveform[event, :]/self.PMTgain)], list_low[hit][event] * self.ns_per_sample, list_high[hit][event]*self.ns_per_sample, alpha = 0.3, label = "Hit %i Window (%.1f, %.1f)"%(hit, list_low[hit][event]*self.ns_per_sample, list_high[hit][event]*self.ns_per_sample))
 
 
             plt.xlabel("ns")
+            plt.ylabel("number of pe")
             plt.grid()
             plt.legend()
 

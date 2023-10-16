@@ -56,12 +56,12 @@ def studyLenWindow(argv):
     event3 = 30000
     lenLongAverage = 5000
 
-    TwoHits = True
+    TwoHits = False
 
     if TwoHits:
-        fig.suptitle("Run 490 - study of window size\nTwo particle in each TOF", fontsize=16, fontweight='bold')
+        fig.suptitle("Run 523 - study of window size\nTwo particle in each TOF", fontsize=16, fontweight='bold')
     else:
-        fig.suptitle("Run 490 - study of window size\nOne particle in each TOF", fontsize=16, fontweight='bold')
+        fig.suptitle("Run 523 - study of window size\nOne particle in each TOF", fontsize=16, fontweight='bold')
 
     y_array_1 = [[],[],[],[]]
     y_array_2 = [[],[],[],[]]
@@ -79,7 +79,7 @@ def studyLenWindow(argv):
 
     list_xlabels = []
     #look at TOF00, TOF10, ACT0L, ACT2L
-    detectorOfInterest = [2, 7, 1, 4]
+    detectorOfInterest = [8, 12, 5, 7]
     for file_name in root_filenames:
 
         print(file_name)
@@ -186,9 +186,51 @@ def studyLenWindow(argv):
 
 
 
+def overlayACTprofiles(argv):
+    #this is to overlay the histograms of the ACT signal to get an idea of the separation
+    root_filenames = [f for f in argv[1:]]
+    TwoHits = False
+    for file_name in root_filenames:
+        lower_bound = float(file_name.split("_")[1][:-2])
+        upper_bound = float(file_name.split("_")[-1][:-7])
+        file = ur.open(file_name)
+        if TwoHits:
+            nPeaksInToF = nPeakInToF(file, 2) #we only want one hit
+        else:
+            nPeaksInToF = nPeakInToF(file, 1)
 
+        for detector in range(len(file.keys()[:-1])):
+            key = file.keys()[detector]
+            print(key)
+            df = file[key].arrays(library="pd")
+            df = df[nPeaksInToF]
+            df = df.reset_index() #very important!
+
+            print(df.columns)
+
+
+            intCharge = pd.DataFrame(df['IntCharge'].values.tolist())
+            dfPeak = pd.concat([df, intCharge], axis = 1)
+
+            windowIntCharge = pd.DataFrame(df['WindowIntCharge'].values.tolist())
+            dfWindow = pd.concat([df, windowIntCharge], axis = 1)
+
+            plt.figure(detector)
+            plt.title('%s'%file.keys()[detector])
+            plt.hist(dfWindow[0], bins = 100, range = (0, 0.75), label = 'Window Charge (%.0fns, %.0fns)'%(lower_bound, upper_bound), histtype = 'step')
+            plt.hist(dfPeak[0], bins = 100, range = (0, 0.75), color = 'r', label = 'Peak Charge', histtype = 'step')
+            plt.xlabel('Integrated charge [nC]')
+            plt.ylabel('Triggers')
+
+            # plt.show()
+    for detector in range(len(file.keys()[:-1])):
+        plt.figure(detector)
+        plt.grid()
+        plt.legend()
+    plt.show()
 
 
 
 if __name__ == "__main__":
-    studyLenWindow(sys.argv)
+    # studyLenWindow(sys.argv)
+    overlayACTprofiles(sys.argv)

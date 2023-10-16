@@ -101,16 +101,26 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
         return
 
     print(f"All {n_channels} active channels have {n_events} events")
+
+    #we need to perform the calibration of the timing for the window offset
     run_number = int(root_filename[-11:-5])
     for d in active_digitizers:
         optional_branch_names = [b for b in ["timeStamp", "triggerTime"] if b in run_file[d].keys()]
         channels = digitizer_channels[d]
         branch_names = list(channels.keys()) + optional_branch_names
         print(f"Reading digitizer {d}")
-        for batch, report in run_file[d].iterate(branch_names, step_size="1000 MB", report=True):
+        for batch, report in run_file[d].iterate(branch_names, step_size="100 MB", report=True):
             print(f"... events {report.tree_entry_start} to {report.tree_entry_stop}")
             for c, i in channels.items():
                 print(f"... ... processing {d}/{c} into {config['ChannelNames'][i]}", end="", flush=True)
+                #calculate the time offset to the reference
+                df = ref_file[config['ChannelNames'][i]].arrays(library="pd")
+                hit_times = pd.DataFrame(df['SignalTime'].values.tolist())
+                df =  pd.concat([df, hit_times], axis=1)
+                WindowTimeOffset = (df[0]-df_TOF10[0]).mean()
+
+                print(config["WindowTimeOffset"][i], WindowTimeOffset)
+
                 config_args = {
                     "threshold": config["Thresholds"][i],
                     "analysis_window": (config["AnalysisWindowLow"][i], config["AnalysisWindowHigh"][i]),
@@ -118,16 +128,17 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                     "reverse_polarity": (config["Polarity"][i] == 0),
                     "voltage_scale": config["VoltageScale"],
                     "time_offset": config["TimeOffset"][i],
-                    "window_time_offset": config["WindowTimeOffset"][i],
+                    "window_time_offset": WindowTimeOffset,
+                    "PMTgain": config["PMTgain"][i],
                 }
                 waveforms = batch[c]
                 optional_branches = {b: batch[b] for b in optional_branch_names}
                 print(df_TOF10, df_TOF10[0], c, i)
-                process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF10, window_lower_bound, window_upper_bound)
+                process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF10.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], window_lower_bound, window_upper_bound)
                 #save the waveforms pictures
                 # plt.figure(2)
                 plt.title(f"{config['ChannelNames'][i]} - Window ({window_lower_bound}_{window_upper_bound})")
-                plt.savefig(f"pdf_results/sample_waveforms_40nsWindow502_{config['ChannelNames'][i]}_run{run_number}_{window_lower_bound}_{window_upper_bound}.pdf")
+                plt.savefig(f"pdf_results/sample_waveforms_40nsWindow503_{config['ChannelNames'][i]}_run{run_number}_{window_lower_bound}_{window_upper_bound}.pdf")
 
 
     print(f"Saving event info for run {run_number}")
@@ -148,20 +159,26 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
     peak_times = waveform_analysis.pulse_peak_times
     signal_times = waveform_analysis.pulse_signal_times
     integrated_charges = waveform_analysis.pulse_charges
+    integrated_pe = waveform_analysis.pulse_pe
     window_integrated_charges = waveform_analysis.window_int_charge
+    window_integrated_pe = waveform_analysis.window_int_pe
+    max_voltage = ak.Array(waveform_analysis.max_voltage.squeeze())
 
     print(type(integrated_charges), type(window_integrated_charges))
 
     peaks = ak.zip({"PeakVoltage": peak_voltages,
                     "PeakTime": peak_times,
                     "SignalTime": signal_times,
-                    "IntCharge": integrated_charges})
+                    "IntCharge": integrated_charges,
+                    "IntPE": integrated_pe})
 
     #needs to be handled separately because it has another format
-    window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges})
+    window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
+                           "WindowIntPE": window_integrated_pe})
 
     branches = {"Pedestal": pedestals,
                 "PedestalSigma": pedestal_sigmas,
+                "MaxVoltage": max_voltage,
                 "Peaks": peaks,
                 "WindowPeaks": window_peaks,
                 **optional_branches}

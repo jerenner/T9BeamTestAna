@@ -44,7 +44,10 @@ public :
    Double_t        PeakTime[maxnPeaks];   //[nPeakTime]
    Double_t        SignalTime[maxnPeaks];   //[nSignalTime]
    Double_t        IntCharge[maxnPeaks];   //[nIntCharge]
+   Double_t        IntPE[maxnPeaks];   //[nIntCharge]
    Double_t        WindowIntCharge[maxnPeaks];   //[WindownIntCharge]
+   Double_t        WindowIntPE[maxnPeaks];   //[WindownIntCharge]
+
 
    // List of branches
    TBranch        *b_Pedestal;   //!
@@ -54,7 +57,9 @@ public :
    TBranch        *b_PeakTime;   //!
    TBranch        *b_SignalTime;   //!
    TBranch        *b_IntCharge;   //!
+   TBranch        *b_IntPE;   //!
    TBranch        *b_WindowIntCharge;   //!
+   TBranch        *b_WindowIntPE;   //!
 
    channelReadClass(TFile *infile, TString treeName);
    virtual ~channelReadClass();
@@ -137,7 +142,9 @@ void channelReadClass::Init(TTree *tree)
    fChain->SetBranchAddress("PeakTime", PeakTime, &b_PeakTime);
    fChain->SetBranchAddress("SignalTime", SignalTime, &b_SignalTime);
    fChain->SetBranchAddress("IntCharge", IntCharge, &b_IntCharge);
+   fChain->SetBranchAddress("IntPE", IntPE, &b_IntPE);
    fChain->SetBranchAddress("WindowIntCharge", WindowIntCharge, &b_WindowIntCharge);
+   fChain->SetBranchAddress("WindowIntPE", WindowIntPE, &b_WindowIntPE);
    Notify();
 }
 

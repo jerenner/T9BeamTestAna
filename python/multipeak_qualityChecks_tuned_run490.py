@@ -645,17 +645,14 @@ def getHist(array_df):
 
 
 def sum2Gaussians(x, a1, m1, s1, a2, m2, s2, c):
-    return abs(a1) * np.exp(-(m1 - x) **2/ (2 * s1 **2) ) + abs(a2) * np.exp(-(m2 - x) **2/ (2 * s2 **2)) + abs(c)
+    return a1 * np.exp(-(m1 - x) **2/ (2 * s1 **2) ) + a2 * np.exp(-(m2 - x) **2/ (2 * s2 **2)) + abs(c)
 def oneGaussian(x, a1, m1, s1):
     return a1 * np.exp(-(m1 - x) **2/ (2 * s1 **2) )
 
-
 def distToLinearCut(x1, y1, a, b):
-    #simple trigonometry
-    yA = a*x1 + b
-    xA = (y1-b)/a
-    theta = np.arctan((yA-y1)/(x1-xA))
-    return np.sin(theta) * (x1-xA)
+    #simple trigonometry - perpendicular distance to a line
+    return (a * x1 - y1 + b)/(np.sqrt(a**2+1))
+
 
 def singlePE(argv):
     root_filenames = argv[1]
@@ -711,13 +708,13 @@ def singlePE(argv):
     linearCutB = -0.704
 
     #2d cut in ACT1 ACT2
-    ACTlinearA = -0.9952#-0.9243 #-0.8436#-1.983 #-1.431#-1.572 #-0.9413 #-1.572 #-1.983 #-1.9375
-    ACTlinearB = 7.71#6.09 #4.806 #4.504 #10.00 #6.89 #8.3 #5.59 #6 #10.0 #19
+    ACTlinearA = -1.9375
+    ACTlinearB = 19
 
     Pbupper = 0.18
 
     ACTupper = 11
-    ACTlower = 3 #1
+    ACTlower = 1
 
     plot_cuts = True
 
@@ -730,6 +727,7 @@ def singlePE(argv):
 
 
     ACT_selection_e = np.where(ACT_selection == True, False, True)
+    ACT_selection_e = ACT_selection_e & ((detectors_pd_wind[4][0]+detectors_pd_wind[5][0] + detectors_pd_wind[6][0] + detectors_pd_wind[7][0])/4 > ACTlower)
 
     a = pd.Series(data = tof, name = 'TOF')
     TOF_selection = a>limCutTOF
@@ -738,7 +736,7 @@ def singlePE(argv):
     PbTOF_selection = PbTOF_selection & (detectors_pd_safe[18][0]< Pbupper)
 
     PbTOF_selection_e = np.where(PbTOF_selection == True, False, True)
-
+    PbTOF_selection_e = PbTOF_selection_e & (detectors_pd_safe[18][0]>(linearCutA * a + linearCutB))
 
 
     for detector in range(len(file.keys()[:-1])):
@@ -804,53 +802,11 @@ def singlePE(argv):
     ACT23_selection4, ACT1_selection4, TOF_selection4, LG_selection4 = getHist(detectors_pd_2D_ACTs_selection_e)
     ACT23_selection5, ACT1_selection5, TOF_selection5, LG_selection5 = getHist(detectors_pd_2D_tofLG_selection_e)
 
-
     h_ACTs_selection3 = distToLinearCut(ACT1_selection3, ACT23_selection3, ACTlinearA, ACTlinearB)
     h_ACTs_selection4 = distToLinearCut(ACT1_selection4, ACT23_selection4, ACTlinearA, ACTlinearB)
 
     # h_ACTs_selection3 = distToLinearCut(TOF_selection2, LG_selection2, linearCutA, linearCutB)
     # h_ACTs_selection4 = distToLinearCut(TOF_selection5, LG_selection5, linearCutA, linearCutB)
-
-
-    plt.hist(h_ACTs_selection3, bins = 100, range = (-20, 10), label = 'ACT cut - non electrons')
-    plt.hist(h_ACTs_selection4, bins = 100, range = (-20, 10), label = 'ACT cut - electrons')
-    plt.grid()
-    plt.xlabel("Perpendicular distance to the cut line")
-    plt.ylabel("number of triggers")
-    plt.legend()
-    plt.show()
-
-
-
-
-    xmin = 0
-    xmax = 20
-
-    plt.hist2d(ACT1_all, ACT23_all, bins = (200, 200), range = ((xmin,xmax), (0, 25)), norm = colors.LogNorm())
-    if plot_cuts:
-        plt.plot([xmin, xmax], [ACTlower, ACTlower], 'k--', label = '2D cut: lower = %.2f, upper = %.2F'%(ACTupper, ACTlower))
-        # plt.plot([xmin, xmax], [ACTupper, ACTupper], 'k--', label = '2D cut: lower = %.2f, upper = %.2F'%(ACTupper, ACTlower))
-        plt.plot([xmin, xmax], [xmin*ACTlinearA+ACTlinearB, xmax*ACTlinearA+ACTlinearB], 'k--')
-    plt.colorbar(label="Number of triggers")
-    plt.xlabel("Mean ACT 1 window PE")
-    plt.ylabel("Mean ACT23 window PE")
-    plt.title("Run 523")
-    plt.legend()
-    plt.show()
-
-    xmin = 11
-    xmax = 14
-
-    plt.hist2d(TOF_all, LG_all, bins = (200, 200), range = ((xmin,xmax), (0, 0.5)), norm = colors.LogNorm())
-    if plot_cuts:
-        plt.plot([xmin, xmax], [xmin*linearCutA+linearCutB, xmax*linearCutA+linearCutB], 'k--', label = '2D cut: A = %.3f, B = %.3F'%(linearCutA, linearCutB))
-        plt.plot([xmin, xmax], [Pbupper, Pbupper], 'k--')
-    plt.colorbar(label="Number of triggers")
-    plt.xlabel("Time of flight (ns)")
-    plt.ylabel("Peak integrated lead glass")
-    plt.title("Run 523")
-    plt.legend()
-    plt.show()
 
     xmax = 10
     xmin = -30
@@ -987,7 +943,7 @@ def singlePE(argv):
 
 
     xmin = 0
-    xmax = 6
+    xmax = 50
     nbins = 100
 
     f, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 1]})
@@ -1017,13 +973,10 @@ def singlePE(argv):
     a, _ = np.histogram(ACT23_selection3, bins = bin_edges)
     b, _ = np.histogram(ACT23_selection4, bins = bin_edges)
 
-
-
-    x_ref = np.linspace(xmin, xmax, 1000)
+    x_ref = np.linspace(1, 20, 100)
     #here the fit to the ACT23 information
-    popt, pcov = curve_fit(sum2Gaussians, bin_edges[:-1] + (xmax-xmin)/(2*nbins), a, p0 = [332.15273834,   0.91885663,   0.51667649, 35, 4, 6, 0])
-    # popt = [343, 1.15, 0.1, 376, 1.45, 0.4, 75]
-    # a1.plot(x_ref, sum2Gaussians(x_ref, *popt), 'k-')
+    popt, pcov = curve_fit(sum2Gaussians, bin_edges[:-1] + (xmax-xmin)/(2*nbins), a, p0 = [570, 4.5, 2, 230, 15, 2, 0])
+    a1.plot(x_ref, sum2Gaussians(x_ref, *popt), 'k-')
 
     #check the purity
     window_low_tot = 0
@@ -1160,8 +1113,40 @@ def singlePE(argv):
     plt.ylabel("Mean ACT23 window PE")
     plt.show()
 
+    xmin = 10
+    xmax = 15
+
+    plt.hist2d(TOF_all, LG_all, bins = (200, 200), range = ((xmin,xmax), (0, 0.5)), norm = colors.LogNorm())
+    if plot_cuts:
+        plt.plot([xmin, xmax], [xmin*linearCutA+linearCutB, xmax*linearCutA+linearCutB], 'k--', label = '2D cut: A = %.3f, B = %.3F'%(linearCutA, linearCutB))
+        plt.plot([xmin, xmax], [Pbupper, Pbupper], 'k--')
+    plt.colorbar(label="Number of triggers")
+    plt.xlabel("Time of flight (ns)")
+    plt.ylabel("Peak integrated lead glass")
+    plt.title("Run 523")
+    plt.legend()
+    plt.show()
+
+    xmin = 0
+    xmax = 25
+
+    plt.hist2d(ACT1_all, ACT23_all, bins = (200, 200), range = ((xmin,xmax), (0, 55)), norm = colors.LogNorm())
+    if plot_cuts:
+        plt.plot([xmin, xmax], [ACTlower, ACTlower], 'k--', label = '2D cut: lower = %.2f, upper = %.2F'%(ACTupper, ACTlower))
+        # plt.plot([xmin, xmax], [ACTupper, ACTupper], 'k--', label = '2D cut: lower = %.2f, upper = %.2F'%(ACTupper, ACTlower))
+        plt.plot([xmin, xmax], [xmin*ACTlinearA+ACTlinearB, xmax*ACTlinearA+ACTlinearB], 'k--')
+    plt.colorbar(label="Number of triggers")
+    plt.xlabel("Mean ACT 1 window PE")
+    plt.ylabel("Mean ACT23 window PE")
+    plt.title("Run 523")
+    plt.legend()
+    plt.show()
+
+
 
     raise end
+
+
 
 
 
