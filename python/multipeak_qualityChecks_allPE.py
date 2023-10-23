@@ -777,7 +777,7 @@ def singlePE(argv):
 
     #2d cut in ACT1 ACT2
     ACTlinearA = -1.0#-5.2757#-1.9375#-0.9952#-0.9243 #-0.8436#-1.983 #-1.431#-1.572 #-0.9413 #-1.572 #-1.983 #-1.9375
-    ACTlinearB = 25 #85#80#25 # * 4 #7.71#6.09 #4.806 #4.504 #10.00 #6.89 #8.3 #5.59 #6 #10.0 #19
+    ACTlinearB = 16 #85#80#25 # * 4 #7.71#6.09 #4.806 #4.504 #10.00 #6.89 #8.3 #5.59 #6 #10.0 #19
 
     Pbupper = 0.18
 
@@ -1282,22 +1282,22 @@ def singlePE(argv):
     f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
     f.suptitle("Q vs T - ELECTRONS peak integration")
 
-    a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
+    # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
     a0.hist2d(ACT0_selection4_time-TOF10_selection4_time, ACT0_selection4_peak,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
     a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
     # a0.colorbar()
 
 
 
-    a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+    # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
     a1.hist2d(ACT1_selection4_time-TOF10_selection4_time, ACT1_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
     a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
 
-    a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+    # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
     a2.hist2d(ACT2_selection4_time-TOF10_selection4_time, ACT2_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
     a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
 
-    a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+    # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
     a3.hist2d(ACT3_selection4_time-TOF10_selection4_time, ACT3_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
     a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
 
