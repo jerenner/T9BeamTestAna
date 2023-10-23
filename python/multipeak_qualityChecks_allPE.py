@@ -15,9 +15,11 @@ from scipy.integrate import quad
 
 ############################### READ ME #################################################
 #This is a very crude code to look at multi peaks events - tailored for run 373 for now
-#strated by acraplet
+#started by acraplet
 #reads the new ntuple format and looks at the hit time, trying to make useful plots to
-#understand how best to match the peaks and calibrate for the ACT diffrent cable length
+#understand how best to match the peaks and calibrate for the ACT different cable length
+#this code was grown organically for what I needed it to plot appologies for the mess,
+#main is at the very end.
 #########################################################################################
 
 #will look at the number of hits against T0F for a given event

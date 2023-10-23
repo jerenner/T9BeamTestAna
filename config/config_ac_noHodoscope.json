@@ -62,7 +62,7 @@
 				    200, 200, 540, 540, 540, 540, 540, 540,
 				    540, 540, 540, 540, 540, 540, 540, 540],
 
-		"comment" : "Timing calibration offsets for TOF",
+		"comment" : "Timing calibration offsets for TOF1",
 			"TimeOffset" : [ 0, 0, 0, 0, 0, 0, 0, 0,
 					0, 4.5538, 0.1996, 4.0006, -1.439, -0.13, -0.7766, -0.4064,
 					0, 0, 0, 0, 0, 0, 0, 0,
@@ -75,11 +75,11 @@
 		"comment" : "PMT gain before correction accounting for the integration",
 			"comment" : "2.73e-1, 2.73e-1, 0.03889, 0.05845, 0.04108, 0.0307, 0.03951, 0.0563",
 
-		"comment" : "Offset wrt TOF1 for integration with window",
+		"comment" : "Offset wrt TOF1 for integration window ACT - not used anymore",
 		"comment" : "WindowTimeOffset for run 373 [ -37.2, -32.41, -47.60, -44.37, -46.93, -46.00, -45.02,-45.58,-11.63, -11.63, -11.63, -11.63, 0, 0, 0, 0,0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",
 
-		"comment" : "Offset wrt TOF1 for integration with window for run 490",
-			"WindowTimeOffset" : [-38.23, -33.54, -47.60, -44.37, -46.93, -46.00, -45.40, -45.58,
+		"comment" : "Offset wrt TOF1 for integration with window for run 490 - not used anymore: automatic calibration",
+			"comment" : [-38.23, -33.54, -47.60, -44.37, -46.93, -46.00, -45.40, -45.58,
 					-11.63, -11.63, -11.63, -11.63, 0, 0, 0, 0,
 					0, 0, 0, 0, 0, 0, 0, 0,
 					0, 0, 0, 0, 0, 0, 0, 0],
