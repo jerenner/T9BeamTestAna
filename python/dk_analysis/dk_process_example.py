@@ -6,18 +6,19 @@ import numpy as np
 
 # Perform standard analysis on 2023 data without/with hodoscope
 
-folder = "C:/Users/Karlen/Documents/temp/"
-#folder = "C:/Users/Karlen/Documents/temp/wtime/"
+#folder = "C:/Users/Karlen/Documents/temp/"
+folder = "C:/Users/Karlen/Documents/temp/wtime/"
 
 #run_numbers = [628,629,630,631,632,633,634,635,636,637,638,639,640,641,642,644]
 #run_numbers = [592,635]
-run_numbers = [678]
+run_numbers = [731,740,745,753]
 for run_number in run_numbers:
     n_channels = 32
     if run_number <= 578:
         n_channels = 19
 
-    config = json5.load(open("../../config/config.json"))['WaveAnalysis']
+    #config = json5.load(open("../../config/config.json"))['WaveAnalysis']
+    config = json5.load(open("../../config/config_noHodoscope.json"))['WaveAnalysis']
     config["NumberOfChannels"] = n_channels
 
     if n_channels == 19:

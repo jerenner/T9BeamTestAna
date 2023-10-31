@@ -26,13 +26,14 @@ class Run:
         run_file = ur.open(filename)
 
         # save triggerTime and timeStamp information
+        n_channels = self.config["NumberOfChannels"]
         if 'triggerTime' in run_file['midas_data_D300']:
-            for digi in range(4):
+            n_digi = int((n_channels-1)/8)+1
+            for digi in range(n_digi):
                 self.times[digi] = {}
                 for field in ['spillNumber','timeStamp','triggerTime']:
                     self.times[digi][field] = run_file['midas_data_D30' + str(digi)][field].array().to_numpy()
 
-        n_channels = self.config["NumberOfChannels"]
         for i_c in range(n_channels):
             digitizer_id = int(i_c / 8)
             d_channel = i_c - 8 * digitizer_id
@@ -48,8 +49,8 @@ class Run:
                                         voltage_scale=config["VoltageScale"],
                                         time_offset=config["TimeOffset"][i_c])
 
-            # disable for hodoscope running - fails
-            if n_channels == 19:
+            # disable running - fails
+            if n_channels == -19:
                 analysis.find_peaks()
                 analysis.calculate_signal_times()
                 analysis.integrate_charges()

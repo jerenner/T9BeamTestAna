@@ -1,7 +1,66 @@
 from Run import Run
 import numpy as np
+from scipy import stats
 from scipy.optimize import curve_fit
+from iminuit import Minuit
 
+def get_digitizer_period(time_differences, period_0, offset_0):
+    # return the digitizer period (in units of 8ns time bins: the segmentation of the triggerTime counter)
+    # do this by shifting the time_difference distributions by the digitizer_period
+    # best to limit this to a single spill, to keep time differences within a 1/2 second
+
+    def get_variance(period, offset):
+        # ignore negative time differences (first event in spill)
+        sum2 = 0.
+        sum = 0.
+        n = 0
+        for td in time_differences:
+            if td > 0:
+                n += 1
+                shifted = (td-offset)%period - period/2.
+                sum2 += shifted**2
+                sum += shifted
+        return sum2/n - sum*sum/n/n
+
+    m = Minuit(get_variance, period=period_0, offset=offset_0)
+    m.limits['period'] = (40., 43.)
+    m.limits['offset'] = (offset_0-10., offset_0+10.)
+
+    m.migrad()
+    #m.hesse()
+    return m
+
+def get_beam_parameters(corrected_times, period_0, offset_0, sigma_0, background_0):
+    # use maximum likelihood to find beam parameters (all in units of triggerTime steps ~ 8 ns)
+    # requires a good starting point to find a solution
+    # model: real times for trigger are defined by Gaussians with means = offset, offset+period, offset+2period, ...
+    # integrating over appropriate integer range time bins gives probability for a trigger to occur there
+    def get_neg_log_like(period, offset, sigma, background):
+        time_interval = corrected_times[-1]-corrected_times[0]
+        n_bunches = time_interval//period
+        log_like = 0.
+        for ct in corrected_times:
+            if ct > 0:
+                # centre the time in the bunch, to get the bunch number count correct
+                cct = ct-offset + period/2.
+                # bunch number
+                bunch = cct//period
+                # Gaussian mean - removing the centering
+                mu = offset + bunch*period - period/2.
+                prob_g = stats.norm.cdf(ct+2., loc=mu, scale=sigma) - stats.norm.cdf(ct+0., loc=mu, scale=sigma)
+                prob = (1.-background)*prob_g/n_bunches + background*2./time_interval
+                log_like += np.log(prob)
+        return -1.*log_like
+
+    m = Minuit(get_neg_log_like, period=period_0, offset=offset_0, sigma=sigma_0, background=background_0)
+    m.limits['period'] = (period_0-1., period_0+1.)
+    m.limits['offset'] = (offset_0-10., offset_0+10.)
+    m.limits['sigma'] = (1.,sigma_0+5.)
+    m.limits['background'] = (0.00001,0.99999)
+
+    m.migrad()
+    #m.hesse()
+    return m
 
 def get_signal_times(run, config):
 
