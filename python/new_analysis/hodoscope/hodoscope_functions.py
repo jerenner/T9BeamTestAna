@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.lines import Line2D
 
 from scipy.optimize import curve_fit
 from scipy.stats import norm, moyal
@@ -17,7 +19,39 @@ custom_order = [
 ]
 
 # Define the computed electron energy for hitting each hodoscope element.
-elec_hit_momenta = {0: 0.15058755351819803,
+elec_hit_momenta_MC_fieldmap = {0: 0.09783230585487263,
+                    1: 0.11089383662305125,
+                    2: 0.11718751862628744,
+                    3: 0.1357407927028879,
+                    4: 0.13997438543024,
+                    5: 0.1471055825691591,
+                    6: 0.15399394364580632,
+                    7: 0.17768442931536754,
+                    8: 0.1954001338291036,
+                    9: 0.21160634230382658,
+                    10: 0.2352525614724067,
+                    11: 0.2544546042946958,
+                    12: 0.2914536355311684,
+                    13: 0.32090114397989367,
+                    14: 0.3746842330143378}
+
+elec_hit_momenta_MC_basicfield = {0: 0.15582261018870644,
+                                1: 0.16651505160688465,
+                                2: 0.17289996548544717,
+                                3: 0.17841390695053236,
+                                4: 0.18295397261505822,
+                                5: 0.1978669429349461,
+                                6: 0.20530606915601174,
+                                7: 0.22249044868699686,
+                                8: 0.23256616677748593,
+                                9: 0.24792568763571388,
+                                10: 0.26542390993691517,
+                                11: 0.2862366273068532,
+                                12: 0.3116743632237849,
+                                13: 0.33559257093775985,
+                                14: 0.38199036544635756}
+
+elec_hit_momenta_calc = {0: 0.15058755351819803,
                     1: 0.1632022173955016,
                     2: 0.16454507453432862,
                     3: 0.17837784731694356,
@@ -177,7 +211,88 @@ def ntuple_to_pd_multipeak(filename):
         
     return df_dict
 
-def plot_histograms_for_each_signal(df_dict, base_dir=".", rnum = 0, quantity='nPeaks', select_nonzero_peaks=False, logscale=False, nbins=60):
+def plot_2D_histogram(df_dict, detector1, quantity1, detector2, quantity2, evt_list=None, base_dir=".", rnum = 0, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60, range=[[0,100],[0,100]]):
+    """
+    Generate a 2D histogram for the specified signals.
+    """
+    
+    out_dir = f"{base_dir}/{rnum}"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
+    print("Plotting 2D histogram for (",detector1,",",quantity1,") vs. (",detector2,",",quantity2,") for all signals in run",rnum)
+
+    # Create a grid of 8 rows x 4 columns
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    
+    #fig.title(f'Run {rnum}', fontsize=24, y=1.02)
+
+    # Get the detector element from the dataframe dictionary.
+    df1 = df_dict[detector1]
+    df2 = df_dict[detector2]
+
+    # Select the events based on the given list.
+    if(not(evt_list is None)):
+        print("DF1: before selection:",len(df1))
+        print("DF2: before selection:",len(df2))
+
+        df1 = df1[df1['event'].isin(evt_list)]
+        df2 = df2[df2['event'].isin(evt_list)]
+
+        print("DF1: selecting out",len(evt_list),"events to get",len(df1))
+        print("DF2: selecting out",len(evt_list),"events to get",len(df2))
+
+
+    # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
+    if(detector1[0:2] == 'HD' and (quantity1 == 'IntCharge' or quantity1 == 'PeakVoltage')):
+        df1 = df1[df1[quantity1] > 0.02]
+    if(detector2[0:2] == 'HD' and (quantity2 == 'IntCharge' or quantity2 == 'PeakVoltage')):
+        df2 = df2[df2[quantity2] > 0.02]
+
+    # SINGLE PEAK ANALYSIS
+    # Consider only 1-peak events.
+    # df1_single_peak = df1[df1['nPeaks'] == 1]
+    # df2_single_peak = df2[df2['nPeaks'] == 1]
+
+    # Find common events
+    # common_events = set(df1_single_peak['event']).intersection(set(df2_single_peak['event']))
+    # df1_final = df1_single_peak[df1_single_peak['event'].isin(common_events)]
+    # df2_final = df2_single_peak[df2_single_peak['event'].isin(common_events)]
+
+    # MULTI-PEAK ANALYSIS
+    df1['event_nPeaks'] = df1['event'].astype(str) + "_" + df1['nPeaks'].astype(str)
+    df2['event_nPeaks'] = df2['event'].astype(str) + "_" + df2['nPeaks'].astype(str)
+
+    common_events_nPeaks = set(df1['event_nPeaks']).intersection(set(df2['event_nPeaks']))
+
+    df1_final = df1[df1['event_nPeaks'].isin(common_events_nPeaks)]
+    df2_final = df2[df2['event_nPeaks'].isin(common_events_nPeaks)]
+
+    print("Shape of df1[quantity1]:", df1_final[quantity1].shape)
+    print("Shape of df2[quantity2]:", df2_final[quantity2].shape)
+    print("Type of df1[quantity1]:", type(df1_final[quantity1]))
+    print("Type of df2[quantity2]:", type(df2_final[quantity2]))
+    print("NaNs in df1[quantity1]:", df1_final[quantity1].isna().sum())
+    print("NaNs in df2[quantity2]:", df2_final[quantity2].isna().sum())
+    print("Infs in df1[quantity1]:", np.isinf(df1_final[quantity1]).sum())
+    print("Infs in df2[quantity2]:", np.isinf(df2_final[quantity2]).sum())
+
+    h2d = ax.hist2d(df1_final[quantity1],df2_final[quantity2],bins=[nbins,nbins],norm=matplotlib.colors.LogNorm(), range=range)
+    ax.set_xlabel(f"{detector1}/{quantity1}")
+    ax.set_ylabel(f"{detector2}/{quantity2}")
+    ax.legend()  # Add legend
+    
+    if(logscale):
+        ax.set_yscale('log')
+
+    # Adjust the layout so the plots do not overlap
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig(f"{out_dir}/{detector1}_{quantity1}vs{detector2}_{quantity2}.pdf", bbox_inches='tight')
+    plt.close()
+
+
+def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum = 0, quantity='nPeaks', select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
     """
     Generate plots of histograms for each signal.
     """
@@ -197,16 +312,23 @@ def plot_histograms_for_each_signal(df_dict, base_dir=".", rnum = 0, quantity='n
     # Iterate based on the custom order
     for key, ax in zip(custom_order, flat_axes):
         df = df_dict[key]
+
+        # Cut on the selected events if an event list is provided.
+        if(not(evt_list is None)):
+            print(f"[{key}] before selection {len(df)}")
+            df_select = df[df['event'].isin(evt_list)]
+            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select)}")
         
         # Select only non-zero peaks if specified.
         if(select_nonzero_peaks):
-            df_select = df[df['nPeaks'] > 0]
+            df_select = df_select[df_select['nPeaks'] > 0]
+        # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
         else:
-            df_select = df
+            df_select = df_select.drop_duplicates(subset=['event'], keep='first')
             
         # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
         if(key[0:2] == 'HD' and (quantity == 'IntCharge' or quantity == 'PeakVoltage')):
-            df_select = df[df[quantity] > 0.02]
+            df_select = df_select[df_select[quantity] > -2.0]
 
         # Plot histogram for the current signal on its corresponding axis
         n, bins, patches = ax.hist(df_select[quantity], bins=nbins, edgecolor='black', alpha=0.7, label=key)  # capture output to use in legend
@@ -352,10 +474,34 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
                     act3_timing_range, hd_timing_ranges, hd_charge_ranges, low_radiation = False,
                     debug = False):
     
-    # Filter lead glass
-    pb_filtered = filter_range("PbGlass",df_dict['PbGlass'],'PeakTime',pb_timing_range,debug=debug)
+    # Extract the total number of events
+    ntot_evts = -1
+    ntot_spills = -1
+    for det in df_dict:
 
-    # Filter TOF elements
+        # Confirm that each detector dataframe has recorded all events.
+        if(det != 'EventInfo'):
+            df_det = df_dict[det]
+            evts = df_det['event'].values
+            if(debug): print(f"[Detector {det}] events go from {evts[0]} to {evts[-1]} for total of {len(np.unique(evts))}")
+        # Get the actual total from the 'EventInfo' dataframe.
+        else:
+            df_evts = df_dict[det]
+            evts = df_evts['EventNumber'].values
+            spills = df_evts['SpillNumber'].values
+            ntot_evts = len(evts)
+            ntot_spills = len(np.unique(spills))
+    if(debug): print(f"* Found a total of {ntot_evts} events and {ntot_spills} spills.")
+    
+    # Lead glass
+    # --------------------------------------------------------------------------------------------
+    pb_filtered = filter_range("PbGlass",df_dict['PbGlass'],'PeakTime',pb_timing_range,debug=debug)
+    #pb_filtered = filter_range("PbGlass",df_dict['PbGlass'],'nPeaks',(1,1),debug=debug)
+    npeaks_pre  = len(df_dict['PbGlass'])
+    npeaks_post = len(pb_filtered)
+    #if(debug): print(f"-- Peaks {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
+
+    # TOF elements
     # --------------------------------------------------------------------------------------------
     # TOF0
     tof00_filtered = filter_range("TOF00",df_dict['TOF00'],'PeakTime',tof0_timing_range,debug=debug)
@@ -397,7 +543,8 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
     if(not low_radiation): tof1_valid.loc[:,'hit_TOF1'] = 1
     if(debug): print()
 
-    # T2
+    # Filter T2
+    # --------------------------------------------------------------------------------------------
     t2_filtered = filter_range("T2",df_dict['TriggerScint'],'PeakTime',t2_timing_range,debug=debug)
     t2_valid = filter_range("T2",t2_filtered,'IntCharge',t2_charge_range,debug=debug)
     t2_valid.loc[:,'hit_T2'] = 1
@@ -448,17 +595,19 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
         hd_charge_range = hd_charge_ranges[hd_key]
         
         # Filtering
-        filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
-                                (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
-        if(debug): print(f"HD{i}: {len(filtered)} of {len(df_dict[hd_key])} events after filter")
+        hd_filtered = filter_range(hd_key,df_dict[hd_key],'PeakTime',hd_time_range,debug=debug)
+        hd_filtered = filter_range(hd_key,hd_filtered,'IntCharge',hd_charge_range,debug=debug)
+        # hd_filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
+        #                         (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
+        if(debug): print(f"HD{i}: {len(hd_filtered)} of {len(df_dict[hd_key])} events after filter")
         
         # Assign a binary value indicating a hit
-        if not filtered.empty:
-            filtered.loc[:,hit_col_name] = 1
+        if not hd_filtered.empty:
+            hd_filtered.loc[:,hit_col_name] = 1
         else:
-            filtered.loc[:,hit_col_name] = 0
+            hd_filtered.loc[:,hit_col_name] = 0
 
-        hd_dfs[hd_key] = filtered
+        hd_dfs[hd_key] = hd_filtered
 
     # Merge all HD dataframes
     combined_hd_df = hd_dfs['HD0'][['event', 'hit_HD0']]
@@ -477,13 +626,16 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
 
     # Filter events with a hit count of 1
     hd_valid_events = combined_hd_df[combined_hd_df['total_hits'] == 1]
+    if(debug): print(f"Number of hd_valid_events = {len(hd_valid_events)}")
 
     u, c = np.unique(combined_hd_df['event'].values, return_counts=True)
     if(debug): print("Duplicates in combined HD dataframe:",np.sum(c[c > 1]))
     # --------------------------------------------------------------------------------------------
 
     # Merge all relevant dataframes
+    pb_filtered.columns = ['LG_' + col if col != 'event' else col for col in pb_filtered.columns]
     final_df = pb_filtered.merge(hd_valid_events, on='event', how='inner')
+    if(debug): print(f"Final df number of events = {len(final_df)}")
     if(not low_radiation): final_df = final_df.merge(act0_valid[['event', 'hit_ACT0']], on='event', how='left')
     final_df = final_df.merge(act1_valid[['event', 'hit_ACT1']], on='event', how='left')
     final_df = final_df.merge(act3_valid[['event', 'nohit_ACT3']], on='event', how='left')
@@ -492,9 +644,10 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
     final_df = final_df.merge(t2_valid[['event', 'hit_T2']], on='event', how='left')
 
     # Fill NaN values in the hit columns with 0
-    final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']] = final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']].fillna(0)
+    if(low_radiation): final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']] = final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']].fillna(0)
+    else: final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']] = final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']].fillna(0)
 
-    return final_df
+    return final_df, ntot_evts, ntot_spills
 
 def line(x, m, b):
     y = m*x + b
@@ -506,7 +659,7 @@ def gaussian(x, amplitude, mean, stddev):
 def resfxn(x, F, C):
         return F * x**0.5 + C
 
-def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", timing_cuts = False, low_radiation = False):
+def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", timing_cuts = False, low_radiation = False):
     """
     Analyze the gamma peaks.
     """
@@ -535,35 +688,51 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
         cuts = (final_df.total_hits == 1)
 
     # Get the charge arrays
-    chg_hd14 = final_df[(final_df.hit_HD14 == 1) & cuts]['IntCharge'].values
-    chg_hd13 = final_df[(final_df.hit_HD13 == 1) & cuts]['IntCharge'].values
-    chg_hd12 = final_df[(final_df.hit_HD12 == 1) & cuts]['IntCharge'].values
-    chg_hd11 = final_df[(final_df.hit_HD11 == 1) & cuts]['IntCharge'].values
-    chg_hd10 = final_df[(final_df.hit_HD10 == 1) & cuts]['IntCharge'].values
-    chg_hd9 = final_df[(final_df.hit_HD9 == 1) & cuts]['IntCharge'].values
-    chg_hd8 = final_df[(final_df.hit_HD8 == 1) & cuts]['IntCharge'].values
-    chg_hd7 = final_df[(final_df.hit_HD7 == 1) & cuts]['IntCharge'].values
-    chg_hd6 = final_df[(final_df.hit_HD6 == 1) & cuts]['IntCharge'].values
-    chg_hd5 = final_df[(final_df.hit_HD5 == 1) & cuts]['IntCharge'].values
-    chg_hd4 = final_df[(final_df.hit_HD4 == 1) & cuts]['IntCharge'].values
-    chg_hd3 = final_df[(final_df.hit_HD3 == 1) & cuts]['IntCharge'].values
-    chg_hd2 = final_df[(final_df.hit_HD2 == 1) & cuts]['IntCharge'].values
-    chg_hd1 = final_df[(final_df.hit_HD1 == 1) & cuts]['IntCharge'].values
-    chg_hd0 = final_df[(final_df.hit_HD0 == 1) & cuts]['IntCharge'].values
+    chg_hd14 = final_df[(final_df.hit_HD14 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd13 = final_df[(final_df.hit_HD13 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd12 = final_df[(final_df.hit_HD12 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd11 = final_df[(final_df.hit_HD11 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd10 = final_df[(final_df.hit_HD10 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd9 = final_df[(final_df.hit_HD9 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd8 = final_df[(final_df.hit_HD8 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd7 = final_df[(final_df.hit_HD7 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd6 = final_df[(final_df.hit_HD6 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd5 = final_df[(final_df.hit_HD5 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd4 = final_df[(final_df.hit_HD4 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd3 = final_df[(final_df.hit_HD3 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd2 = final_df[(final_df.hit_HD2 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd1 = final_df[(final_df.hit_HD1 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd0 = final_df[(final_df.hit_HD0 == 1) & cuts]['LG_IntCharge'].values
 
     chg_arrays = [chg_hd0, chg_hd1, chg_hd2, chg_hd3, chg_hd4, chg_hd5, chg_hd6, chg_hd7, chg_hd8,
                   chg_hd9, chg_hd10, chg_hd11, chg_hd12, chg_hd13, chg_hd14]
     labels = ["H0", "H1", "H2", "H3", "H4", "H5", "H6", "H7", "H8", "H9", "H10", "H11", "H12", "H13", "H14"]
 
-    # Set up the figure.
-    fig, axes = plt.subplots(2, 2, figsize=(28, 14))
-    flat_axes = axes.ravel()
-    fig.suptitle("Run {}, p = +{} MeV/c".format(run,run_momentum), fontsize=32, y=0.95)
+    # Create a list of colors for the histogram of each hodoscope element.
+    # hues = np.linspace(0, 1, 16)[:-1]  # Exclude the last hue since it's equal to the first
+    # order = np.array([0, 9, 5, 14, 3, 12, 8, 1, 10, 6, 13, 2, 11, 7, 4])
+    # ordered_hues = hues[order]
+    colors = sns.hls_palette(15, l=0.4)
+
+    # Set up the figures.
+
+    # Figure showing only peak fits.
+    fig_peaks, ax_peaks = plt.subplots(1,1,figsize=(12,7))
+
+    # Figure showing all peak fits in a single figure.
+    fig_allpeaks, axes_allpeaks = plt.subplots(3, 5, figsize=(40,18))
+    flat_axes_allpeaks = axes_allpeaks.ravel()
+
+    # Figure showing all key plots.
+    fig_keyplots, axes_keyplots = plt.subplots(2, 2, figsize=(28, 14))
+    flat_axes_keyplots = axes_keyplots.ravel()
+    fig_keyplots.suptitle("Run {}, p = +{} MeV/c".format(run,run_momentum), fontsize=32, y=0.95)
 
     # Fit all gamma peaks.
     initial_params = [1000, np.mean(chg_hd14), np.std(chg_hd14)]
     fit_means, fit_smeans, fit_sigmas, fit_ssigmas = [], [], [], []
-    for arr,label in zip(chg_arrays[::-1],labels[::-1]):
+    gamma_peaks_max = -1
+    for ipeak,(arr,label,color) in enumerate(zip(chg_arrays[::-1],labels[::-1],colors)):
 
         # Make the histogram for this hodoscope element
         hist, bin_edges = np.histogram(arr, bins=nbins, range=range)
@@ -581,18 +750,56 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
         fit_sigmas.append(popt[2])
         fit_ssigmas.append(perr[2])
 
-        # Plot the histogram
-        lbl = '{} $\sigma$/$\mu$ = {:.2f}'.format(label, popt[2]/popt[1])
-        flat_axes[0].hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range)
-        flat_axes[0].plot(bin_centers, fit_curve, 'r-', alpha=0.6)
+        # Plot the histogram (individual peak plots).
+        lbl1 = "ELEMENT {}".format(label)
+        lbl2 = "$\mu$ = {:.4f} $\pm$ {:.4f}".format(popt[1],perr[1])
+        lbl3 = "$\sigma$ = {:.4f} $\pm$ {:.4f}".format(popt[2],perr[2])
+        legend_elements = [Line2D([0], [0], color='none', lw=0, label=lbl1),
+                           Line2D([0], [0], color='none', lw=0, label=lbl2),
+                           Line2D([0], [0], color='none', lw=0, label=lbl3)]
 
-        flat_axes[0].legend(fontsize=12)
-        
-        flat_axes[0].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
-        flat_axes[0].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
-        flat_axes[0].tick_params(axis="x", labelsize=ax_tick_font_size)
-        flat_axes[0].tick_params(axis="y", labelsize=ax_tick_font_size)
-        #flat_axes[0].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20);
+        flat_axes_allpeaks[ipeak].bar(bin_edges[:-1], hist, width=np.diff(bin_edges)[0], align='edge', color='white')
+        flat_axes_allpeaks[ipeak].plot(bin_edges[:-1], hist, color='black', drawstyle='steps-post')
+        flat_axes_allpeaks[ipeak].plot(bin_centers, fit_curve, '--', color='red', linewidth=1.5, alpha=1.0)
+        flat_axes_allpeaks[ipeak].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+        flat_axes_allpeaks[ipeak].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
+        flat_axes_allpeaks[ipeak].tick_params(axis="x", labelsize=ax_tick_font_size)
+        flat_axes_allpeaks[ipeak].tick_params(axis="y", labelsize=ax_tick_font_size)
+        leg = flat_axes_allpeaks[ipeak].legend(handles=legend_elements, frameon=True, handlelength=0, fontsize=16)
+        for i, text in enumerate(leg.get_texts()):
+            if i == 0:
+                text.set_weight('bold')
+            text.set_horizontalalignment('right')
+
+        # Plot the histogram (peak plot).
+        lbl = '{}, $\mu$ = {:.3f}'.format(label, popt[1])
+        # h_peaks, bedge_peaks = np.histogram(arr, bins=nbins)
+        # ax_peaks.bar(bin_edges[:-1], hist, label=lbl, width=np.diff(bin_edges)[0], align='edge', color=color)
+        # ax_peaks.plot(bin_edges[:-1], hist, color='black', drawstyle='steps-post')
+        hpeaks = ax_peaks.hist(arr, bins=nbins, alpha=1.0, label=lbl, range=range)
+        ax_peaks.plot(bin_centers, fit_curve, '-', color='red', linewidth=1, alpha=1.0)
+        ax_peaks.legend(fontsize=12)
+        ax_peaks.set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+        ax_peaks.set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
+        ax_peaks.tick_params(axis="x", labelsize=ax_tick_font_size)
+        ax_peaks.tick_params(axis="y", labelsize=ax_tick_font_size)
+        ax_peaks.set_yscale('log')
+        gamma_peaks_max = np.max([gamma_peaks_max, np.max(hpeaks[0])*1.1])
+
+        # Plot the histogram (key plots).
+        lbl = '{} $\sigma$/$\mu$ = {:.2f}'.format(label, popt[2]/popt[1])
+        flat_axes_keyplots[0].hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range)
+        flat_axes_keyplots[0].plot(bin_centers, fit_curve, 'r-', alpha=0.6)
+        flat_axes_keyplots[0].legend(fontsize=12)
+        flat_axes_keyplots[0].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+        flat_axes_keyplots[0].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
+        flat_axes_keyplots[0].tick_params(axis="x", labelsize=ax_tick_font_size)
+        flat_axes_keyplots[0].tick_params(axis="y", labelsize=ax_tick_font_size)
+
+    # Set the ylimit for the gamma peaks plot.
+    ax_peaks.set_ylim([0.8,gamma_peaks_max])
+
+    # Convert relevant lists to numpy arrays.        
     fit_means = np.array(fit_means)
     fit_smeans = np.array(fit_smeans)
     fit_sigmas = np.array(fit_sigmas)
@@ -602,22 +809,22 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
     # -----------------------------------------------------------------------------------
     # Plot the energy resolution sigma/mean vs. mean
     err_sigma_over_mean = np.sqrt(fit_smeans**2 + fit_ssigmas**2)
-    flat_axes[1].errorbar(fit_means,fit_sigmas/fit_means,fmt='o',yerr=err_sigma_over_mean)
-    flat_axes[1].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
-    flat_axes[1].set_ylabel('Gamma peak sigma/mean',fontsize=ax_lbl_font_size)
-    flat_axes[1].tick_params(axis="x", labelsize=ax_tick_font_size)
-    flat_axes[1].tick_params(axis="y", labelsize=ax_tick_font_size)
+    flat_axes_keyplots[1].errorbar(fit_means,fit_sigmas/fit_means,fmt='o',yerr=err_sigma_over_mean)
+    flat_axes_keyplots[1].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+    flat_axes_keyplots[1].set_ylabel('Gamma peak sigma/mean',fontsize=ax_lbl_font_size)
+    flat_axes_keyplots[1].tick_params(axis="x", labelsize=ax_tick_font_size)
+    flat_axes_keyplots[1].tick_params(axis="y", labelsize=ax_tick_font_size)
     # -----------------------------------------------------------------------------------
     
     # -----------------------------------------------------------------------------------
     # Plot the lead glass charge vs. expected energy.
     elec_hit_momenta_values = [v for v in elec_hit_momenta.values()]
     e_gamma_expected = [run_momentum - mval*1000 for mval in elec_hit_momenta_values[::-1]]
-    flat_axes[2].errorbar(e_gamma_expected, fit_means, yerr=fit_smeans, fmt='o')
-    flat_axes[2].set_ylabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
-    flat_axes[2].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
-    flat_axes[2].tick_params(axis="x", labelsize=ax_tick_font_size)
-    flat_axes[2].tick_params(axis="y", labelsize=ax_tick_font_size)
+    flat_axes_keyplots[2].errorbar(e_gamma_expected, fit_means, yerr=fit_smeans, fmt='o')
+    flat_axes_keyplots[2].set_ylabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+    flat_axes_keyplots[2].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
+    flat_axes_keyplots[2].tick_params(axis="x", labelsize=ax_tick_font_size)
+    flat_axes_keyplots[2].tick_params(axis="y", labelsize=ax_tick_font_size)
     #flat_axes[2].set_title("Run {}, p = +{} MeV/c".format(run,run_momentum),fontsize=20)
 
     # Fit to a line
@@ -626,8 +833,8 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
     x = np.linspace(e_gamma_expected[0], e_gamma_expected[-1], 1000)
     y = line(x, *popt)
     perr = np.sqrt(np.diag(pcov))
-    flat_axes[2].plot(x, y, label='C = $({:.2f} \pm {:.2f}) x 10^{{-4}} \cdot $p + $({:.3f} \pm {:.3f})$'.format(popt[0]*10000,perr[0]*10000,popt[1],perr[1]), color='red', alpha=0.8, linewidth=3, linestyle=':')
-    flat_axes[2].legend(loc=2,fontsize=20)
+    flat_axes_keyplots[2].plot(x, y, label='C = $({:.2f} \pm {:.2f}) x 10^{{-4}} \cdot $p + $({:.3f} \pm {:.3f})$'.format(popt[0]*10000,perr[0]*10000,popt[1],perr[1]), color='red', alpha=0.8, linewidth=3, linestyle=':')
+    flat_axes_keyplots[2].legend(loc=2,fontsize=20)
     # -----------------------------------------------------------------------------------
 
     # -----------------------------------------------------------------------------------
@@ -647,29 +854,36 @@ def gamma_peak_plot(final_df, run, run_momentum, nbins, range, base_dir=".", tim
 
     # Fit the fit_means_MeV vs. lg_sigmas_MeV to a F*sqrt(E) + C
     p0 = [lg_sigmas_MeV[1]/fit_means_MeV[1]**0.5,0.]
-    popt, pcov = curve_fit(resfxn, fit_means_MeV[1:], lg_sigmas_MeV[1:], p0=p0, sigma=fit_ssigmas_MeV[1:])
-    x_res = np.linspace(np.min(fit_means_MeV), np.max(fit_means_MeV), 1000)
-    y_res = resfxn(x_res, *popt)
-    res_err = np.sqrt(np.diag(pcov))
-    fres = popt[0]
-    cres = popt[1]
-    ferr = res_err[0]
-    cerr = res_err[1]
+    # popt, pcov = curve_fit(resfxn, fit_means_MeV[1:], lg_sigmas_MeV[1:], p0=p0, sigma=fit_ssigmas_MeV[1:])
+    # x_res = np.linspace(np.min(fit_means_MeV), np.max(fit_means_MeV), 1000)
+    # y_res = resfxn(x_res, *popt)
+    # res_err = np.sqrt(np.diag(pcov))
+    fres = 0 # popt[0]
+    cres = 0 # popt[1]
+    ferr = 0 # res_err[0]
+    cerr = 0 # res_err[1]
 
     # Plot the momentum range vs. energy
     #flat_axes[3].plot(fit_means_MeV,lg_sigmas,'o',label='LG resolution',color='blue')
-    flat_axes[3].plot(fit_means_MeV,momentum_sigmas*1000,'^',label='Computed HD momentum range',color='blue')
-    flat_axes[3].errorbar(fit_means_MeV,fit_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='s',label='$(\sigma/\mu)$ x $\mu$ (calibrated)',color='green')
-    flat_axes[3].errorbar(fit_means_MeV,lg_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='o',label='LG resolution (calibrated)',color='red')
-    flat_axes[3].plot(x_res, y_res, label='R = $({:.1f} \pm {:.1f}) \sqrt{{p}} + ({:.1f} \pm {:.1f})$'.format(fres,ferr,cres,cerr), color='red', alpha=0.8, linewidth=3, linestyle=':')
-    flat_axes[3].set_ylabel('Resolution [MeV]',fontsize=ax_lbl_font_size)
-    flat_axes[3].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
-    flat_axes[3].tick_params(axis="x", labelsize=ax_tick_font_size)
-    flat_axes[3].tick_params(axis="y", labelsize=ax_tick_font_size)
-    flat_axes[3].legend(fontsize=16)
+    flat_axes_keyplots[3].plot(fit_means_MeV,momentum_sigmas*1000,'^',label='Computed HD momentum range',color='blue')
+    #flat_axes_keyplots[3].errorbar(fit_means_MeV,fit_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='s',label='$(\sigma/\mu)$ x $\mu$ (calibrated)',color='green')
+    #flat_axes_keyplots[3].errorbar(fit_means_MeV,lg_sigmas_MeV,yerr=fit_ssigmas_MeV,fmt='o',label='LG resolution (calibrated)',color='red')
+    #flat_axes_keyplots[3].plot(x_res, y_res, label='R = $({:.1f} \pm {:.1f}) \sqrt{{p}} + ({:.1f} \pm {:.1f})$'.format(fres,ferr,cres,cerr), color='red', alpha=0.8, linewidth=3, linestyle=':')
+    flat_axes_keyplots[3].set_ylabel('Resolution [MeV]',fontsize=ax_lbl_font_size)
+    flat_axes_keyplots[3].set_xlabel('Expected momentum [MeV/c]',fontsize=ax_lbl_font_size)
+    flat_axes_keyplots[3].tick_params(axis="x", labelsize=ax_tick_font_size)
+    flat_axes_keyplots[3].tick_params(axis="y", labelsize=ax_tick_font_size)
+    flat_axes_keyplots[3].legend(fontsize=16)
     # -----------------------------------------------------------------------------------
 
-    plt.savefig(f"{out_dir}/gamma_peaks.pdf", bbox_inches='tight')
-    plt.close()
+    # Save all figures.
+    fig_keyplots.savefig(f"{out_dir}/key_plots.pdf", bbox_inches='tight')
+    plt.close(fig_keyplots)
 
-    return mconv, merr, bconv, berr, fres, ferr, cres, cerr
+    fig_peaks.savefig(f"{out_dir}/gamma_peaks.pdf", bbox_inches='tight')
+    plt.close(fig_peaks)
+
+    fig_allpeaks.savefig(f"{out_dir}/gamma_peaks_separate.pdf", bbox_inches='tight')
+    plt.close(fig_allpeaks)
+
+    return [mconv, merr, bconv, berr, fres, ferr, cres, cerr], [fit_means, fit_smeans, fit_sigmas, fit_ssigmas]
