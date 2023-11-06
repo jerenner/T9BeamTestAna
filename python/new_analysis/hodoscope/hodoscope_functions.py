@@ -67,6 +67,8 @@ elec_hit_momenta_calc = {0: 0.15058755351819803,
                     13: 0.3393035715640493,
                     14: 0.38511992183555954}
 
+elec_hit_momenta = elec_hit_momenta_calc
+
 # Define the computed momentum range for each hodoscope element.
 momentum_range = {0: 0.0063047132725456145,
                     1: 0.006932943602899561,
