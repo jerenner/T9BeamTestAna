@@ -402,8 +402,8 @@ def main(argv):
     cans.append(can)
     can.cd()
     hTOFvsACT23.SetTitle('TOF vs ACT23 {}'.format(ftag[10:]))
-    hTOFvsACT23.GetXaxis().SetRangeUser(10., 16.0)
-    hTOFvsACT23.GetYaxis().SetRangeUser(0, 15)
+    hTOFvsACT23.GetXaxis().SetRangeUser(10., 14.0)
+    hTOFvsACT23.GetYaxis().SetRangeUser(0, 4)
     hTOFvsACT23.DrawCopy(opt2d)
     adjustStats(hTOFvsACT23)
     interest.append(hTOFvsACT23)
@@ -415,7 +415,7 @@ def main(argv):
     cans.append(can)
     can.cd()
     hPbATOF.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
-    hPbATOF.GetXaxis().SetRangeUser(0., 10.)
+    hPbATOF.GetXaxis().SetRangeUser(0., 2.)
     hPbATOF.GetYaxis().SetRangeUser(10., 16.0)
     hPbATOF.DrawCopy(opt2d)
     adjustStats(hPbATOF)
@@ -429,22 +429,95 @@ def main(argv):
     can.cd()
     hTOFPbA.SetTitle('Lead glass vs TOF {}'.format(ftag[10:]))
     hTOFPbA.GetXaxis().SetRangeUser(10., 16.)
-    hTOFPbA.GetYaxis().SetRangeUser(0., 16.0)
+    hTOFPbA.GetYaxis().SetRangeUser(0., 2)
     hTOFPbA.DrawCopy(opt2d)
     adjustStats(hTOFPbA)
     interest.append(hTOFPbA)
+    #
+    # canname = 'PbvsACT1_{}'.format(ftag[10:])
+    # hname = 'hRef_pbA_act1C'
+    # h = rfile.Get(hname)
+    # can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    # cans.append(can)
+    # can.cd()
+    # # h.SetTitle('Lead glass vs ACT1 {}'.format(ftag[10:]))
+    # # h.GetXaxis().SetRangeUser(0., 10.)
+    # # h.GetYaxis().SetRangeUser(0., 16.0)
+    # h.Draw(opt2d)
+    # adjustStats(h)
 
-    canname = 'PbvsACT1_{}'.format(ftag[10:])
-    hname = 'hRef_pbA_act1C'
-    h = rfile.Get(hname)
+    canname = 'TOFWindACT23_{}'.format(ftag[10:])
+    hname = 'hRef_TOFWindACT23C'
+    hTOFWindACT23 = rfile.Get(hname)
     can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
     cans.append(can)
     can.cd()
-    h.SetTitle('Lead glass vs ACT1 {}'.format(ftag[10:]))
-    # h.GetXaxis().SetRangeUser(0., 10.)
-    # h.GetYaxis().SetRangeUser(0., 16.0)
-    h.Draw(opt2d)
-    adjustStats(h)
+    hTOFWindACT23.SetTitle('TOF vs ACT23 WINDOW int. {}'.format(ftag[10:]))
+    hTOFWindACT23.GetYaxis().SetRangeUser(0., 4.)
+    hTOFWindACT23.GetXaxis().SetRangeUser(10., 14.0)
+    hTOFWindACT23.Draw(opt2d)
+    adjustStats(hTOFWindACT23)
+    interest.append(hTOFWindACT23)
+
+    canname = 'TOFACT0WindC_{}'.format(ftag[10:])
+    hname = 'hRef_TOFACT0WindC'
+    TOFACT0WindC = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    TOFACT0WindC.SetTitle('TOF vs ACT0 WINDOW int. {}'.format(ftag[10:]))
+    TOFACT0WindC.GetYaxis().SetRangeUser(0., 1.)
+    TOFACT0WindC.GetXaxis().SetRangeUser(10., 14.0)
+    TOFACT0WindC.Draw(opt2d)
+    # ROOT.gPad.SetLogy(3);
+    adjustStats(TOFACT0WindC)
+    interest.append(TOFACT0WindC)
+
+
+    canname = 'TOFACT1WindC_{}'.format(ftag[10:])
+    hname = 'hRef_TOFACT1WindC'
+    TOFACT1WindC = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    TOFACT1WindC.SetTitle('TOF vs ACT1 WINDOW int. {}'.format(ftag[10:]))
+    TOFACT1WindC.GetYaxis().SetRangeUser(0., 1.)
+    TOFACT1WindC.GetXaxis().SetRangeUser(10., 14.0)
+    TOFACT1WindC.Draw(opt2d)
+    # ROOT.gPad.SetLogy(3);
+    adjustStats(TOFACT1WindC)
+    interest.append(TOFACT1WindC)
+
+
+    canname = 'TOFACT0C_{}'.format(ftag[10:])
+    hname = 'hRef_TOFACT0C'
+    TOFACT0C = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    TOFACT0C.SetTitle('TOF vs ACT0 PEAK int. {}'.format(ftag[10:]))
+    TOFACT0C.GetYaxis().SetRangeUser(0., 1.)
+    TOFACT0C.GetXaxis().SetRangeUser(10., 14.0)
+    TOFACT0C.Draw(opt2d)
+    # ROOT.gPad.SetLogy(3);
+    adjustStats(TOFACT0C)
+    interest.append(TOFACT0C)
+
+    canname = 'TOFACT1C_{}'.format(ftag[10:])
+    hname = 'hRef_TOFACT1C'
+    TOFACT1C = rfile.Get(hname)
+    can = ROOT.TCanvas(canname, canname, 0, 0, 1200, 800)
+    cans.append(can)
+    can.cd()
+    TOFACT1C.SetTitle('TOF vs ACT1 PEAK int. {}'.format(ftag[10:]))
+    TOFACT1C.GetYaxis().SetRangeUser(0., 1.)
+    TOFACT1C.GetXaxis().SetRangeUser(10., 14.0)
+    TOFACT1C.Draw(opt2d)
+    # ROOT.gPad.SetLogy(3);
+    adjustStats(TOFACT1C)
+    interest.append(TOFACT1C)
+
+
 
 
 
@@ -462,6 +535,9 @@ def main(argv):
     h.Draw(opt2d)
     fit.Draw('same')
     ROOT.gPad.SetLogy(1);
+
+
+
 
 
     canname = 'CmpInterest_{}'.format(ftag[10:])

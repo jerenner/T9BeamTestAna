@@ -1,6 +1,47 @@
 # T9BeamTestAna
 Analysis package for the T9 beam test
 
+2023
+## Cleaned up version:
+
+Since the end of the beam time the analyis of the root files moved to python. Firstly the peak detect algorithm is applied to the root file using:
+
+```python python/new_analysis/process_waveform_analysis.py data/root_run_000$run.root config/config_noHodoscope.json peakAnalysed_$run.root```
+
+where the config file contains:
+ 1. information about the analysis portion of the waveform and the pedestal portion
+ 2. the relative timing offset between the 8 PMTs composing the 2 time of flight detectors
+ 3. the channel names and whether they are active
+ 4. the voltage scale (forconverting ADC counts to V)
+
+Note: the code is written in python3, you might need to run it with python3 instead of python depending how your environment is set up. 
+
+The resulting root file contains the peak integrated charge for all of the peaks found in the signal. They can be accessed as shown in  python/peakMatching for example. 
+
+Once we have information about the peak timing we can run the python analysis a second time to integrate a protion of the ACT waveform of a fixed duration around the expected time of arrival. The window duration is user-input (I used -16 to 45ns in general) and the timing offset calibration with respect to the TOF01 detector is done automatically at run time. This piece of code also adds two new branches to the data holding the peak and window integrated charges converted to the number of PE which is useful for comparisions. It is ran with: 
+
+```python python/new_analysis/process_ac_waveform_analysis.py data/root_run_000$run.root peakAnalysed_$run.root -16 45 config/config_ac_noHodoscope.json windowPE_-16ns_45ns_run$run.root ```
+
+where we take as input the initial root file and the one that has been analysed with the original peak finding analysis. The config file contains:
+  1. V to PE conversion for the ACT PMTs
+  2. all that is contained in config_noHodoscope.json
+  3. typical timing calibration constants, not used but could be useful for debug
+
+The whole analysis can be run for multiple files using:
+
+```bash process_all_1PE.sh```
+
+There are three helper python code for accessing the data and producing some (more or less) useful plots. These are ```python/multipeak_qualityChecks.py```, ```python/peakMatching.py``` and ```python/studyLenWindow.py```.
+
+Coding still left to do:
+1. change the reference timing to be an average of TOF10, TOF11, TOF12 and TOF13 to limit risks of accidentals in TOF01 biasing the signal
+2. probably merge the config files into 1 to have something cleaner
+3. make a cleaner general python plotting script
+
+please get in touch if anything's unclear,
+
+Alie
+
 
 2023
 ## Quick and dirty start:
