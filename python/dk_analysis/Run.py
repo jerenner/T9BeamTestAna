@@ -127,3 +127,25 @@ class Run:
 
         with open(filepath, 'rb') as f:
             return pickle.load(f)
+
+class TriggerRun(Run):
+    """ A class that contains only the trigger timestamp information"""
+
+    def __init__(self, filename, config):
+        """Constructor"""
+
+        self.config = config
+        self.user = {}
+        self.times = {}
+
+        # read data
+        run_file = ur.open(filename)
+
+        # save triggerTime and timeStamp information
+        n_channels = self.config["NumberOfChannels"]
+        if 'triggerTime' in run_file['midas_data_D300']:
+            n_digi = int((n_channels-1)/8)+1
+            for digi in range(n_digi):
+                self.times[digi] = {}
+                for field in ['spillNumber','timeStamp','triggerTime']:
+                    self.times[digi][field] = run_file['midas_data_D30' + str(digi)][field].array().to_numpy()
