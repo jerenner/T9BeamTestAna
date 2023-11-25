@@ -717,6 +717,15 @@ def distToLinearCut(x1, y1, a, b):
 
 def singlePE(argv):
     root_filenames = argv[1]
+    TOTAL_run_number = 0
+    TOTAL_momentum = 0
+    TOTAL_ref_index = 0
+    if len(argv) == 5:
+        TOTAL_run_number = int(argv[2])
+        TOTAL_momentum = float(argv[3])
+        TOTAL_ref_index = float(argv[4])
+
+
     file = ur.open(root_filenames)
     nPeaksInToF = nPeakInToF(file, 1)
     print(sum(nPeaksInToF))
@@ -730,6 +739,8 @@ def singlePE(argv):
     detectors_pd_2D_ACTs_selection = []
     detectors_pd_2D_ACTs_selection_peak = []
     detectors_pd_2D_ACTs_selection_e = []
+    detectors_pd_2D_ACTs_selection_mu = []
+    detectors_pd_2D_ACTs_selection_pi = []
     detectors_pd_2D_ACTs_selection_e_peak = []
     detectors_pd_all = []
     detectors_pd_nPE_selection_pi = []
@@ -738,6 +749,10 @@ def singlePE(argv):
     detectors_pd_2D_ACTs_time = []
     detectors_pd_2D_ACTs_time_e = []
     detectors_pd_proton_time = []
+
+    detectors_pd_weird_e = []
+
+
 
     # nPeaksInToF = noHoleHit(file, nPeaksInToF)
     print(sum(nPeaksInToF))
@@ -751,6 +766,8 @@ def singlePE(argv):
 
     detectors_pd_safe = detectors_pd.copy()
     detectors_pd_wind = detectors_pd.copy()
+
+
 
     for pmt in range(len(file.keys()[:-1])):
         # if pmt>=8 and pmt < 16:
@@ -770,6 +787,9 @@ def singlePE(argv):
     tof = np.array(np.array(mean_first_hit_TOF1)-np.array(mean_first_hit_TOF0))
     print(tof)
 
+    TOTAL_spill = max(detectors_pd[0]['spillNumber'])
+    print("Number of spills:", TOTAL_spill)
+
 
 
 
@@ -777,26 +797,103 @@ def singlePE(argv):
     linearCutA = 0.07286
     linearCutB = -0.704
 
+    multPE = 1
+
     #2d cut in ACT1 ACT2
-    ACTlinearA = -1.0#-5.2757#-1.9375#-0.9952#-0.9243 #-0.8436#-1.983 #-1.431#-1.572 #-0.9413 #-1.572 #-1.983 #-1.9375
-    ACTlinearB = 16 #85#80#25 # * 4 #7.71#6.09 #4.806 #4.504 #10.00 #6.89 #8.3 #5.59 #6 #10.0 #19
+    ACTlinearA = -3#-5.2757#-1.9375#-0.9952#-0.9243 #-0.8436#-1.983 #-1.431#-1.572 #-0.9413 #-1.572 #-1.983 #-1.9375
+    ACTlinearB =60#* (2/(1+multPE))#85#80#25 # * 4 #7.71#6.09 #4.806 #4.504 #10.00 #6.89 #8.3 #5.59 #6 #10.0 #19
 
     Pbupper = 0.18
 
     ACTupper = 11
-    ACTlower = 1 #1
+    ACTlower = 2 #1
 
-    limCutTOF = 15
+    limCutTOF = 20
+
+    piMuBorderACT = 20 #/ (2/(1+multPE))
 
     plot_cuts = True
     thereIsProtons = True
 
-    ACT_selection = (detectors_pd_wind[4][0]+detectors_pd_wind[5][0] + detectors_pd_wind[6][0] + detectors_pd_wind[7][0]) > ACTlower
+    A_pion_guess = 1000
+    m_pion_guess = 10
+    std_pion_guess = 2
+    A_muon_guess = 100
+    m_muon_guess = 30
+    std_muon_guess = 2
+
+    horizontal_el = 0 #/ (2/(1+multPE))
+
+    lessPlots = True
 
 
+    #Here we want a cut in the timing
+    mean_delay_left = [ -45.81, -47.51, -45.96] #-74.47,
+    len_window = 5000
+    i = 0
+    hits_to_throwAway_left = (np.where(-abs(detectors_pd[0][0]) <= 1, False, False))
+    for PMT in [2, 4, 6]:
+        isBeforeWindowEnd = abs(detectors_pd[PMT][0] - detectors_pd[12][0] - mean_delay_left[i]) > (len_window)
+        print("Hey", abs(detectors_pd[PMT][0] - detectors_pd[12][0] - mean_delay_left[i]))
+        hits_to_throwAway_left = np.where(isBeforeWindowEnd, True, hits_to_throwAway_left)
+        print("Hey", hits_to_throwAway_left)
+        # ACT_selection_e = ACT_selection_e &(isBeforeWindowEnd)
+        # ACT_selection = ACT_selection & (isBeforeWindowEnd)
+
+        i += 1
+
+    # raise end
+
+    mean_delay_right = [-40.50, -45.29, -44.99] #-71.61,
+    i = 0
+    hits_to_throwAway_right = (np.where(-abs(detectors_pd[0][0]) <= 1, False, False))
+    for PMT in [3, 5, 7]:
+        isBeforeWindowEnd = abs(detectors_pd[PMT][0] - detectors_pd[12][0] - mean_delay_right[i]) > (len_window)
+        hits_to_throwAway_right = np.where(isBeforeWindowEnd, True, hits_to_throwAway_right)
+        # ACT_selection_e = ACT_selection_e &(isBeforeWindowEnd)
+        # ACT_selection = ACT_selection &(isBeforeWindowEnd)
+        i += 1
+
+    multiplicator_right = np.where(hits_to_throwAway_right, multPE, 1)
+    multiplicator_left = np.where(hits_to_throwAway_left,multPE, 1)
+
+    ACT23 = (detectors_pd_wind[4][0] * multiplicator_left  + detectors_pd_wind[5][0] * multiplicator_right + detectors_pd_wind[6][0] * multiplicator_left + detectors_pd_wind[7][0] * multiplicator_right)
+
+    ACT1 = (detectors_pd_wind[2][0] * multiplicator_left + detectors_pd_wind[3][0] * multiplicator_right) #+ ACTlinearB
+    ACT0 = (detectors_pd_wind[1][0] + detectors_pd_wind[0][0]) #+ ACTlinearB
+
+    xmin, xmax = 0, 15
+    plt.hist2d(ACT1, ACT23, norm = colors.LogNorm(), bins = (200,200), range=((0, 15), (0,100)))
+    plt.plot([xmin, xmax], [xmin*ACTlinearA+ACTlinearB, xmax*ACTlinearA+ACTlinearB], 'k--')
+    plt.plot([xmin, xmax], [piMuBorderACT, piMuBorderACT], 'k--')
+    plt.xlabel("ACT1 total charge (pe)")
+    plt.ylabel("ACT1 total charge (pe)")
+    plt.show()
+
+    hits_to_keep = np.where((hits_to_throwAway_right | hits_to_throwAway_left) == True, False, True )
+
+    act1_thresh_e = 4
+    act0_thresh_e =  100
+    ACT_selection = np.where(ACT23 > ACTlower, hits_to_keep, False)
+    ACT_selection = np.where(ACT23 < ACT1 * ACTlinearA + ACTlinearB, ACT_selection, False)
+    ACT_selection = np.where(ACT1 < act1_thresh_e, ACT_selection, False)
+    ACT_selection = np.where(ACT0 < act0_thresh_e, ACT_selection, False)
+    # #here we are selecting the pions and muons with a horizontal cut on the ACT23
+    ACT_selection_pi = np.where(ACT23 < piMuBorderACT, ACT_selection, False)
+    ACT_selection_mu = np.where(ACT23 > piMuBorderACT, ACT_selection, False)
 
 
-    ACT_selection = ACT_selection & ((detectors_pd_wind[4][0] + detectors_pd_wind[5][0] + detectors_pd_wind[6][0] + detectors_pd_wind[7][0]) < ACTlinearA * (detectors_pd_wind[2][0] + detectors_pd_wind[3][0]) + ACTlinearB)
+    TOF_all = pd.Series(data = tof, name = 'TOF')
+    TOF_selection = TOF_all>limCutTOF
+
+    TOF_weird_e = 12
+
+    ACT_selection_weird_e = np.where( TOF_all < TOF_weird_e, ACT_selection, False)
+
+
+    # ACT_selection && (( < ACTlinearA * ) || ((detectors_pd_wind[4][0] + detectors_pd_wind[5][0] + detectors_pd_wind[6][0] + detectors_pd_wind[7][0]) < horizontal_el))
+
+    # ACT_selection = ACT_selection & ((detectors_pd_wind[4][0] + detectors_pd_wind[5][0] + detectors_pd_wind[6][0] + detectors_pd_wind[7][0]) < horizontal_el)
 
 
 
@@ -806,35 +903,23 @@ def singlePE(argv):
     ACT_selection_e = np.where(ACT_selection == True, False, True)
     ACT_electron = ACT_selection_e
 
-    mean_delay_left = [-74.47, -45.81, -47.51, -45.96]
-    len_window = 5000
-    i = 0
-    hits_to_throwAway = False
-    for PMT in [0, 2, 4, 6]:
-        isBeforeWindowEnd = (detectors_pd[PMT][0] - detectors_pd[12][0]) < (mean_delay_left[i] + len_window)
-        hits_to_throwAway = hits_to_throwAway | (np.where(isBeforeWindowEnd, False, True))
-        ACT_selection_e = ACT_selection_e &(isBeforeWindowEnd)
-        ACT_selection = ACT_selection &(isBeforeWindowEnd)
 
-        i += 1
 
-    mean_delay_right = [-71.61, -40.50, -45.29, -44.99]
-    i = 0
-    for PMT in [1, 3, 5, 7]:
-        isBeforeWindowEnd = (detectors_pd[PMT][0] - detectors_pd[12][0]) < (mean_delay_right[i] + len_window)
-        hits_to_throwAway = hits_to_throwAway | (np.where(isBeforeWindowEnd, False, True))
-        ACT_selection_e = ACT_selection_e &(isBeforeWindowEnd)
-        ACT_selection = ACT_selection &(isBeforeWindowEnd)
-        i += 1
+
+
+    #
+    # ACT_selection_mu = ACT_selection &((detectors_pd_wind[4][0] + detectors_pd_wind[5][0] + detectors_pd_wind[6][0] + detectors_pd_wind[7][0]) > piMuBorderACT)
+
 
     # remove electrons that arrive after the end of the window so we do not underestimate their charge
-    hits_to_keep = np.where(hits_to_throwAway == True, False, True)
+    hits_to_keep = np.where(hits_to_throwAway_left == True, True, True)
 
     print(hits_to_keep)
 
-
     a = pd.Series(data = tof, name = 'TOF')
-    TOF_selection = a>limCutTOF
+
+
+
 
     if thereIsProtons:
         ACT_selection = np.where(TOF_selection == True, False, ACT_selection)
@@ -884,12 +969,18 @@ def singlePE(argv):
 
             detectors_pd_2D_ACTs_selection.append(detectors_pd_wind[detector][ACT_selection])
             detectors_pd_2D_ACTs_selection_e.append(detectors_pd_wind[detector][ACT_selection_e])
+            detectors_pd_2D_ACTs_selection_pi.append(detectors_pd_wind[detector][ACT_selection_pi])
+            detectors_pd_2D_ACTs_selection_mu.append(detectors_pd_wind[detector][ACT_selection_mu])
 
             detectors_pd_2D_ACTs_selection_peak.append(detectors_pd_safe[detector][ACT_selection])
             detectors_pd_2D_ACTs_selection_e_peak.append(detectors_pd_safe[detector][ACT_selection_e])
 
             detectors_pd_2D_ACTs_time.append(detectors_pd[detector][ACT_selection])
             detectors_pd_2D_ACTs_time_e.append(detectors_pd[detector][ACT_selection_e])
+
+            detectors_pd_weird_e.append(detectors_pd[detector][ACT_selection_weird_e])
+
+
 
             detectors_pd_NONel_wind.append(detectors_pd_wind[detector][TOF_selection])
             detectors_pd_proton_time.append(detectors_pd[detector][TOF_selection])
@@ -911,6 +1002,11 @@ def singlePE(argv):
 
             detectors_pd_2D_ACTs_selection.append(detectors_pd_safe[detector][ACT_selection] )
             detectors_pd_2D_ACTs_selection_e.append(detectors_pd_safe[detector][ACT_selection_e])
+            detectors_pd_2D_ACTs_selection_pi.append(detectors_pd_safe[detector][ACT_selection_pi])
+            detectors_pd_2D_ACTs_selection_mu.append(detectors_pd_safe[detector][ACT_selection_mu])
+
+            detectors_pd_weird_e.append(detectors_pd_safe[detector][ACT_selection_weird_e])
+
             detectors_pd_all.append(detectors_pd_safe[detector][hits_to_keep])
 
             detectors_pd_nPE_selection_pi.append(detectors_pd_safe[detector][nPE_selection_pi])
@@ -938,9 +1034,31 @@ def singlePE(argv):
     # plt.title("PMT left and right comparision - Window Integrated PE")
     # plt.show()
 
+
+
+
+
     detectors_pd_protons = detectors_pd_NONel_wind
 
     ACT23_all, ACT1_all, TOF_all, LG_all = getHist(detectors_pd_all)
+
+    df_test = detectors_pd_all[0]
+    #
+    # spillNumber = 20
+    # df_test = df_test[df_test["spillNumber"]==spillNumber]
+    # print(df_test)
+    #
+    # #Look at trigger times
+    # delta_trigger = (np.array(df_test["triggerTime"][1:]) - np.array(df_test["triggerTime"][:-1]))* 1e-6
+    # print(delta_trigger, detectors_pd_all[0]["triggerTime"][1:])
+    # plt.hist(delta_trigger, bins = 100, histtype = 'step', range = (-0.025, 0.25))
+    # plt.grid()
+    # plt.xlabel("Delay between consecutive triggerTime")
+    # plt.ylabel("number of triggers")
+    # plt.title("delay between consecutive triggers in spill %i"%spillNumber)
+    # plt.show()
+
+
     ACT23_selection1, ACT1_selection1, TOF_selection1, LG_selection1 = getHist(detectors_pd_NONel_wind)
     ACT23_selection2, ACT1_selection2, TOF_selection2, LG_selection2 = getHist(detectors_pd_2D_tofLG_selection)
 
@@ -950,11 +1068,26 @@ def singlePE(argv):
 
     ACT23_selection_pi, ACT1_selection_pi, TOF_selection_pi, LG_selection_pi = getHist(detectors_pd_nPE_selection_pi)
     ACT23_selection_mu, ACT1_selection_mu, TOF_selection_mu, LG_selection_mu = getHist(detectors_pd_nPE_selection_mu)
-    ACT23_selection_e, ACT1_selection_e, TOF_selection_e, LG_selection_e = getHist(detectors_pd_nPE_selection_e)
+    # ACT23_selection_e, ACT1_selection_e, TOF_selection_e, LG_selection_e = getHist(detectors_pd_nPE_selection_e)
 
 
     ACT23_selection3, ACT1_selection3, TOF_selection3, LG_selection3 = getHist(detectors_pd_2D_ACTs_selection)
     ACT23_selection4, ACT1_selection4, TOF_selection4, LG_selection4 = getHist(detectors_pd_2D_ACTs_selection_e)
+
+    ACT23_selection_pi, ACT1_selection_pi, TOF_selection_pi, LG_selection_pi = getHist(detectors_pd_2D_ACTs_selection_pi)
+
+    ACT23_selection_mu, ACT1_selection_mu, TOF_selection_mu, LG_selection_mu = getHist(detectors_pd_2D_ACTs_selection_mu)
+
+    ACT23_selection_e, ACT1_selection_e, TOF_selection_e, LG_selection_e = getHist(detectors_pd_2D_ACTs_selection_e)
+
+    print(detectors_pd_weird_e[0])
+
+
+    ACT23_weird_e, ACT1_weird_e, TOF_weird_e, LG_weird_e= getHist(detectors_pd_weird_e)
+
+    ACT0_selection_e, ACT1_selection_e =  getACT01(detectors_pd_2D_ACTs_selection_e)
+    ACT0_selection_pi, ACT1_selection_pi =  getACT01(detectors_pd_2D_ACTs_selection_pi)
+    ACT0_selection_mu, ACT1_selection_mu =  getACT01(detectors_pd_2D_ACTs_selection_mu)
 
 
     ACT2_all, ACT3_all =  getACT23(detectors_pd_all)
@@ -994,6 +1127,139 @@ def singlePE(argv):
 
     # digiDelay_selection3 = getTiggerTimeDifferenceDig1Dig0(detectors_pd_2D_ACTs_time)
 
+    TOTAL_p_number = len(ACT2_proton)
+
+
+
+
+
+ ######here plot the tof and lead glas
+    tof_min, tof_max = 10, 15
+    lg_min, lg_max = 0, 8
+
+
+    # hist1 = plt.hist2d(TOF_selection_e, LG_selection_e, bins = (200, 200), range = ((tof_min, tof_max), (lg_min, lg_max)), norm = colors.LogNorm(),cmap='greys' )
+    #
+    # hist2 = plt.hist2d(TOF_selection_mu, LG_selection_mu, bins = (200, 200), range = ((tof_min, tof_max), (lg_min, lg_max)), norm = colors.LogNorm(),cmap='Oranges' )
+    #
+    # hist2 = plt.hist2d(TOF_selection_pi, LG_selection_pi, bins = (200, 200), range = ((tof_min, tof_max), (lg_min, lg_max)), norm = colors.LogNorm(),cmap='Blues' )
+
+    plt.xlim(tof_min, tof_max)
+    plt.ylim(lg_min, lg_max)
+
+    plt.plot(TOF_selection_e, LG_selection_e, "x", color ='lightgrey', label = "Electrons" )
+
+    plt.plot(TOF_selection_mu, LG_selection_mu, "x",color = "red",label = "Muons" )
+
+    plt.plot(TOF_selection_pi, LG_selection_pi, "x", color = "green", label = 'Pions' )
+
+    if(thereIsProtons):
+        plt.plot(TOF_selection_proton, LG_selection_proton, "x", color = "blue", label = 'Protons' )
+
+
+    # plt.colorbar(hist1, orientation='vertical', label = 'Number of electrons')
+    # plt.colorbar(hist2, orientation='vertical', label = 'Number of muons')
+    #
+    # plt.colorbar(label="Number of triggers")
+    plt.ylabel("Lead glass charge (a.u.)")
+    plt.grid()
+    plt.xlabel("Time of flight (ns)")
+    plt.title("WCTE beam test - Run %i, p = %i MeV/c, n = %.3f - Particle ID w/ ACTs"%(TOTAL_run_number, TOTAL_momentum, TOTAL_ref_index))
+    plt.legend()
+    plt.show()
+    ######################################
+    plt.xlim(tof_min, tof_max)
+    plt.ylim(0, 250)
+
+    plt.plot(TOF_selection_e, ACT0_selection_e, "x", color ='lightgrey', label = "Electrons" )
+
+    plt.plot(TOF_selection_mu, ACT0_selection_mu, "x",color = "red",label = "Muons" )
+
+    plt.plot(TOF_selection_pi, ACT0_selection_pi, "x", color = "green", label = 'Pions' )
+
+    # if(thereIsProtons):
+    #     plt.plot(TOF_selection_proton, ACT0_selection_proton, "x", color = "blue", label = 'Protons' )
+
+
+    # plt.colorbar(hist1, orientation='vertical', label = 'Number of electrons')
+    # plt.colorbar(hist2, orientation='vertical', label = 'Number of muons')
+    #
+    # plt.colorbar(label="Number of triggers")
+    plt.ylabel("ACT0 number of PE")
+    plt.grid()
+    plt.xlabel("Time of flight (ns)")
+    plt.title("WCTE beam test - Run %i, p = %i MeV/c, n = %.3f - Particle ID w/ ACTs"%(TOTAL_run_number, TOTAL_momentum, TOTAL_ref_index))
+    plt.legend()
+    plt.show()
+
+
+    plt.xlim(0, 30)
+    plt.ylim(0, 250)
+
+    plt.plot(LG_selection_e, ACT23_selection_e, "x", color ='lightgrey', label = "Electrons" )
+
+    plt.plot(LG_selection_mu, ACT23_selection_mu, "x",color = "red",label = "Muons" )
+
+    plt.plot(LG_selection_pi, ACT23_selection_pi, "x", color = "green", label = 'Pions' )
+    plt.ylabel("ACT23 number of PE")
+    plt.grid()
+    plt.xlabel("Lead glass (ns)")
+    plt.title("WCTE beam test - Run %i, p = %i MeV/c, n = %.3f - Particle ID w/ ACTs"%(TOTAL_run_number, TOTAL_momentum, TOTAL_ref_index))
+    plt.legend()
+    plt.show()
+
+
+    plt.xlim(0, 30)
+    plt.ylim(0, 250)
+
+    plt.plot(LG_selection_e, ACT23_selection_e, "x", color ='lightgrey', label = "Electrons" )
+
+    plt.plot(LG_selection_mu, ACT23_selection_mu, "x",color = "red",label = "Muons" )
+
+    plt.plot(LG_selection_pi, ACT23_selection_pi, "x", color = "green", label = 'Pions' )
+
+    plt.plot(LG_weird_e, ACT23_weird_e, "x", color = "black", label = 'Weird electron' )
+    plt.ylabel("ACT23 number of PE")
+    plt.grid()
+    plt.xlabel("Lead glass (ns)")
+    plt.title("WCTE beam test - Run %i, p = %i MeV/c, n = %.3f - Particle ID w/ ACTs"%(TOTAL_run_number, TOTAL_momentum, TOTAL_ref_index))
+    plt.legend()
+    plt.show()
+
+
+    tof_min, tof_max = 10, 30
+    lg_min, lg_max = 0, 8
+
+
+    # hist1 = plt.hist2d(TOF_selection_e, LG_selection_e, bins = (200, 200), range = ((tof_min, tof_max), (lg_min, lg_max)), norm = colors.LogNorm(),cmap='greys' )
+    #
+    # hist2 = plt.hist2d(TOF_selection_mu, LG_selection_mu, bins = (200, 200), range = ((tof_min, tof_max), (lg_min, lg_max)), norm = colors.LogNorm(),cmap='Oranges' )
+    #
+    # hist2 = plt.hist2d(TOF_selection_pi, LG_selection_pi, bins = (200, 200), range = ((tof_min, tof_max), (lg_min, lg_max)), norm = colors.LogNorm(),cmap='Blues' )
+
+    # plt.xlim(tof_min, tof_max)
+    # plt.ylim(lg_min, lg_max)
+
+    plt.plot(ACT1_selection_e, ACT23_selection_e, "x", color ='lightgrey', label = "Electrons" )
+
+    plt.plot(ACT1_selection_mu, ACT23_selection_mu, "x",color = "red",label = "Muons" )
+
+    plt.plot(ACT1_selection_pi, ACT23_selection_pi, "x", color = "green", label = 'Pions' )
+
+    if(thereIsProtons):
+        plt.plot(ACT1_selection_proton, ACT23_selection_proton, "x", color = "blue", label = 'Protons' )
+
+
+    # plt.colorbar(hist1, orientation='vertical', label = 'Number of electrons')
+    # plt.colorbar(hist2, orientation='vertical', label = 'Number of muons')
+    #
+    # plt.colorbar(label="Number of triggers")
+    plt.ylabel("ACT23 charge (pe)")
+    plt.grid()
+    plt.ylabel("ACT1 charge (pe)")
+    plt.title("WCTE beam test - Run %i, p = %i MeV/c, n = %.3f - Particle ID w/ ACTs"%(TOTAL_run_number, TOTAL_momentum, TOTAL_ref_index))
+    plt.legend()
+    plt.show()
 
 
 
@@ -1033,73 +1299,74 @@ def singlePE(argv):
     plt.legend()
     plt.show()
 
-    f, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 1]})
-    a0.hist(ACT0L_selection3, bins = 100, range = (0, 2),  histtype = 'step', label = 'ACT0L - non-e like')
-    a0.grid()
-    a0.legend()
-    a0.set_xlabel('Max Voltage (V)')
-    a1.hist(ACT0R_selection3, bins = 100, range = (0, 2),  histtype = 'step', label = 'ACT0R - non-e like')
-    a1.grid()
-    a1.legend()
-    a1.set_xlabel('Max Voltage (V)')
-    plt.show()
+    if (not lessPlots):
+        f, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 1]})
+        a0.hist(ACT0L_selection3, bins = 100, range = (0, 2),  histtype = 'step', label = 'ACT0L - non-e like')
+        a0.grid()
+        a0.legend()
+        a0.set_xlabel('Max Voltage (V)')
+        a1.hist(ACT0R_selection3, bins = 100, range = (0, 2),  histtype = 'step', label = 'ACT0R - non-e like')
+        a1.grid()
+        a1.legend()
+        a1.set_xlabel('Max Voltage (V)')
+        plt.show()
 
 
-    f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-    f.suptitle("ACT sprectra for particles below threshold")
+        f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
+        f.suptitle("ACT sprectra for particles below threshold")
 
-    #caluclate the expected number of pe
-    pedestal_thresh = 0.20
-    n_pedestal = sum(np.where(ACT0_selection3<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT0_selection3)
-    exp_photon = -np.log(ratio)
-
-    a0.hist(ACT0_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT0 - mu+pi like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT0_selection3.mean(), ACT0_selection3.std(), exp_photon))
-
-    n_pedestal = sum(np.where(ACT1_selection3<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT1_selection3)
-    exp_photon = -np.log(ratio)
-
-    a1.hist(ACT1_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT1 - non-e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT1_selection3.mean(), ACT1_selection3.std(), exp_photon))
-
-    n_pedestal = sum(np.where(ACT2_selection3<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT2_selection3)
-    exp_photon = -np.log(ratio)
-
-    a2.hist(ACT2_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT2 - non-e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT2_selection3.mean(), ACT2_selection3.std(), exp_photon))
-
-    n_pedestal = sum(np.where(ACT3_selection3<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT3_selection3)
-    exp_photon = -np.log(ratio)
-
-    a3.hist(ACT3_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT3 - non-e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT3_selection3.mean(), ACT3_selection3.std(), exp_photon))
-
-    if thereIsProtons:
-        n_pedestal = sum(np.where(ACT0_proton<pedestal_thresh, 1, 0))
-        ratio = n_pedestal/len(ACT0_proton)
+        #caluclate the expected number of pe
+        pedestal_thresh = 0.20
+        n_pedestal = sum(np.where(ACT0_selection3<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT0_selection3)
         exp_photon = -np.log(ratio)
-        a0.hist(ACT0_proton, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT0 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT0_proton.mean(), ACT0_proton.std(), exp_photon))
 
-        n_pedestal = sum(np.where(ACT1_proton<pedestal_thresh, 1, 0))
-        ratio = n_pedestal/len(ACT1_proton)
-        exp_photon = -np.log(ratio)
-        a1.hist(ACT1_proton, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT1 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT1_proton.mean(), ACT1_proton.std(), exp_photon))
-        n_pedestal = sum(np.where(ACT2_proton<pedestal_thresh, 1, 0))
-        ratio = n_pedestal/len(ACT2_proton)
-        exp_photon = -np.log(ratio)
-        a2.hist(ACT2_proton, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT2 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT2_proton.mean(), ACT2_proton.std(), exp_photon))
-        n_pedestal = sum(np.where(ACT3_proton<pedestal_thresh, 1, 0))
-        ratio = n_pedestal/len(ACT3_proton)
-        exp_photon = -np.log(ratio)
-        a3.hist(ACT3_proton, bins = 100, range = (0, 20),  histtype = 'step', label = 'ACT3 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT3_proton.mean(), ACT3_proton.std(), exp_photon))
+        a0.hist(ACT0_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT0 - mu+pi like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT0_selection3.mean(), ACT0_selection3.std(), exp_photon))
 
-    for prefix in [a0, a1, a2, a3]:
-        prefix.grid()
-        prefix.legend()
-        prefix.set_xlabel('Number of window int PE')
-        prefix.set_ylabel('Number of triggers')
+        n_pedestal = sum(np.where(ACT1_selection3<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT1_selection3)
+        exp_photon = -np.log(ratio)
 
-    plt.show()
+        a1.hist(ACT1_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT1 - non-e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT1_selection3.mean(), ACT1_selection3.std(), exp_photon))
+
+        n_pedestal = sum(np.where(ACT2_selection3<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT2_selection3)
+        exp_photon = -np.log(ratio)
+
+        a2.hist(ACT2_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT2 - non-e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT2_selection3.mean(), ACT2_selection3.std(), exp_photon))
+
+        n_pedestal = sum(np.where(ACT3_selection3<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT3_selection3)
+        exp_photon = -np.log(ratio)
+
+        a3.hist(ACT3_selection3, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT3 - non-e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT3_selection3.mean(), ACT3_selection3.std(), exp_photon))
+
+        if thereIsProtons:
+            n_pedestal = sum(np.where(ACT0_proton<pedestal_thresh, 1, 0))
+            ratio = n_pedestal/len(ACT0_proton)
+            exp_photon = -np.log(ratio)
+            a0.hist(ACT0_proton, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT0 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT0_proton.mean(), ACT0_proton.std(), exp_photon))
+
+            n_pedestal = sum(np.where(ACT1_proton<pedestal_thresh, 1, 0))
+            ratio = n_pedestal/len(ACT1_proton)
+            exp_photon = -np.log(ratio)
+            a1.hist(ACT1_proton, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT1 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT1_proton.mean(), ACT1_proton.std(), exp_photon))
+            n_pedestal = sum(np.where(ACT2_proton<pedestal_thresh, 1, 0))
+            ratio = n_pedestal/len(ACT2_proton)
+            exp_photon = -np.log(ratio)
+            a2.hist(ACT2_proton, bins = 150, range = (0, 20),  histtype = 'step', label = 'ACT2 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT2_proton.mean(), ACT2_proton.std(), exp_photon))
+            n_pedestal = sum(np.where(ACT3_proton<pedestal_thresh, 1, 0))
+            ratio = n_pedestal/len(ACT3_proton)
+            exp_photon = -np.log(ratio)
+            a3.hist(ACT3_proton, bins = 100, range = (0, 20),  histtype = 'step', label = 'ACT3 - proton like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT3_proton.mean(), ACT3_proton.std(), exp_photon))
+
+        for prefix in [a0, a1, a2, a3]:
+            prefix.grid()
+            prefix.legend()
+            prefix.set_xlabel('Number of window int PE')
+            prefix.set_ylabel('Number of triggers')
+
+        plt.show()
 
     #
     # plt.title('Left PMT only')
@@ -1120,221 +1387,88 @@ def singlePE(argv):
     upper_bound = 10
 
 
-    f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-    f.suptitle("ACT sprectra for particles below threshold")
-
-    y = np.linspace (0, 100000/10, 100)
-    x = np.zeros(len(y))
-
-    #non-e like
-    a0.hist(ACT0_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, -25),  histtype = 'step', label = 'ACT0 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT0_selection3_time-TOF10_selection3_time).mean(), (ACT0_selection3_time-TOF10_selection3_time).std()))
-
-    A0_mean = (ACT0_selection4_time-TOF10_selection4_time).mean()
-    # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-
-    a1.hist(ACT1_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, xmax), histtype = 'step', label = 'ACT1 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT1_selection3_time-TOF10_selection3_time).mean(), (ACT1_selection3_time-TOF10_selection3_time).std()))
-
-    A1_mean = (ACT1_selection4_time-TOF10_selection4_time).mean()
-    # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-
-    a2.hist(ACT2_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, xmax),  histtype = 'step', label = 'ACT2 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT2_selection3_time-TOF10_selection3_time).mean(), (ACT2_selection3_time-TOF10_selection3_time).std()))
-
-    A2_mean = (ACT2_selection4_time-TOF10_selection4_time).mean()
-    # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-
-    a3.hist(ACT3_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT3 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT3_selection3_time-TOF10_selection3_time).mean(), (ACT3_selection3_time-TOF10_selection3_time).std()))
-
-    A3_mean = (ACT3_selection4_time-TOF10_selection4_time).mean()
-    # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-
-    #e-like
-    a0.hist(ACT0_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, -25),   histtype = 'step', label = 'ACT0 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
-
-    a1.hist(ACT1_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT1 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
-
-    a2.hist(ACT2_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT2 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
-
-    a3.hist(ACT3_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, xmax),  histtype = 'step', label = 'ACT3 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
-
-    #protons
-    if thereIsProtons:
-        TOF10_proton_time
-        a0.hist(ACT0_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, -25),   histtype = 'step', label = 'ACT0 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT0_proton_time-TOF10_proton_time).mean(), (ACT0_proton_time-TOF10_proton_time).std()))
-
-        a1.hist(ACT1_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT1 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT1_proton_time-TOF10_proton_time).mean(), (ACT1_proton_time-TOF10_proton_time).std()))
-
-        a2.hist(ACT2_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT2 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT2_proton_time-TOF10_proton_time).mean(), (ACT2_proton_time-TOF10_proton_time).std()))
-
-        a3.hist(ACT3_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT3 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT3_proton_time-TOF10_proton_time).mean(), (ACT3_proton_time-TOF10_proton_time).std()))
-
-
-
-    for prefix in [a0, a1, a2, a3]:
-        prefix.grid()
-        prefix.legend()
-        prefix.set_ylabel('Number of triggers')
-        prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
-        prefix.set_yscale('log')
-
-    plt.show()
-
-
-    xmax = 25
-    xmin = 0
-
-    f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-    f.suptitle("Q vs T - Muons and Pions")
-
-    # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
-    a0.hist2d(ACT0_selection3_time-TOF10_selection3_time, ACT0_selection3,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
-    a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
-    # a0.colorbar()
-
-
-    # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a1.hist2d(ACT1_selection3_time-TOF10_selection3_time, ACT1_selection3,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
-
-    # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a2.hist2d(ACT2_selection3_time-TOF10_selection3_time, ACT2_selection3,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
-
-    # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a3.hist2d(ACT3_selection3_time-TOF10_selection3_time, ACT3_selection3,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
-
-    for prefix in [a0, a1, a2, a3]:
-        prefix.grid()
-        prefix.legend()
-        prefix.set_ylabel('Window Integrated PE')
-        prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
-        # prefix.set_yscale('log')
-
-    plt.show()
-
-    #same QT map but peak charge instead
-    xmax = 25
-    xmin = 0
-
-    f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-    f.suptitle("Q vs T - Muons and Pions - Peak integrated")
-
-    # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
-    a0.hist2d(ACT0_selection3_time-TOF10_selection3_time, ACT0_selection3_peak,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
-    a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
-    # a0.colorbar()
-
-
-
-    # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a1.hist2d(ACT1_selection3_time-TOF10_selection3_time, ACT1_selection3_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
-
-    # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a2.hist2d(ACT2_selection3_time-TOF10_selection3_time, ACT2_selection3_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
-
-    # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a3.hist2d(ACT3_selection3_time-TOF10_selection3_time, ACT3_selection3_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
-
-    for prefix in [a0, a1, a2, a3]:
-        prefix.grid()
-        prefix.legend()
-        prefix.set_ylabel('Peak Integrated PE')
-        prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
-        # prefix.set_yscale('log')
-
-    plt.show()
-
-    xmax = 75
-
-    f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-    f.suptitle("Q vs T - ELECTRONS")
-
-    # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
-    a0.hist2d(ACT0_selection4_time-TOF10_selection4_time, ACT0_selection4,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
-    a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
-    # a0.colorbar()
-
-
-
-    # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a1.hist2d(ACT1_selection4_time-TOF10_selection4_time, ACT1_selection4,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
-
-    # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a2.hist2d(ACT2_selection4_time-TOF10_selection4_time, ACT2_selection4,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
-
-    # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a3.hist2d(ACT3_selection4_time-TOF10_selection4_time, ACT3_selection4,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
-
-    for prefix in [a0, a1, a2, a3]:
-        prefix.grid()
-        prefix.legend()
-        prefix.set_ylabel('Window Integrated PE')
-        prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
-        # prefix.set_yscale('log')
-
-    plt.show()
-
-    #electrons and peak detect
-    f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-    f.suptitle("Q vs T - ELECTRONS peak integration")
-
-    # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
-    a0.hist2d(ACT0_selection4_time-TOF10_selection4_time, ACT0_selection4_peak,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
-    a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
-    # a0.colorbar()
-
-
-
-    # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a1.hist2d(ACT1_selection4_time-TOF10_selection4_time, ACT1_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
-
-    # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a2.hist2d(ACT2_selection4_time-TOF10_selection4_time, ACT2_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
-
-    # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-    a3.hist2d(ACT3_selection4_time-TOF10_selection4_time, ACT3_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
-    a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
-
-    for prefix in [a0, a1, a2, a3]:
-        prefix.grid()
-        prefix.legend()
-        prefix.set_ylabel('Peak Integrated PE')
-        prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
-        # prefix.set_yscale('log')
-
-    plt.show()
-
-    xmax = 25
-
-    if thereIsProtons:
+    if (not lessPlots):
         f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-        f.suptitle("Q vs T - Protons")
+        f.suptitle("ACT sprectra for particles below threshold")
+
+        y = np.linspace (0, 100000/10, 100)
+        x = np.zeros(len(y))
+
+        #non-e like
+        a0.hist(ACT0_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, -25),  histtype = 'step', label = 'ACT0 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT0_selection3_time-TOF10_selection3_time).mean(), (ACT0_selection3_time-TOF10_selection3_time).std()))
+
+        A0_mean = (ACT0_selection4_time-TOF10_selection4_time).mean()
+        # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+
+        a1.hist(ACT1_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, xmax), histtype = 'step', label = 'ACT1 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT1_selection3_time-TOF10_selection3_time).mean(), (ACT1_selection3_time-TOF10_selection3_time).std()))
+
+        A1_mean = (ACT1_selection4_time-TOF10_selection4_time).mean()
+        # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+
+        a2.hist(ACT2_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, xmax),  histtype = 'step', label = 'ACT2 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT2_selection3_time-TOF10_selection3_time).mean(), (ACT2_selection3_time-TOF10_selection3_time).std()))
+
+        A2_mean = (ACT2_selection4_time-TOF10_selection4_time).mean()
+        # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+
+        a3.hist(ACT3_selection3_time-TOF10_selection3_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT3 - TOF10 time - non-e like \n mean: %.2fns std: %.2fns'%((ACT3_selection3_time-TOF10_selection3_time).mean(), (ACT3_selection3_time-TOF10_selection3_time).std()))
+
+        A3_mean = (ACT3_selection4_time-TOF10_selection4_time).mean()
+        # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+
+        #e-like
+        a0.hist(ACT0_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, -25),   histtype = 'step', label = 'ACT0 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
+
+        a1.hist(ACT1_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT1 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
+
+        a2.hist(ACT2_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT2 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
+
+        a3.hist(ACT3_selection4_time-TOF10_selection4_time, bins = nbins, range = (xmin, xmax),  histtype = 'step', label = 'ACT3 - TOF10 time - e like \n mean: %.2fns std: %.2fns'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
+
+        #protons
+        if thereIsProtons:
+            TOF10_proton_time
+            a0.hist(ACT0_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, -25),   histtype = 'step', label = 'ACT0 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT0_proton_time-TOF10_proton_time).mean(), (ACT0_proton_time-TOF10_proton_time).std()))
+
+            a1.hist(ACT1_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT1 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT1_proton_time-TOF10_proton_time).mean(), (ACT1_proton_time-TOF10_proton_time).std()))
+
+            a2.hist(ACT2_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT2 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT2_proton_time-TOF10_proton_time).mean(), (ACT2_proton_time-TOF10_proton_time).std()))
+
+            a3.hist(ACT3_proton_time-TOF10_proton_time, bins = nbins, range = (xmin, xmax),   histtype = 'step', label = 'ACT3 - TOF10 time - proton like \n mean: %.2fns std: %.2fns'%((ACT3_proton_time-TOF10_proton_time).mean(), (ACT3_proton_time-TOF10_proton_time).std()))
+
+
+
+        for prefix in [a0, a1, a2, a3]:
+            prefix.grid()
+            prefix.legend()
+            prefix.set_ylabel('Number of triggers')
+            prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
+            prefix.set_yscale('log')
+
+        plt.show()
+
+
+        xmax = 25
+        xmin = 0
+
+        f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
+        f.suptitle("Q vs T - Muons and Pions")
 
         # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
-        a0.hist2d(ACT0_proton_time-TOF10_proton_time, ACT0_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a0.hist2d(ACT0_selection3_time-TOF10_selection3_time, ACT0_selection3,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
         a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
         # a0.colorbar()
 
 
-
         # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-        a1.hist2d(ACT1_proton_time-TOF10_proton_time, ACT1_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a1.hist2d(ACT1_selection3_time-TOF10_selection3_time, ACT1_selection3,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
         a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
 
         # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-        a2.hist2d(ACT2_proton_time-TOF10_proton_time, ACT2_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a2.hist2d(ACT2_selection3_time-TOF10_selection3_time, ACT2_selection3,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
         a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
 
         # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
-        a3.hist2d(ACT3_proton_time-TOF10_proton_time, ACT3_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a3.hist2d(ACT3_selection3_time-TOF10_selection3_time, ACT3_selection3,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
         a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
 
         for prefix in [a0, a1, a2, a3]:
@@ -1346,40 +1480,174 @@ def singlePE(argv):
 
         plt.show()
 
-    f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
-    f.suptitle("ACT sprectra for particles above threshold")
+        #same QT map but peak charge instead
+        xmax = 25
+        xmin = 0
 
-    n_pedestal = sum(np.where(ACT0_selection4<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT0_selection4)
-    exp_photon = -np.log(ratio)
+        f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
+        f.suptitle("Q vs T - Muons and Pions - Peak integrated")
 
-    a0.hist(ACT0_selection4, bins = 100, range = (0, 25),  histtype = 'step', label = 'ACT0 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT0_selection4.mean(), ACT0_selection4.std(), exp_photon))
+        # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
+        a0.hist2d(ACT0_selection3_time-TOF10_selection3_time, ACT0_selection3_peak,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
+        a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
+        # a0.colorbar()
 
-    n_pedestal = sum(np.where(ACT1_selection4<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT1_selection4)
-    exp_photon = -np.log(ratio)
 
-    a1.hist(ACT1_selection4, bins = 100, range = (0, 25),  histtype = 'step', label = 'ACT1 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT1_selection4.mean(), ACT1_selection4.std(), exp_photon))
 
-    n_pedestal = sum(np.where(ACT2_selection4<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT2_selection4)
-    exp_photon = -np.log(ratio)
+        # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a1.hist2d(ACT1_selection3_time-TOF10_selection3_time, ACT1_selection3_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
 
-    a2.hist(ACT2_selection4, bins = 100, range = (0, 50),  histtype = 'step', label = 'ACT2 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT2_selection4.mean(), ACT2_selection4.std(), exp_photon))
+        # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a2.hist2d(ACT2_selection3_time-TOF10_selection3_time, ACT2_selection3_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
 
-    n_pedestal = sum(np.where(ACT3_selection4<pedestal_thresh, 1, 0))
-    ratio = n_pedestal/len(ACT3_selection4)
-    exp_photon = -np.log(ratio)
+        # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a3.hist2d(ACT3_selection3_time-TOF10_selection3_time, ACT3_selection3_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
 
-    a3.hist(ACT3_selection4, bins = 100, range = (0, 50),  histtype = 'step', label = 'ACT3 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT3_selection4.mean(), ACT3_selection4.std(), exp_photon))
+        for prefix in [a0, a1, a2, a3]:
+            prefix.grid()
+            prefix.legend()
+            prefix.set_ylabel('Peak Integrated PE')
+            prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
+            # prefix.set_yscale('log')
 
-    for prefix in [a0, a1, a2, a3]:
-        prefix.grid()
-        prefix.legend()
-        prefix.set_xlabel('Number of window int PE')
-        prefix.set_ylabel('Number of triggers')
+        plt.show()
 
-    plt.show()
+        xmax = 75
+
+        f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
+        f.suptitle("Q vs T - ELECTRONS")
+
+        # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
+        a0.hist2d(ACT0_selection4_time-TOF10_selection4_time, ACT0_selection4,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
+        a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
+        # a0.colorbar()
+
+
+
+        # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a1.hist2d(ACT1_selection4_time-TOF10_selection4_time, ACT1_selection4,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
+
+        # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a2.hist2d(ACT2_selection4_time-TOF10_selection4_time, ACT2_selection4,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
+
+        # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a3.hist2d(ACT3_selection4_time-TOF10_selection4_time, ACT3_selection4,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
+
+        for prefix in [a0, a1, a2, a3]:
+            prefix.grid()
+            prefix.legend()
+            prefix.set_ylabel('Window Integrated PE')
+            prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
+            # prefix.set_yscale('log')
+
+        plt.show()
+
+        #electrons and peak detect
+        f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
+        f.suptitle("Q vs T - ELECTRONS peak integration")
+
+        # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
+        a0.hist2d(ACT0_selection4_time-TOF10_selection4_time, ACT0_selection4_peak,  bins = (100, 100), range = ( (-100, -25), (xmin,xmax)), norm = colors.LogNorm())
+        a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
+        # a0.colorbar()
+
+
+
+        # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a1.hist2d(ACT1_selection4_time-TOF10_selection4_time, ACT1_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
+
+        # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a2.hist2d(ACT2_selection4_time-TOF10_selection4_time, ACT2_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
+
+        # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+        a3.hist2d(ACT3_selection4_time-TOF10_selection4_time, ACT3_selection4_peak,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+        a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
+
+        for prefix in [a0, a1, a2, a3]:
+            prefix.grid()
+            prefix.legend()
+            prefix.set_ylabel('Peak Integrated PE')
+            prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
+            # prefix.set_yscale('log')
+
+        plt.show()
+
+        xmax = 25
+
+        if thereIsProtons:
+            f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
+            f.suptitle("Q vs T - Protons")
+
+            # a0.fill_betweenx(y, x + A0_mean + lower_bound, x + A0_mean + upper_bound, alpha = 0.3, label = 'Window %i - %i' %(lower_bound, upper_bound))
+            a0.hist2d(ACT0_proton_time-TOF10_proton_time, ACT0_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+            a0.plot([A0_mean, A0_mean], [xmin, xmax], 'r--', label = 'ACT0 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT0_selection4_time-TOF10_selection4_time).mean(), (ACT0_selection4_time-TOF10_selection4_time).std()))
+            # a0.colorbar()
+
+
+
+            # a1.fill_betweenx(y, x + A1_mean + lower_bound, x + A1_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+            a1.hist2d(ACT1_proton_time-TOF10_proton_time, ACT1_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+            a1.plot([A1_mean, A1_mean], [xmin, xmax], 'r--', label = 'ACT1 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT1_selection4_time-TOF10_selection4_time).mean(), (ACT1_selection4_time-TOF10_selection4_time).std()))
+
+            # a2.fill_betweenx(y, x + A2_mean + lower_bound, x + A2_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+            a2.hist2d(ACT2_proton_time-TOF10_proton_time, ACT2_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+            a2.plot([A2_mean, A2_mean], [xmin, xmax], 'r--', label = 'ACT2 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT2_selection4_time-TOF10_selection4_time).mean(), (ACT2_selection4_time-TOF10_selection4_time).std()))
+
+            # a3.fill_betweenx(y, x + A3_mean + lower_bound, x + A3_mean + upper_bound, alpha = 0.3, label = 'Window %i - %ins' %(lower_bound, upper_bound))
+            a3.hist2d(ACT3_proton_time-TOF10_proton_time, ACT3_proton,  bins = (100, 100), range = ( (-100, 150), (xmin,xmax)), norm = colors.LogNorm())
+            a3.plot([A3_mean, A3_mean], [xmin, xmax], 'r--', label = 'ACT3 - TOF10 time - e like \n mean: %.2f std: %.2f'%((ACT3_selection4_time-TOF10_selection4_time).mean(), (ACT3_selection4_time-TOF10_selection4_time).std()))
+
+            for prefix in [a0, a1, a2, a3]:
+                prefix.grid()
+                prefix.legend()
+                prefix.set_ylabel('Window Integrated PE')
+                prefix.set_xlabel('ACT hit time - TOF hit time (ns)')
+                # prefix.set_yscale('log')
+
+            plt.show()
+
+        f, ((a0,a1), (a2, a3) ) = plt.subplots(2, 2, gridspec_kw={'height_ratios': [1, 1], 'width_ratios': [1, 1]})
+        f.suptitle("ACT sprectra for particles above threshold")
+
+        n_pedestal = sum(np.where(ACT0_selection4<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT0_selection4)
+        exp_photon = -np.log(ratio)
+
+        a0.hist(ACT0_selection4, bins = 100, range = (0, 25),  histtype = 'step', label = 'ACT0 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT0_selection4.mean(), ACT0_selection4.std(), exp_photon))
+
+        n_pedestal = sum(np.where(ACT1_selection4<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT1_selection4)
+        exp_photon = -np.log(ratio)
+
+        a1.hist(ACT1_selection4, bins = 100, range = (0, 25),  histtype = 'step', label = 'ACT1 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT1_selection4.mean(), ACT1_selection4.std(), exp_photon))
+
+        n_pedestal = sum(np.where(ACT2_selection4<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT2_selection4)
+        exp_photon = -np.log(ratio)
+
+        a2.hist(ACT2_selection4, bins = 100, range = (0, 50),  histtype = 'step', label = 'ACT2 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT2_selection4.mean(), ACT2_selection4.std(), exp_photon))
+
+        n_pedestal = sum(np.where(ACT3_selection4<pedestal_thresh, 1, 0))
+        ratio = n_pedestal/len(ACT3_selection4)
+        exp_photon = -np.log(ratio)
+
+        a3.hist(ACT3_selection4, bins = 100, range = (0, 50),  histtype = 'step', label = 'ACT3 - e like \n mean: %.2f std: %.2f\n Expected nb photon: %.2f'%(ACT3_selection4.mean(), ACT3_selection4.std(), exp_photon))
+
+        for prefix in [a0, a1, a2, a3]:
+            prefix.grid()
+            prefix.legend()
+            prefix.set_xlabel('Number of window int PE')
+            prefix.set_ylabel('Number of triggers')
+
+        plt.show()
 
     p = 700
     plt.title('LG - Run 391, %i MeV/c, neg'%p)
@@ -1403,27 +1671,28 @@ def singlePE(argv):
     xmin = 0
     xmax = 50
 
-    plt.hist2d(ACT3_all, ACT2_all, bins = (200, 200), range = ((xmin,xmax), (0, 50)), norm = colors.LogNorm())
-    plt.plot([xmin, xmax], [xmin, xmax], 'k--')
-    plt.colorbar(label="Number of triggers")
-    plt.xlabel("Total ACT 3 window PE")
-    plt.ylabel("Total ACT 2 window PE")
-    plt.title("Run 385")
-    plt.legend()
-    plt.show()
+    if (not lessPlots):
+        plt.hist2d(ACT3_all, ACT2_all, bins = (200, 200), range = ((xmin,xmax), (0, 50)), norm = colors.LogNorm())
+        plt.plot([xmin, xmax], [xmin, xmax], 'k--')
+        plt.colorbar(label="Number of triggers")
+        plt.xlabel("Total ACT 3 window PE")
+        plt.ylabel("Total ACT 2 window PE")
+        plt.title("Run 385")
+        plt.legend()
+        plt.show()
 
-    xmin = 0
-    xmax = 30
+        xmin = 0
+        xmax = 30
 
 
-    plt.hist2d(ACT0_all, ACT1_all, bins = (200, 200), range = ((xmin,xmax), (0, 30)), norm = colors.LogNorm())
-    plt.plot([xmin, xmax], [xmin, xmax], 'k--')
-    plt.colorbar(label="Number of triggers")
-    plt.xlabel("Total ACT 0 window PE")
-    plt.ylabel("Total ACT 1 window PE")
-    plt.title("ACT0 vs ACT1")
-    plt.legend()
-    plt.show()
+        plt.hist2d(ACT0_all, ACT1_all, bins = (200, 200), range = ((xmin,xmax), (0, 30)), norm = colors.LogNorm())
+        plt.plot([xmin, xmax], [xmin, xmax], 'k--')
+        plt.colorbar(label="Number of triggers")
+        plt.xlabel("Total ACT 0 window PE")
+        plt.ylabel("Total ACT 1 window PE")
+        plt.title("ACT0 vs ACT1")
+        plt.legend()
+        plt.show()
 
 
 
@@ -1447,26 +1716,27 @@ def singlePE(argv):
     if thereIsProtons:
         xmax = 35
 
-    plt.hist2d(TOF_all, ACT23_all, bins = (200, 200), range = ((xmin,xmax), (0, 200)), norm = colors.LogNorm())
+    if (not lessPlots):
+        plt.hist2d(TOF_all, ACT23_all, bins = (200, 200), range = ((xmin,xmax), (0, 200)), norm = colors.LogNorm())
 
-    plt.colorbar(label="Number of triggers")
-    plt.xlabel("Time of flight (ns)")
-    plt.ylabel("Total ACT23 window PE")
-    plt.title("420MeV/c - run 490")
-    plt.legend()
-    plt.show()
+        plt.colorbar(label="Number of triggers")
+        plt.xlabel("Time of flight (ns)")
+        plt.ylabel("Total ACT23 window PE")
+        plt.title("420MeV/c - run 490")
+        plt.legend()
+        plt.show()
 
-    xmin = 0
-    xmax = 0.5
+        xmin = 0
+        xmax = 0.5
 
-    plt.hist2d(LG_all, ACT23_all, bins = (200, 200), range = ((xmin,xmax), (0, 100)), norm = colors.LogNorm())
+        plt.hist2d(LG_all, ACT23_all, bins = (200, 200), range = ((xmin,xmax), (0, 100)), norm = colors.LogNorm())
 
-    plt.colorbar(label="Number of triggers")
-    plt.xlabel("Peak integrated lead glass")
-    plt.ylabel("Total ACT23 window PE")
-    plt.title("420MeV/c - run 490")
-    plt.legend()
-    plt.show()
+        plt.colorbar(label="Number of triggers")
+        plt.xlabel("Peak integrated lead glass")
+        plt.ylabel("Total ACT23 window PE")
+        plt.title("420MeV/c - run 490")
+        plt.legend()
+        plt.show()
 
 
 
@@ -1476,16 +1746,17 @@ def singlePE(argv):
     if thereIsProtons:
         xmax = 35
 
-    plt.hist2d(TOF_all, LG_all, bins = (200, 200), range = ((xmin,xmax), (0, 0.5)), norm = colors.LogNorm())
-    if plot_cuts:
-        plt.plot([xmin, xmax], [xmin*linearCutA+linearCutB, xmax*linearCutA+linearCutB], 'k--', label = '2D cut: A = %.3f, B = %.3F'%(linearCutA, linearCutB))
-        plt.plot([xmin, xmax], [Pbupper, Pbupper], 'k--')
-    plt.colorbar(label="Number of triggers")
-    plt.xlabel("Time of flight (ns)")
-    plt.ylabel("Peak integrated lead glass")
-    plt.title("Run 523")
-    plt.legend()
-    plt.show()
+    if (not lessPlots):
+        plt.hist2d(TOF_all, LG_all, bins = (200, 200), range = ((xmin,xmax), (0, 0.5)), norm = colors.LogNorm())
+        if plot_cuts:
+            plt.plot([xmin, xmax], [xmin*linearCutA+linearCutB, xmax*linearCutA+linearCutB], 'k--', label = '2D cut: A = %.3f, B = %.3F'%(linearCutA, linearCutB))
+            plt.plot([xmin, xmax], [Pbupper, Pbupper], 'k--')
+        plt.colorbar(label="Number of triggers")
+        plt.xlabel("Time of flight (ns)")
+        plt.ylabel("Peak integrated lead glass")
+        plt.title("Run 523")
+        plt.legend()
+        plt.show()
 
     xmax = 35
     xmin = -50
@@ -1511,7 +1782,7 @@ def singlePE(argv):
 
     plt.hist(h_ACTs_selection3, bins = nbins, range = (xmin, xmax), label = 'ACT cut - non electrons %i triggers'%len(h_ACTs_selection3) , histtype = 'step')
 
-    popt, pcov = curve_fit(sum2Gaussians, bin_edges[:-1] + (xmax-xmin)/(2*nbins), b, p0 = [160, 12, 2, 45, 3.5, 2, 0])
+    popt, pcov = curve_fit(sum2Gaussians, bin_edges[:-1] + (xmax-xmin)/(2*nbins), b, p0 = [160, 12, 2, 45, 3, 2, 0])
     n_mu_pi = quad(sum2Gaussians, xmin, xmax, args = (popt[0], popt[1], popt[2], popt[3], popt[4], popt[5], popt[6]))[0] *(nbins)/ (xmax-xmin)
     n_mu_pi_inE = quad(sum2Gaussians, xmin, 0, args = (popt[0], popt[1], popt[2], popt[3], popt[4], popt[5], popt[6]))[0] *(nbins)/ (xmax-xmin)
     n_mu_pi_inMuPi = quad(sum2Gaussians, 0, xmax, args = (popt[0], popt[1], popt[2], popt[3], popt[4], popt[5], popt[6]))[0] *(nbins)/ (xmax-xmin)
@@ -1528,7 +1799,15 @@ def singlePE(argv):
 
 
     # print(n_e, len(h_ACTs_selection4))
-    #
+
+    TOTAL_el_number = n_e
+    TOTAL_mupi_number = len(h_ACTs_selection3)
+
+    TOTAL_el_purity = n_e_inE/(n_mu_pi_inE + n_e_inE)
+    TOTAL_el_efficiency = (n_e_inE/n_e)
+    TOTAL_mupi_purity = len(h_ACTs_selection3)/(n_e_inMuPi + len(h_ACTs_selection3))
+    TOTAL_mupi_efficiency = n_mu_pi_inMuPi/len(h_ACTs_selection3)
+
     print("Electron Purity: %.3f"%(n_e_inE/(n_mu_pi_inE + n_e_inE)))
     print("Electron Efficiency: %.3f"% (n_e_inE/n_e))
     #
@@ -1611,21 +1890,22 @@ def singlePE(argv):
 
     print(a)
 
-    a1.errorbar(bin_edges[:-1], (b-a)/a, yerr= np.sqrt(1/a + 1/b)/a , marker = 'x', color = 'r', label = 'ACTnonE - TOFLGnonE', ls='none')
-    a0.set_xlabel('LeadGlass peak Int')
-    a0.set_ylabel('Number of tiggers per %.3f'%((xmax-xmin)/nbins))
-    a0.set_title("LeadGlass comparison")
-    a0.legend()
-    a0.grid()
-    a1.set_xlabel('LeadGlass peak Int')
-    a1.set_ylabel('Frac. Diff. in nb tiggers')
-    a1.legend()
-    a1.grid()
-    plt.show()
+    if (not lessPlots):
+        a1.errorbar(bin_edges[:-1], (b-a)/a, yerr= np.sqrt(1/a + 1/b)/a , marker = 'x', color = 'r', label = 'ACTnonE - TOFLGnonE', ls='none')
+        a0.set_xlabel('LeadGlass peak Int')
+        a0.set_ylabel('Number of tiggers per %.3f'%((xmax-xmin)/nbins))
+        a0.set_title("LeadGlass comparison")
+        a0.legend()
+        a0.grid()
+        a1.set_xlabel('LeadGlass peak Int')
+        a1.set_ylabel('Frac. Diff. in nb tiggers')
+        a1.legend()
+        a1.grid()
+        plt.show()
 
 
     xmin = 0
-    xmax = 60
+    xmax = 100
     nbins = 100
 
     f, (a0, a1) = plt.subplots(2, 1, gridspec_kw={'height_ratios': [1, 1]})
@@ -1659,9 +1939,12 @@ def singlePE(argv):
 
     x_ref = np.linspace(xmin, xmax, 1000)
     #here the fit to the ACT23 information
-    popt, pcov = curve_fit(sum2Gaussians, bin_edges[:-1] + (xmax-xmin)/(2*nbins), a, p0 = [1200,   6,   2, 100, 18, 5, 0])
+    popt, pcov = curve_fit(sum2Gaussians, bin_edges[:-1] + (xmax-xmin)/(2*nbins), a, p0 = [A_pion_guess,   m_pion_guess, std_pion_guess, A_muon_guess, m_muon_guess, std_muon_guess, 0])
     # popt = [343, 1.15, 0.1, 376, 1.45, 0.4, 75]
     # a1.plot(x_ref, sum2Gaussians(x_ref, *popt), 'k-')
+    TOTAL_mean_mu, TOTAL_std_mu = popt[4]/2, popt[5]/2
+
+    TOTAL_mean_pi, TOTAL_std_pi = popt[1]/2, popt[2]/2
 
     #check the purity
     window_low_tot = 0
@@ -1679,6 +1962,9 @@ def singlePE(argv):
 
     a1.plot(x_ref, oneGaussian(x_ref, *popt[3:6]), 'g--', label = "Total fitted number of muons: %.1f" % n_muon_tot)
     a1.plot(x_ref, oneGaussian(x_ref, *popt[0:3]), 'r--', label = "Total fitted number of pions: %.1f" % n_pion_tot)
+
+    TOTAL_mu_number = n_muon_tot
+    TOTAL_pi_number = n_pion_tot
 
     print("Best fit parameters:", popt)
 
@@ -1700,13 +1986,20 @@ def singlePE(argv):
     # a1.grid()
     plt.show()
 
+
+
+
+    a1.hist(ACT23_selection3, bins = nbins, range = (xmin, xmax), histtype = 'step', label = 'Non-electrons-like %i triggers (ACTs selection)'%len(ACT23_selection3))
+
+
+
     #Plot the purities
-    window_low_mu = 100
+    window_low_mu = 0
     window_high_mu = 100
 
     #check the purity
     window_low_tot = 0
-    window_high_tot = 50
+    window_high_tot = 100
 
     muon_efficiency =[]
     muon_purity =[]
@@ -1794,6 +2087,24 @@ def singlePE(argv):
     ax2.plot(window_end, pion_efficiency, color = 'red')
     ax2.tick_params(axis ='y', labelcolor = 'red')
     plt.show()
+
+    TOTAL_mu_efficiency = best_efficiency_muons
+    TOTAL_pi_efficiency = best_efficiency_pions
+
+
+    ######################################################################################################
+    #HERE WE ARE SAVING THE RUN INFORMATION WITH THE NUMBER OF PARTICLES
+    #####################################################################################################
+    table = np.array([TOTAL_run_number, TOTAL_momentum, TOTAL_ref_index, TOTAL_el_number, TOTAL_mu_number, TOTAL_pi_number, TOTAL_mupi_number, TOTAL_p_number, TOTAL_el_efficiency, TOTAL_el_purity, TOTAL_mu_efficiency, TOTAL_pi_efficiency, TOTAL_mupi_efficiency, TOTAL_mupi_purity, TOTAL_spill, TOTAL_mean_mu, TOTAL_std_mu, TOTAL_mean_pi, TOTAL_std_pi])
+
+
+    # fmt = "%i", "%i", "%.3f", "%.3e", "%.2f", "%.2f", "%.2f", "%.2f", "%.4f", "%.4f", "%.4f", "%.4f", "%.4f", "%.4f", "%i"
+    # np.savetxt("test.txt", table)
+
+    with open("new_output_all.txt", "a") as file:
+        # file.write("Run Momentum n n_e n_mu n_pi n_pimu n_p eff_e pur_e eff_mu eff_pi eff_mupi pur_mupi nSpill \n")
+        file.write("%i %i %.3f %.3e %.2f %.2f %.2f %.2f %.4f %.4f %.4f %.4f %.4f %.4f %i %.3f %.3f %.3f %.3f \n" % (table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8],table[9], table[10], table[11], table[12], table[13],table[14], table[15], table[16], table[17],table[18]) )
+
 
 
 
