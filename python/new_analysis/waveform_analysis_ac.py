@@ -278,11 +278,11 @@ class WaveformAnalysis:
             #making subplots for each event
             plt.subplot(int(len(list_events)/2)+(int((len(list_events)+1)/2)-int(len(list_events)/2)), int(len(list_events)/2), i+1)
 
-            plt.plot(np.array(self.analysis_bins) * self.ns_per_sample, analysis_waveform[event, :]/self.PMTgain, 'x--', label = 'Event %i\nPedestalSigma%.2e\n PeakIntPE %s \n WindowIntPE %s \n Peak Times %s'%(event, self.my_pedestal_sigmas, self.pulse_pe[event], self.window_int_pe[event], self.pulse_signal_times[event]))
+            #plt.plot(np.array(self.analysis_bins) * self.ns_per_sample, analysis_waveform[event, :]/self.PMTgain, 'x--', label = 'Event %i\nPedestalSigma%.2e\n PeakIntPE %s \n WindowIntPE %s \n Peak Times %s'%(event, self.my_pedestal_sigmas, self.pulse_pe[event], self.window_int_pe[event], self.pulse_signal_times[event]))
 
-            for hit in range(max(self.df["nPeaks"])):
-                if list_low[hit][event] != -9999:
-                    plt.fill_betweenx([min(analysis_waveform[event, :]/self.PMTgain), max(analysis_waveform[event, :]/self.PMTgain)], list_low[hit][event] * self.ns_per_sample, list_high[hit][event]*self.ns_per_sample, alpha = 0.3, label = "Hit %i Window (%.1f, %.1f)"%(hit, list_low[hit][event]*self.ns_per_sample, list_high[hit][event]*self.ns_per_sample))
+            #for hit in range(max(self.df["nPeaks"])):
+            #    if list_low[hit][event] != -9999:
+            #        plt.fill_betweenx([min(analysis_waveform[event, :]/self.PMTgain), max(analysis_waveform[event, :]/self.PMTgain)], list_low[hit][event] * self.ns_per_sample, list_high[hit][event]*self.ns_per_sample, alpha = 0.3, label = "Hit %i Window (%.1f, %.1f)"%(hit, list_low[hit][event]*self.ns_per_sample, list_high[hit][event]*self.ns_per_sample))
 
 
             plt.xlabel("ns")

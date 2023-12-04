@@ -105,7 +105,7 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
     #we need to perform the calibration of the timing for the window offset
     run_number = int(root_filename[-11:-5])
     for d in active_digitizers:
-        optional_branch_names = [b for b in ["timeStamp", "triggerTime"] if b in run_file[d].keys()]
+        optional_branch_names = [b for b in ["timeStamp", "triggerTime", "spillNumber"] if b in run_file[d].keys()]
         channels = digitizer_channels[d]
         branch_names = list(channels.keys()) + optional_branch_names
         print(f"Reading digitizer {d}")
@@ -119,7 +119,7 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                 df =  pd.concat([df, hit_times], axis=1)
                 WindowTimeOffset = (df[0]-df_TOF10[0]).mean()
 
-                print(config["WindowTimeOffset"][i], WindowTimeOffset)
+                #print(config["WindowTimeOffset"][i], WindowTimeOffset)
 
                 config_args = {
                     "threshold": config["Thresholds"][i],
