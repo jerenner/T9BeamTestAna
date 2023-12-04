@@ -31,12 +31,17 @@ The whole analysis can be run for multiple files using:
 
 ```bash process_all_1PE.sh```
 
-There are three helper python code for accessing the data and producing some (more or less) useful plots. These are ```python/multipeak_qualityChecks.py```, ```python/peakMatching.py``` and ```python/studyLenWindow.py```.
+There are three helper python code for accessing the data and producing some (more or less) useful plots. These are ```python/multipeak_qualityChecks.py```, ```python/peakMatching.py``` and ```python/studyLenWindow.py```. There is now a comprehensive code that does particle ID and momentum measurements that can be called with:
+
+```python python/particleID.py windowPE_-16ns_45ns_run$run.root runNumber +/-Momentum refractiveIndex isBerylliumTarget probabilityThatThereisAparticleInBunch``` e.g.: ```python python/particleID.py singlePEstudy/singlePE_-16ns_45ns_run432.root 432 +460 1.047 1 0.0023```
+
+More information about how to use this code and what it does are here: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231204/meeting/charge-particle-updates-and-future-studies/acraplet_041223_chargedparticlesetupupdates.pdf/view
 
 Coding still left to do:
 1. change the reference timing to be an average of TOF10, TOF11, TOF12 and TOF13 to limit risks of accidentals in TOF01 biasing the signal
 2. probably merge the config files into 1 to have something cleaner
-3. make a cleaner general python plotting script
+
+
 
 please get in touch if anything's unclear,
 
