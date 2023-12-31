@@ -637,19 +637,21 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
     # Merge all relevant dataframes
     pb_filtered.columns = ['LG_' + col if col != 'event' else col for col in pb_filtered.columns]
     final_df = pb_filtered.merge(hd_valid_events, on='event', how='inner')
-    if(debug): print(f"Final df number of events = {len(final_df)}")
+    ntagged_evts = len(final_df[final_df.total_hits == 1])
+    if(debug): print(f"Final df number of events = {len(final_df)}; {ntagged_evts} tagged events")
     if(not low_radiation): final_df = final_df.merge(act0_valid[['event', 'hit_ACT0']], on='event', how='left')
     final_df = final_df.merge(act1_valid[['event', 'hit_ACT1']], on='event', how='left')
     final_df = final_df.merge(act3_valid[['event', 'nohit_ACT3']], on='event', how='left')
     final_df = final_df.merge(tof0_valid[['event', 'hit_TOF0']], on='event', how='left')
     if(not low_radiation): final_df = final_df.merge(tof1_valid[['event', 'hit_TOF1']], on='event', how='left')
     final_df = final_df.merge(t2_valid[['event', 'hit_T2']], on='event', how='left')
+    if(debug): print(f"{len(final_df[final_df.total_hits == 1])} tagged events")
 
     # Fill NaN values in the hit columns with 0
     if(low_radiation): final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']] = final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']].fillna(0)
     else: final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']] = final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']].fillna(0)
 
-    return final_df, ntot_evts, ntot_spills
+    return final_df, ntot_evts, ntot_spills, ntagged_evts
 
 def line(x, m, b):
     y = m*x + b
