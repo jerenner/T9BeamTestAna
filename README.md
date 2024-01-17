@@ -44,7 +44,7 @@ The analysis code outputs a bunch of numbers to a ```numberParticles.txt``` file
 2. momentum (positive or negative depending on beam charge)
 3. refIndex (index of refraction of aerogels ACT2 and ACT3)
 4. nSpills (number of spills, calculated in the code)
-5. probaBunch (probability for a bunch to contain a particle, see Dean's slide:
+5. probaBunch (probability for a bunch to contain a particle, see Dean's slides: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231127/meeting/beam-structure-and-dead-time-studies-continued/beam_structure_v3.pdf/view
 6. nParticles (total number of particles identified)
 7. nElectrons
 8. nMuons
