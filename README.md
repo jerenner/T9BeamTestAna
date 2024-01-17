@@ -35,11 +35,38 @@ There are three helper python code for accessing the data and producing some (mo
 
 ```python python/particleID.py windowPE_-16ns_45ns_run$run.root runNumber +/-Momentum refractiveIndex isBerylliumTarget probabilityThatThereisAparticleInBunch``` e.g.: ```python python/particleID.py singlePEstudy/singlePE_-16ns_45ns_run432.root 432 +460 1.047 1 0.0023```
 
-More information about how to use this code and what it does are here: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231204/meeting/charge-particle-updates-and-future-studies/acraplet_041223_chargedparticlesetupupdates.pdf/view
+This code reads in the information stored in referenceParticleNumbers.txt to give a first proposition of the selection cuts that could be applied, depending on the beam momentum. This file has the same format as ```numberParticles.txt``` (see below) 
+
+More information about how to use this code and what it does are here: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231204/meeting/charge-particle-updates-and-future-studies/acraplet_041223_chargedparticlesetupupdates.pdf/view [1] 
+
+The analysis code outputs a bunch of numbers to a ```numberParticles.txt``` file that stores the following informations:
+1. run number
+2. momentum (positive or negative depending on beam charge)
+3. refIndex (index of refraction of aerogels ACT2 and ACT3)
+4. nSpills (number of spills, calculated in the code)
+5. probaBunch (probability for a bunch to contain a particle, see Dean's slide:
+6. nParticles (total number of particles identified)
+7. nElectrons
+8. nMuons
+9. nPions
+10. nProtons
+11. nDeuterium (if TOF is very large)
+12. fractionPass1ParticleVeto (fraction of events where there is *exactly* one peak in *all* of the TOF PMTs, 8 in total)
+13. fractionPassNanVeto (always one, just checking if there are any file corruptions)
+14. ACTlinearA (linear coefficient for the selection cut in the ACT2+3 vs ACT1 plane, see ref [1]
+15. ACTlinearB (second line coefficient for the selection)
+16. piMuBorderACT (separation between the pion and muon (in units of PE) populations in ACT23)
+17. ACTlower (lowest ACT23 bound, to avoid noise)
+18. thereIsProtons (1 or 0 depending on the charge of the beam)
+19. protonsTOFCut (in ns, 0 if there are no protons at all)
+20. horizontal_el (in PE, horizontal cut to account for the scintillation and not misID pions/muons as electrons)
+21. LGupper (lead glass signal above which the particle has to be an electron, to account for weird eletrons, see [1])
+22. bery (whether the target is beryllium, or Aluminium, 1 for beryllium, 0 for Al)
 
 Coding still left to do:
 1. change the reference timing to be an average of TOF10, TOF11, TOF12 and TOF13 to limit risks of accidentals in TOF01 biasing the signal
 2. probably merge the config files into 1 to have something cleaner
+   
 
 
 
