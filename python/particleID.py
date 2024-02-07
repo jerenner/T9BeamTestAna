@@ -104,7 +104,7 @@ def plotSelection(df_all, ACTlinearA, ACTlinearB, piMuBorderACT, ACTlower, there
     plt.xlim(xmin, xmax)
     plt.ylim(ymin, ymax)
     if plot_events:
-        plt.plot(ACT1, ACT23, "x", color = "lightgrey")
+        plt.plot(np.array(ACT1), np.array(ACT23), "x", color = "lightgrey")
         plt.plot([xmin, xmax], [piMuBorderACT, piMuBorderACT], "g--", label ="Pi-Mu separation %.3f PE" %(piMuBorderACT))
         plt.plot([xmin, xmax], [ACTlower, ACTlower], "r-", label ="Limit noise %.3f PE"%(ACTlower))
         plt.plot([xmin, (horizontal_el - ACTlinearB)/ACTlinearA], [xmin * ACTlinearA + ACTlinearB, ((horizontal_el - ACTlinearB)/ACTlinearA) * ACTlinearA + ACTlinearB], "k--", label ="Diagonal electron veto A = %.3f, B = %.3f" %(ACTlinearA, ACTlinearB))
@@ -126,7 +126,7 @@ def plotSelection(df_all, ACTlinearA, ACTlinearB, piMuBorderACT, ACTlower, there
 def plotTOFSelection(tof, ACT23, thereIsProtons, protonsTOFCut, max_ACT23=200):
     xmin, xmax = min(tof) * 0.8, max(tof)* 0.8
     ymin, ymax = min(ACT23) * 0.8, min(max_ACT23, max(ACT23)* 0.8)
-    plt.plot(tof, ACT23, "x", color = "lightgrey")
+    plt.plot(np.array(tof), np.array(ACT23), "x", color = "lightgrey")
     if thereIsProtons:
         plt.plot([protonsTOFCut, protonsTOFCut], [ymin, ymax], "r--", label ="Proton TOF cut %.3f ns" %(protonsTOFCut))
         plt.ylabel("ACT23 (PE)")
@@ -1230,7 +1230,7 @@ def singlePE(argv):
 
     with open("numberParticles.txt", "a") as file:
         #first the header, only once
-        file.write("run momentum refIndex nSpills probaBunch nParticles nElectrons nMuons nPions nProtons fractionPass1ParticleVeto fractionPassNanVeto ACTlinearA ACTlinearB piMuBorderACT ACTlower thereIsProtons protonsTOFCut horizontal_el LGupper bery\n")
+        file.write("run momentum refIndex nSpills probaBunch nParticles nElectrons nMuons nPions nProtons nDeuterium fractionPass1ParticleVeto fractionPassNanVeto ACTlinearA ACTlinearB piMuBorderACT ACTlower thereIsProtons protonsTOFCut horizontal_el LGupper bery\n")
         file.write("%i %i %.3f %i %.3e %i %i %i %i %i %i %.5f %.5f %.2f %.2f %.2f %2f %i %.2f %.2f %.2f %i %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f %.2f\n" % (table[0], table[1], table[2], table[3], table[4], table[5], table[6], table[7], table[8],table[9], table[10], table[11], table[12], table[13],table[14], table[15], table[16], table[17],table[18], table[19], table[20], table[21], table[22], table[23],table[24], table[25], table[26], table[27],  table[28], table[29],table[30], table[31], table[32], table[33]) )
 
     #exit the program for now
