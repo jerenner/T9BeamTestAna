@@ -448,45 +448,45 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   c = new TCanvas();
   htoflg->SetStats(0);
   htoflg->Draw("colz");
-  c->Print(Form("%s_tof_lg.png",plotout.c_str()));
+  //c->Print(Form("%s_tof_lg.png",plotout.c_str()));
 
   c = new TCanvas();
   hlgact23->SetStats(0);
   hlgact23->Draw("colz");
-  c->Print(Form("%s_lg_act23.png",plotout.c_str()));
+  //c->Print(Form("%s_lg_act23.png",plotout.c_str()));
 
   for (int chi=0; chi<19; chi++) {
     c = new TCanvas();
     hv[chi]->SetStats(1);
     hv[chi]->Draw();
-    c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chi].c_str()));
+    //c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chi].c_str()));
   
     c = new TCanvas();
     hq[chi]->SetStats(1);
     hq[chi]->Draw();
-    c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chi].c_str()));
+    //c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chi].c_str()));
   }
 
   c = new TCanvas();
   httcoract->Draw();
-  c->Print(Form("%s_ttcoract.png",plotout.c_str()));
+  //c->Print(Form("%s_ttcoract.png",plotout.c_str()));
 
   c = new TCanvas();
   httcorlg->Draw();
-  c->Print(Form("%s_ttcorlg.png",plotout.c_str()));
+  //c->Print(Form("%s_ttcorlg.png",plotout.c_str()));
 
   for (int chi=0;chi<nchans;chi++) {
     c = new TCanvas();
     hspillcoract[chi]->Draw();
-    c->Print(Form("%s_%s_T10_spillcor.png",plotout.c_str(),tree_name[chi].c_str()));
+    //c->Print(Form("%s_%s_T10_spillcor.png",plotout.c_str(),tree_name[chi].c_str()));
 
     c = new TCanvas();
     hspillstdact[chi]->Draw();
-    c->Print(Form("%s_%s_T10_spillstd.png",plotout.c_str(),tree_name[chi].c_str()));
+    //c->Print(Form("%s_%s_T10_spillstd.png",plotout.c_str(),tree_name[chi].c_str()));
 
     c = new TCanvas();
     hactcor[chi]->Draw("colz");
-    c->Print(Form("%s_%s_T10_actcor.png",plotout.c_str(),tree_name[chi].c_str()));
+    //c->Print(Form("%s_%s_T10_actcor.png",plotout.c_str(),tree_name[chi].c_str()));
   }
 
   // mean and std corrections
@@ -702,41 +702,25 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
 
   gStyle->SetOptTitle(0);
 
-  for (int acti=0; acti<8; acti++) {
-
-    //c = new TCanvas();
-    //hactt10[acti]->SetStats(1);
-    //hactt10[acti]->Draw();
-    //c->Print(Form("%s_%s_T10.png",plotout.c_str(),tnames[acti].c_str()));
-    //gPad->SetLogy();          
-    //c->Print(Form("%s_%s_T10_logy.png",plotout.c_str(),tnames[acti].c_str()));
-
-    c = new TCanvas();
-    hactt10cor[acti]->SetStats(0);
-    //hactt10cor[acti]->SetTitle("");
-    hactt10cor[acti]->SetLineColor(kRed);
-    hactt10cor[acti]->Draw();
-    gPad->BuildLegend(0.6,0.7,0.88,0.89);
-    gPad->SetLogy();          
-    c->Print(Form("%s_%s_T10_cor.png",plotout.c_str(),tree_name[acti].c_str()));
+  for (int chi=0; chi<nchans; chi++) {
 
     c = new TCanvas();
     THStack * s = new THStack();
-    hactt10[acti]->SetStats(0);
-    hactt10cor[acti]->SetStats(0);
-    hactt10[acti]->SetLineColor(kBlue);
-    hactt10cor[acti]->SetLineColor(kRed);
-    s->Add(hactt10[acti]);
-    s->Add(hactt10cor[acti]);
-    hactt10[acti]->SetTitle("e-like");
-    hactt10cor[acti]->SetTitle("e-like corr.");
+    hactt10[chi]->SetStats(0);
+    hactt10cor[chi]->SetStats(0);
+    hactt10[chi]->SetLineColor(kBlue);
+    hactt10cor[chi]->SetLineColor(kRed);
+    s->Add(hactt10[chi]);
+    s->Add(hactt10cor[chi]);
+    hactt10[chi]->SetTitle("e-like");
+    hactt10cor[chi]->SetTitle("e-like corr.");
     s->Draw("nostack");
-    s->GetXaxis()->SetTitle(hactt10[acti]->GetXaxis()->GetTitle());
-    s->GetYaxis()->SetTitle(hactt10[acti]->GetYaxis()->GetTitle());
+    s->GetXaxis()->SetTitle(hactt10[chi]->GetXaxis()->GetTitle());
+    s->GetYaxis()->SetTitle(hactt10[chi]->GetYaxis()->GetTitle());
     gPad->BuildLegend(0.6,0.7,0.88,0.89);
     //gPad->SetLogy();          
-    c->Print(Form("%s_%s_T10_cor_stack.png",plotout.c_str(),tree_name[acti].c_str()));
-    //c->Print(Form("%s_%s_T10_cor_stack_logy.png",plotout.c_str(),tnames[acti].c_str()));
+    c->Print(Form("%s_%s_T10_cor_stack.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+    //c->Print(Form("%s_%s_T10_cor_stack_logy.png",plotout.c_str(),tnames[chi].c_str()));
 
   }
 
