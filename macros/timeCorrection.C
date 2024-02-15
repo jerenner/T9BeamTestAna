@@ -22,7 +22,8 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
 
   //extract run number
   string run = input.substr(input.size()-8,3);
-  string plotout(Form("plots/run%s",run.c_str()));
+  string plotdir(".");
+  string plotout(Form("%s/run%s",plotdir.c_str(),run.c_str()));
   string title(Form("Run %s",run.c_str()));
   cout << "run number " << run << endl;
 
@@ -782,15 +783,15 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   //gPad->SetLogy();          
   c->Print(Form("%s_LG_T10_cor_stack.png",plotout.c_str()));
 */
+  // copy results to a text file
+  ofstream fout("timeCorrection.txt",ofstream::app);
+  fout << run;
   for (int chi=0;chi<nchans;chi++) {
-    cout << tree_name[chi] << " ";
-    cout << hactt10[chi]->GetMean() << " ";
-    cout << hactt10[chi]->GetStdDev();
-    cout << " corrected: ";
-    cout << hactt10cor[chi]->GetMean() << " ";
-    cout << hactt10cor[chi]->GetStdDev();
-    cout << endl;
+    fout << " " << hactt10[chi]->GetStdDev();
+    fout << " " << hactt10cor[chi]->GetStdDev();
   }
+  fout << endl;
+  fout.close();
 
   // save new ntuple
   newfile->Write();

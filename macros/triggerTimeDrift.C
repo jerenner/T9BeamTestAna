@@ -21,7 +21,8 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
 
   //extract run number
   string run = input.substr(input.size()-8,3);
-  string plotout(Form("plots/run%s",run.c_str()));
+  string plotdir(".");
+  string plotout(Form("%s/run%s",plotdir.c_str(),run.c_str()));
   string title(Form("Run %s",run.c_str()));
   cout << "run number " << run << endl;
 
