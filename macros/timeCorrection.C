@@ -169,41 +169,41 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   chan.push_back(18);
   const int nchans = chan.size();
 
-  TH1D * hactt10[nchans];
-  TH1D * hactt10cor[nchans];
-  TH1D * hactt10cortmp[nchans];
-  TH1D * hspillcoract [nchans];
-  TH1D * hspillstdact [nchans];
-  TH2D * hactcor[nchans];
+  TH1D * htdiff[nchans];
+  TH1D * htdifftmp[nchans];
+  TH1D * htdiffcor[nchans];
+  TH1D * hoffmean [nchans];
+  TH1D * hoffstd[nchans];
+  TH2D * hoffcorre[nchans];
 
   for (int chi=0;chi<nchans;chi++) {
 
-    hactt10[chi] = new TH1D(Form("%s_TOF10",tree_name[chan[chi]].c_str()),"",100,-100,100);
-    hactt10[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    hactt10[chi]->SetTitle("e-like");
+    htdiff[chi] = new TH1D(Form("%s_TOF10",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiff[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiff[chi]->SetTitle("e-like");
 
-    hactt10cor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,200);
-    hactt10cor[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    hactt10cor[chi]->SetTitle("e-like");
+    htdifftmp[chi] = new TH1D(Form("%s_TOF10_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdifftmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdifftmp[chi]->SetTitle("e-like");
 
-    hactt10cortmp[chi] = new TH1D(Form("%s_TOF10_cor_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
-    hactt10cortmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    hactt10cortmp[chi]->SetTitle("e-like");
+    htdiffcor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,200);
+    htdiffcor[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiffcor[chi]->SetTitle("e-like");
 
-    hspillcoract[chi] = new TH1D(Form("%sspillcor",tree_name[chi].c_str()),
+    hoffmean[chi] = new TH1D(Form("%soffmean",tree_name[chi].c_str()),
                            Form(";%s-TOF10 mean per spill (ns)",tree_name[chi].c_str()),
                            100,-100,100);
 
-    hspillstdact[chi] = new TH1D(Form("%sspillstd",tree_name[chan[chi]].c_str()),
+    hoffstd[chi] = new TH1D(Form("%soffstd",tree_name[chan[chi]].c_str()),
                                  Form(";%s-TOF10 stddev per spill (ns)",tree_name[chan[chi]].c_str()),
                                  100,0,20);
 
-    hactcor[chi] = new TH2D(Form("%sactcor",tree_name[chan[chi]].c_str()),
+    hoffcorre[chi] = new TH2D(Form("%soffcorre",tree_name[chan[chi]].c_str()),
                                  Form(";%s-TOF01 (ns);ACT3R-TOF10",tree_name[chan[chi]].c_str()),
                                  100,-100,100,100,-100,100);
   }
 
-  // act and lg correction
+  // act and lg trigger time correction
   TH1D * httcoract = new TH1D("ttcoract",
                               ";TT0-TT1 (ns)",
                               100,-100,100);
@@ -212,8 +212,8 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
                               100,-100,100);
 
   // save for each spill
-  vector< map<int,double> > cor_mean(nchans);
-  vector< map<int,double> > cor_std(nchans);
+  vector< map<int,double> > off_mean(nchans);
+  vector< map<int,double> > off_std(nchans);
 
   // store previous trigger information
   unsigned int spillNumber_pre = 0;
@@ -240,25 +240,25 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     if (info->EventNumber==0 && info->SpillNumber>0) {
 
       for (int chi=0;chi<nchans;chi++) {
-        hspillcoract[chi]->Fill(hactt10cortmp[chi]->GetMean());
-        hspillstdact[chi]->Fill(hactt10cortmp[chi]->GetStdDev());
-        cor_mean[chi][spillNumber_pre] = hactt10cortmp[chi]->GetMean();
-        cor_std[chi][spillNumber_pre] = hactt10cortmp[chi]->GetStdDev();
-        if (hactt10cortmp[chi]->GetBinContent(0)>0 ||
-            hactt10cortmp[chi]->GetBinContent(hactt10cortmp[chi]->GetNbinsX())>0) {
+        hoffmean[chi]->Fill(htdifftmp[chi]->GetMean());
+        hoffstd[chi]->Fill(htdifftmp[chi]->GetStdDev());
+        off_mean[chi][spillNumber_pre] = htdifftmp[chi]->GetMean();
+        off_std[chi][spillNumber_pre] = htdifftmp[chi]->GetStdDev();
+        if (htdifftmp[chi]->GetBinContent(0)>0 ||
+            htdifftmp[chi]->GetBinContent(htdifftmp[chi]->GetNbinsX())>0) {
           cout << "spill number " << spillNumber_pre << endl;
           cout << tree_name[chi] << " ";
-          cout << hactt10cortmp[chi]->GetMean() << " ";
-          cout << hactt10cortmp[chi]->GetStdDev() << " ";
-          cout << hactt10cortmp[chi]->GetBinContent(0) << " ";
-          cout << hactt10cortmp[chi]->GetBinContent(hactt10cortmp[chi]->GetNbinsX());
+          cout << htdifftmp[chi]->GetMean() << " ";
+          cout << htdifftmp[chi]->GetStdDev() << " ";
+          cout << htdifftmp[chi]->GetBinContent(0) << " ";
+          cout << htdifftmp[chi]->GetBinContent(htdifftmp[chi]->GetNbinsX());
           cout << endl;
         }
-        hactt10cortmp[chi]->Reset();
+        htdifftmp[chi]->Reset();
       }
 
       for (int chi=0;chi<8;chi++) {
-        hactcor[chi]->Fill(cor_mean[chi][spillNumber_pre],cor_mean[7][spillNumber_pre]);
+        hoffcorre[chi]->Fill(off_mean[chi][spillNumber_pre],off_mean[7][spillNumber_pre]);
       }
     }
 
@@ -395,15 +395,15 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
               pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
               //pmt[acti]->IntCharge[0]>thresholdq[acti]) {
             double actdiff = pmt[acti]->SignalTime[0]-pmt[12]->SignalTime[0];
-            hactt10[acti]->Fill(actdiff);
-            hactt10cortmp[acti]->Fill(actdiff+ttcoract);
+            htdiff[acti]->Fill(actdiff);
+            htdifftmp[acti]->Fill(actdiff+ttcoract);
           }
         }
 
         // lead glass digitizer
         double lgdiff = pmt[18]->SignalTime[0]-pmt[12]->SignalTime[0];
-        hactt10[8]->Fill(lgdiff);
-        hactt10cortmp[8]->Fill(lgdiff+ttcorlg);
+        htdiff[8]->Fill(lgdiff);
+        htdifftmp[8]->Fill(lgdiff+ttcorlg);
 
       }
     }
@@ -419,31 +419,31 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   }//digitizers
 
   for (int chi=0;chi<nchans;chi++) {
-    hspillcoract[chi]->Fill(hactt10cortmp[chi]->GetMean());
-    hspillstdact[chi]->Fill(hactt10cortmp[chi]->GetStdDev());
-    cor_mean[chi][info->SpillNumber] = hactt10cortmp[chi]->GetMean();
-    cor_std[chi][info->SpillNumber] = hactt10cortmp[chi]->GetStdDev();
+    hoffmean[chi]->Fill(htdifftmp[chi]->GetMean());
+    hoffstd[chi]->Fill(htdifftmp[chi]->GetStdDev());
+    off_mean[chi][info->SpillNumber] = htdifftmp[chi]->GetMean();
+    off_std[chi][info->SpillNumber] = htdifftmp[chi]->GetStdDev();
     cout << tree_name[chi] << " ";
     cout << "spill " << spillNumber_pre;
-    cout << " mean (ns) " << hactt10cortmp[chi]->GetMean();
-    cout << " std (ns) " <<  hactt10cortmp[chi]->GetStdDev();
-    cout << " entries " <<  hactt10cortmp[chi]->GetEntries() << endl;
+    cout << " mean (ns) " << htdifftmp[chi]->GetMean();
+    cout << " std (ns) " <<  htdifftmp[chi]->GetStdDev();
+    cout << " entries " <<  htdifftmp[chi]->GetEntries() << endl;
     cout << tree_name[chi] << " ";
     cout << "spill " << spillNumber_pre;
-    cout << " mean (ns) " << hactt10[chi]->GetMean();
-    cout << " std (ns) " <<  hactt10[chi]->GetStdDev();
-    cout << " entries " <<  hactt10[chi]->GetEntries() << endl;
-    if (hactt10cortmp[chi]->GetBinContent(0)>0 ||
-        hactt10cortmp[chi]->GetBinContent(hactt10cortmp[chi]->GetNbinsX())>0) {
+    cout << " mean (ns) " << htdiff[chi]->GetMean();
+    cout << " std (ns) " <<  htdiff[chi]->GetStdDev();
+    cout << " entries " <<  htdiff[chi]->GetEntries() << endl;
+    if (htdifftmp[chi]->GetBinContent(0)>0 ||
+        htdifftmp[chi]->GetBinContent(htdifftmp[chi]->GetNbinsX())>0) {
       cout << "spill number " << info->SpillNumber << endl;
       cout << tree_name[chi] << " ";
-      cout << hactt10cortmp[chi]->GetMean() << " ";
-      cout << hactt10cortmp[chi]->GetStdDev() << " ";
-      cout << hactt10cortmp[chi]->GetBinContent(0) << " ";
-      cout << hactt10cortmp[chi]->GetBinContent(hactt10cortmp[chi]->GetNbinsX());
+      cout << htdifftmp[chi]->GetMean() << " ";
+      cout << htdifftmp[chi]->GetStdDev() << " ";
+      cout << htdifftmp[chi]->GetBinContent(0) << " ";
+      cout << htdifftmp[chi]->GetBinContent(htdifftmp[chi]->GetNbinsX());
       cout << endl;
     }
-    hactt10cortmp[chi]->Reset();
+    htdifftmp[chi]->Reset();
   }
 
   if (saveplots) {
@@ -482,24 +482,24 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
 
     for (int chi=0;chi<nchans;chi++) {
       c = new TCanvas();
-      hspillcoract[chi]->Draw();
-      c->Print(Form("%s_%s_T10_spillcor.png",plotout.c_str(),tree_name[chi].c_str()));
+      hoffmean[chi]->Draw();
+      c->Print(Form("%s_%s_T10_offmean.png",plotout.c_str(),tree_name[chi].c_str()));
 
       c = new TCanvas();
-      hspillstdact[chi]->Draw();
-      c->Print(Form("%s_%s_T10_spillstd.png",plotout.c_str(),tree_name[chi].c_str()));
+      hoffstd[chi]->Draw();
+      c->Print(Form("%s_%s_T10_offstd.png",plotout.c_str(),tree_name[chi].c_str()));
 
       c = new TCanvas();
-      hactcor[chi]->Draw("colz");
-      c->Print(Form("%s_%s_T10_actcor.png",plotout.c_str(),tree_name[chi].c_str()));
+      hoffcorre[chi]->Draw("colz");
+      c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chi].c_str()));
     }
   }
 
   // mean and std corrections
   //for (int i=0; i<9; i++) {
   //  cout << "channel " << i << endl;
-  //  cout << "saved spill corrections size " << cor_mean[i].size() << endl;
-  //  for (map<int,double>::iterator sp=cor_mean[i].begin(); sp!=cor_mean[i].end(); sp++) {
+  //  cout << "saved spill corrections size " << off_mean[i].size() << endl;
+  //  for (map<int,double>::iterator sp=off_mean[i].begin(); sp!=off_mean[i].end(); sp++) {
   //    cout << "  spill " << sp->first << " " << sp->second << endl;
   //  }
   //}
@@ -638,7 +638,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       for (int ipeak=0; ipeak<pmt[ipmt]->nPeaks; ipeak++) {
         // ACT channels
         if (ipmt<8) {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcoract - cor_mean[6][info->SpillNumber];
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcoract - off_mean[6][info->SpillNumber];
         }
         // TOF channels
         else if (ipmt<16) {
@@ -646,7 +646,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         }
         // Hole and LG channels
         else {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcorlg - cor_mean[8][info->SpillNumber];
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcorlg - off_mean[8][info->SpillNumber];
         }
       }
       newtree[ipmt]->Fill();
@@ -684,11 +684,11 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
           if (pmt[acti]->nPeaks==1 &&
               pmt[acti]->SignalTime[0]<200 &&
               pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
-            hactt10cor[acti]->Fill(signalTimeCor[acti][0]-signalTimeCor[12][0]);
+            htdiffcor[acti]->Fill(signalTimeCor[acti][0]-signalTimeCor[12][0]);
           }
         }
 
-        hactt10cor[8]->Fill(signalTimeCor[18][0]-signalTimeCor[12][0]);
+        htdiffcor[8]->Fill(signalTimeCor[18][0]-signalTimeCor[12][0]);
 
       }
 
@@ -710,17 +710,17 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     for (int chi=0; chi<nchans; chi++) {
       TCanvas * c = new TCanvas();
       THStack * s = new THStack();
-      hactt10[chi]->SetStats(0);
-      hactt10cor[chi]->SetStats(0);
-      hactt10[chi]->SetLineColor(kBlue);
-      hactt10cor[chi]->SetLineColor(kRed);
-      s->Add(hactt10[chi]);
-      s->Add(hactt10cor[chi]);
-      hactt10[chi]->SetTitle("e-like");
-      hactt10cor[chi]->SetTitle("e-like corr.");
+      htdiff[chi]->SetStats(0);
+      htdiffcor[chi]->SetStats(0);
+      htdiff[chi]->SetLineColor(kBlue);
+      htdiffcor[chi]->SetLineColor(kRed);
+      s->Add(htdiff[chi]);
+      s->Add(htdiffcor[chi]);
+      htdiff[chi]->SetTitle("e-like");
+      htdiffcor[chi]->SetTitle("e-like corr.");
       s->Draw("nostack");
-      s->GetXaxis()->SetTitle(hactt10[chi]->GetXaxis()->GetTitle());
-      s->GetYaxis()->SetTitle(hactt10[chi]->GetYaxis()->GetTitle());
+      s->GetXaxis()->SetTitle(htdiff[chi]->GetXaxis()->GetTitle());
+      s->GetYaxis()->SetTitle(htdiff[chi]->GetYaxis()->GetTitle());
       gPad->BuildLegend(0.6,0.7,0.88,0.89);
       //gPad->SetLogy();          
       c->Print(Form("%s_%s_T10_cor_stack.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
@@ -732,8 +732,8 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   ofstream fout("timeCorrection.txt",ofstream::app);
   fout << run;
   for (int chi=0;chi<nchans;chi++) {
-    fout << " " << hactt10[chi]->GetStdDev();
-    fout << " " << hactt10cor[chi]->GetStdDev();
+    fout << " " << htdiff[chi]->GetStdDev();
+    fout << " " << htdiffcor[chi]->GetStdDev();
   }
   fout << endl;
   fout.close();
