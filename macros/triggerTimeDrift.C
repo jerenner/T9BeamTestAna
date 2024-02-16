@@ -15,6 +15,8 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   gStyle->SetFuncWidth(1);
   gStyle->SetMarkerStyle(6);
 
+  bool saveplots = false;
+
   // input file
   TFile * f = new TFile(input.c_str());
   cout << f->GetName() << endl;
@@ -305,7 +307,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     gdrift[dg]->SetTitle(Form("%s",title.c_str()));
     gdrift[dg]->Fit("pol1","Q");
     gdrift[dg]->Draw("p");
-    c->Print(Form("%s_drift_%i.png",plotout.c_str(),dg));
+    if (saveplots) c->Print(Form("%s_drift_%i.png",plotout.c_str(),dg));
 
     // last spill
     c = new TCanvas();      
@@ -320,7 +322,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     gdriftspill[dg]->SetTitle(Form("%s",title.c_str()));
     gdriftspill[dg]->Fit("pol1","Q");
     gdriftspill[dg]->Draw("p");
-    c->Print(Form("%s_driftspill_%i.png",plotout.c_str(),dg));
+    if (saveplots) c->Print(Form("%s_driftspill_%i.png",plotout.c_str(),dg));
 
     c = new TCanvas();      
     gdriftspillsingle[dg]->Draw("ap");
@@ -332,7 +334,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     max = gdriftspillsingle[dg]->GetHistogram()->GetMaximum();
     gdriftspillsingle[dg]->GetYaxis()->SetRangeUser(min,max*(1.4));
     gdriftspillsingle[dg]->Draw("p");
-    c->Print(Form("%s_driftspillsingle_%i.png",plotout.c_str(),dg));
+    if (saveplots) c->Print(Form("%s_driftspillsingle_%i.png",plotout.c_str(),dg));
 
     // remove drift slope
     for (int p=0; p<gdrift[dg]->GetN(); p++) {
@@ -348,7 +350,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     gdriftcor[dg]->GetXaxis()->SetTitle("TT1 (min)");
     gdriftcor[dg]->SetTitle(Form("%s corrected",title.c_str()));
     gdriftcor[dg]->Draw("p");
-    c->Print(Form("%s_driftcor_%i.png",plotout.c_str(),dg));
+    if (saveplots) c->Print(Form("%s_driftcor_%i.png",plotout.c_str(),dg));
 
     // get fit values
     TF1 * fit = gdrift[dg]->GetFunction("pol1");
@@ -368,7 +370,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     // draw drift slope
     c = new TCanvas();               
     hslope[dg]->Draw();             
-    c->Print(Form("%s_slope_%i.png",plotout.c_str(),dg));
+    if (saveplots) c->Print(Form("%s_slope_%i.png",plotout.c_str(),dg));
 
     //slope[dg] = slopespill[dg][0];//slope spill 0
     slope[dg] = hslope[dg]->GetMean();//mean slope

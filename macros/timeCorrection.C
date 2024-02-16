@@ -16,6 +16,8 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   gStyle->SetFuncWidth(1);
   gStyle->SetMarkerStyle(6);
 
+  bool saveplots = false;
+
   // input file
   TFile * f = new TFile(input.c_str());
   cout << f->GetName() << endl;
@@ -443,50 +445,53 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     hactt10cortmp[chi]->Reset();
   }
 
-  TCanvas * c;
+  if (saveplots) {
 
-  c = new TCanvas();
-  htoflg->SetStats(0);
-  htoflg->Draw("colz");
-  //c->Print(Form("%s_tof_lg.png",plotout.c_str()));
-
-  c = new TCanvas();
-  hlgact23->SetStats(0);
-  hlgact23->Draw("colz");
-  //c->Print(Form("%s_lg_act23.png",plotout.c_str()));
-
-  for (int chi=0; chi<19; chi++) {
-    c = new TCanvas();
-    hv[chi]->SetStats(1);
-    hv[chi]->Draw();
-    //c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chi].c_str()));
-  
-    c = new TCanvas();
-    hq[chi]->SetStats(1);
-    hq[chi]->Draw();
-    //c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chi].c_str()));
-  }
-
-  c = new TCanvas();
-  httcoract->Draw();
-  //c->Print(Form("%s_ttcoract.png",plotout.c_str()));
-
-  c = new TCanvas();
-  httcorlg->Draw();
-  //c->Print(Form("%s_ttcorlg.png",plotout.c_str()));
-
-  for (int chi=0;chi<nchans;chi++) {
-    c = new TCanvas();
-    hspillcoract[chi]->Draw();
-    //c->Print(Form("%s_%s_T10_spillcor.png",plotout.c_str(),tree_name[chi].c_str()));
+    TCanvas * c;
 
     c = new TCanvas();
-    hspillstdact[chi]->Draw();
-    //c->Print(Form("%s_%s_T10_spillstd.png",plotout.c_str(),tree_name[chi].c_str()));
+    htoflg->SetStats(0);
+    htoflg->Draw("colz");
+    c->Print(Form("%s_tof_lg.png",plotout.c_str()));
 
     c = new TCanvas();
-    hactcor[chi]->Draw("colz");
-    //c->Print(Form("%s_%s_T10_actcor.png",plotout.c_str(),tree_name[chi].c_str()));
+    hlgact23->SetStats(0);
+    hlgact23->Draw("colz");
+    c->Print(Form("%s_lg_act23.png",plotout.c_str()));
+
+    for (int chi=0; chi<19; chi++) {
+      c = new TCanvas();
+      hv[chi]->SetStats(1);
+      hv[chi]->Draw();
+      c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chi].c_str()));
+    
+      c = new TCanvas();
+      hq[chi]->SetStats(1);
+      hq[chi]->Draw();
+      c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chi].c_str()));
+    }
+
+    c = new TCanvas();
+    httcoract->Draw();
+    c->Print(Form("%s_ttcoract.png",plotout.c_str()));
+
+    c = new TCanvas();
+    httcorlg->Draw();
+    c->Print(Form("%s_ttcorlg.png",plotout.c_str()));
+
+    for (int chi=0;chi<nchans;chi++) {
+      c = new TCanvas();
+      hspillcoract[chi]->Draw();
+      c->Print(Form("%s_%s_T10_spillcor.png",plotout.c_str(),tree_name[chi].c_str()));
+
+      c = new TCanvas();
+      hspillstdact[chi]->Draw();
+      c->Print(Form("%s_%s_T10_spillstd.png",plotout.c_str(),tree_name[chi].c_str()));
+
+      c = new TCanvas();
+      hactcor[chi]->Draw("colz");
+      c->Print(Form("%s_%s_T10_actcor.png",plotout.c_str(),tree_name[chi].c_str()));
+    }
   }
 
   // mean and std corrections
@@ -702,71 +707,28 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
 
   gStyle->SetOptTitle(0);
 
-  for (int chi=0; chi<nchans; chi++) {
-
-    c = new TCanvas();
-    THStack * s = new THStack();
-    hactt10[chi]->SetStats(0);
-    hactt10cor[chi]->SetStats(0);
-    hactt10[chi]->SetLineColor(kBlue);
-    hactt10cor[chi]->SetLineColor(kRed);
-    s->Add(hactt10[chi]);
-    s->Add(hactt10cor[chi]);
-    hactt10[chi]->SetTitle("e-like");
-    hactt10cor[chi]->SetTitle("e-like corr.");
-    s->Draw("nostack");
-    s->GetXaxis()->SetTitle(hactt10[chi]->GetXaxis()->GetTitle());
-    s->GetYaxis()->SetTitle(hactt10[chi]->GetYaxis()->GetTitle());
-    gPad->BuildLegend(0.6,0.7,0.88,0.89);
-    //gPad->SetLogy();          
-    c->Print(Form("%s_%s_T10_cor_stack.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-    //c->Print(Form("%s_%s_T10_cor_stack_logy.png",plotout.c_str(),tnames[chi].c_str()));
-
+  if (saveplots) {
+    for (int chi=0; chi<nchans; chi++) {
+      TCanvas * c = new TCanvas();
+      THStack * s = new THStack();
+      hactt10[chi]->SetStats(0);
+      hactt10cor[chi]->SetStats(0);
+      hactt10[chi]->SetLineColor(kBlue);
+      hactt10cor[chi]->SetLineColor(kRed);
+      s->Add(hactt10[chi]);
+      s->Add(hactt10cor[chi]);
+      hactt10[chi]->SetTitle("e-like");
+      hactt10cor[chi]->SetTitle("e-like corr.");
+      s->Draw("nostack");
+      s->GetXaxis()->SetTitle(hactt10[chi]->GetXaxis()->GetTitle());
+      s->GetYaxis()->SetTitle(hactt10[chi]->GetYaxis()->GetTitle());
+      gPad->BuildLegend(0.6,0.7,0.88,0.89);
+      //gPad->SetLogy();          
+      c->Print(Form("%s_%s_T10_cor_stack.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+      //c->Print(Form("%s_%s_T10_cor_stack_logy.png",plotout.c_str(),tnames[chi].c_str()));
+    }
   }
 
-  //c = new TCanvas();
-  //glgt10->Draw("ap");
-  //glgt10->GetYaxis()->SetTitle("LG-T10 time (ns)");
-  //glgt10->GetXaxis()->SetTitle("Sample number");
-  //glgt10->Fit("pol1","Q");
-  //glgt10->Draw("p");
-  ////c->Print(Form("%s_LG_T10_drift.png",plotout.c_str()));
-
-  //c = new TCanvas();
-  //hlgt10->SetStats(1);
-  //hlgt10->Draw();
-  //c->Print(Form("%s_LG_T10.png",plotout.c_str()));
-  ////gPad->SetLogy();          
-  ////c->Print(Form("%s_LG_T10_logy.png",plotout.c_str()));
-/*
-  //c = new TCanvas();
-  //hlgt10cor->SetStats(0);
-  //hlgt10cor->SetTitle("");
-  //hlgt10cor->SetLineColor(kRed);
-  //hlgt10cor2->SetLineColor(kBlack);
-  hlgt10cor->Draw();
-  hlgt10cor2->Draw("same");
-  gPad->BuildLegend(0.6,0.7,0.88,0.89);
-  gPad->SetLogy();          
-  c->Print(Form("%s_LG_T10_cor.png",plotout.c_str()));
-
-  c = new TCanvas();
-  THStack * s = new THStack();
-  hlgt10->SetStats(0);
-  hlgt10cor->SetStats(0);
-  hlgt10->SetLineColor(kBlue);
-  hlgt10cor->SetLineColor(kRed);
-  s->Add(hlgt10);
-  s->Add(hlgt10cor);
-  hlgt10->SetTitle("e-like");
-  hlgt10cor->SetTitle("e-like corr.");
-  s->Draw("nostack");
-  s->GetXaxis()->SetTitle(hlgt10->GetXaxis()->GetTitle());
-  s->GetYaxis()->SetTitle(hlgt10->GetYaxis()->GetTitle());
-  gPad->BuildLegend(0.6,0.7,0.88,0.89);
-  //gPad->SetLogy();          
-  c->Print(Form("%s_LG_T10_cor_stack.png",plotout.c_str()));
-*/
   // copy results to a text file
   ofstream fout("timeCorrection.txt",ofstream::app);
   fout << run;
