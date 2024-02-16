@@ -342,12 +342,14 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     double tt_tof = triggerTimeFullSpill[1]*period[1];
     double tt_lg  = triggerTimeFullSpill[2]*period[2];
 
+    // trigger time correction
     double ttcoract = tt_act-tt_tof;
     double ttcorlg  = tt_lg -tt_tof;
 
     httcoract->Fill(ttcoract);
     httcorlg ->Fill(ttcorlg);
 
+    // e-like selection
     // one peak cut
     bool cut = true;
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
@@ -384,7 +386,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       double act23 = act2+act3;
       hlgact23->Fill(lg,act23);
 
-      // e-like selection
       if (tof<12 && lg>0.2) {
 
         // act digitizer
@@ -632,29 +633,27 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     double ttcoract = tt_act-tt_tof;
     double ttcorlg  = tt_lg -tt_tof;
 
-    double t_tof = pmt[12]->SignalTime[0];
-    double t_act[8];
-    for (int acti=0; acti<8; acti++) {
-      t_act[acti] = pmt[acti]->SignalTime[0] + ttcoract - cor_mean[acti][info->SpillNumber];
-    }
-    double t_lg = pmt[18]->SignalTime[0] + ttcorlg - cor_mean[8][info->SpillNumber];
-
+    // full correction of signal time for all channels
     for (int ipmt=0; ipmt<npmts; ipmt++) {
       for (int ipeak=0; ipeak<pmt[ipmt]->nPeaks; ipeak++) {
+        // ACT channels
         if (ipmt<8) {
           signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcoract - cor_mean[6][info->SpillNumber];
         }
+        // TOF channels
         else if (ipmt<16) {
-          signalTimeCor[ipmt][ipeak] = t_tof;
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak];
         }
+        // Hole and LG channels
         else {
-          signalTimeCor[ipmt][ipeak] = pmt[18]->SignalTime[ipeak] + ttcorlg - cor_mean[8][info->SpillNumber];
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcorlg - cor_mean[8][info->SpillNumber];
         }
       }
       newtree[ipmt]->Fill();
     }
 
-    // TOF cuts
+    // e-like selection
+    // with full corrections
     // one peak cut
     bool cut = true;
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
@@ -685,11 +684,11 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
           if (pmt[acti]->nPeaks==1 &&
               pmt[acti]->SignalTime[0]<200 &&
               pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
-            hactt10cor[acti]->Fill(t_act[acti]-t_tof);
+            hactt10cor[acti]->Fill(signalTimeCor[acti][0]-signalTimeCor[12][0]);
           }
         }
 
-        hactt10cor[8]->Fill(t_lg-t_tof);
+        hactt10cor[8]->Fill(signalTimeCor[18][0]-signalTimeCor[12][0]);
 
       }
 
