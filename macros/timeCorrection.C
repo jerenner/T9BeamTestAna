@@ -91,7 +91,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     if (runread==run) {
       ss >> slope[0];
       ss >> slope[2];
-      break;
     }
   }
 
