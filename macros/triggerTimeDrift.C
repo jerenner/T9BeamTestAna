@@ -28,31 +28,86 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   string title(Form("Run %s",run.c_str()));
   cout << "run number " << run << endl;
 
+  // is low momentum or tagged gamma configuration?
+  int run_number = stoi(run);
+  bool isLM = (run_number<=579) ? true : false;
+
   // input trees
   vector<string> tree_name;
-  tree_name.push_back("ACT0L");//0
-  tree_name.push_back("ACT0R");
-  tree_name.push_back("ACT1L");//2
-  tree_name.push_back("ACT1R");
-  tree_name.push_back("ACT2L");//4
-  tree_name.push_back("ACT2R");
-  tree_name.push_back("ACT3L");//6
-  tree_name.push_back("ACT3R");
-  tree_name.push_back("TOF00");//8
-  tree_name.push_back("TOF01");
-  tree_name.push_back("TOF02");//10
-  tree_name.push_back("TOF03");
-  tree_name.push_back("TOF10");//12
-  tree_name.push_back("TOF11");
-  tree_name.push_back("TOF12");//14
-  tree_name.push_back("TOF13");
-  tree_name.push_back("Hole0");//16
-  tree_name.push_back("Hole1");
-  tree_name.push_back("PbGlass");//18
+  if (isLM) {
+    tree_name.push_back("ACT0L");//0 - digitizer 0
+    tree_name.push_back("ACT0R");
+    tree_name.push_back("ACT1L");//2
+    tree_name.push_back("ACT1R");
+    tree_name.push_back("ACT2L");//4
+    tree_name.push_back("ACT2R");
+    tree_name.push_back("ACT3L");//6
+    tree_name.push_back("ACT3R");
+    tree_name.push_back("TOF00");//8 - digitizer 1
+    tree_name.push_back("TOF01");
+    tree_name.push_back("TOF02");//10
+    tree_name.push_back("TOF03");
+    tree_name.push_back("TOF10");//12
+    tree_name.push_back("TOF11");
+    tree_name.push_back("TOF12");//14
+    tree_name.push_back("TOF13");
+    tree_name.push_back("Hole0");//16 - digitizer 2
+    tree_name.push_back("Hole1");
+    tree_name.push_back("PbGlass");//18
+  }
+  else {
+    tree_name.push_back("ACT0L");//0 - digitizer 0
+    tree_name.push_back("ACT0R");
+    tree_name.push_back("ACT1L");//2
+    tree_name.push_back("ACT1R");
+    tree_name.push_back("ACT3L");//4
+    tree_name.push_back("ACT3R");
+    tree_name.push_back("TriggerScint");//6
+    tree_name.push_back("TOF00");//7 - digitizer 1
+    tree_name.push_back("TOF01");//8
+    tree_name.push_back("TOF02");
+    tree_name.push_back("TOF03");//10
+    tree_name.push_back("TOF10");
+    tree_name.push_back("TOF11");//12
+    tree_name.push_back("TOF12");
+    tree_name.push_back("TOF13");//14
+    tree_name.push_back("PbGlass");//15 - digitizer 2
+    tree_name.push_back("HD8");//16
+    tree_name.push_back("HD9");
+    tree_name.push_back("HD10");//18
+    tree_name.push_back("HD11");
+    tree_name.push_back("HD12");//20
+    tree_name.push_back("HD13");
+    tree_name.push_back("HD14");//22
+    tree_name.push_back("HD0");//23 - digitizer 3
+    tree_name.push_back("HD1");//24
+    tree_name.push_back("HD2");
+    tree_name.push_back("HD3");//26
+    tree_name.push_back("HD4");
+    tree_name.push_back("HD5");//28
+    tree_name.push_back("HD6");
+    tree_name.push_back("HD7");//30
+  }
   tree_name.push_back("EventInfo");
   const int npmts = tree_name.size()-1;
 
-  const int ndigitizers = 3;
+  const int ndigitizers = isLM ? 3 : 4;
+  // all pmt channels in a digitizer have
+  // the same trigger time and time stamp
+  // so pick one to represent each digitizer
+  vector<int> dg_pmt;
+  if (isLM) {
+    dg_pmt.push_back(0);//ACT0L for digitizer 0
+    dg_pmt.push_back(8);//TOF00 for digitizer 1
+    dg_pmt.push_back(16);//PbGlass for digitizer 2
+  }
+  else {
+    dg_pmt.push_back(0);//ACT0L for digitizer 0
+    dg_pmt.push_back(7);//TOF00 for digitizer 1
+    dg_pmt.push_back(15);//PbGlass for digitizer 2
+    dg_pmt.push_back(23);//HD0 digitizer 3
+  }
+
   unsigned long offset = 2147483648;//2^31 steps = ~17s
   double to_s  = 8e-9;
 
@@ -110,12 +165,18 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   // save for each spill
   vector< map<int,double> > slopespill(ndigitizers);
 
-  // store previous trigger information
-  unsigned int spillNumber_pre = 0;
+  // trigger times containers for all digitizers
   vector<unsigned long> timeStamp(ndigitizers,0);
+  vector<unsigned long> triggerTime(ndigitizers,0);
+  vector<unsigned long> triggerTimeFull(ndigitizers,0);
+  vector<unsigned long> triggerTimeFullInit(ndigitizers,0);
+  vector<double>        timeFullInit(ndigitizers,0);
+  vector<unsigned long> triggerTimeFullSpill(ndigitizers,0);
+  vector<double>        timeFullSpill(ndigitizers,0);
+
+  unsigned int spillNumber_pre = 0;
   vector<unsigned long> timeStamp_pre(ndigitizers,0);
   vector<unsigned long> timeStamp_init(ndigitizers,0);
-  vector<unsigned long> triggerTime(ndigitizers,0);
   vector<unsigned long> triggerTime_pre(ndigitizers,0);
   vector<unsigned long> triggerTime_full_pre(ndigitizers,0);
   vector<unsigned long> triggerTime_off(ndigitizers,0);
@@ -134,47 +195,37 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     // calculate slope for previous spill
     if (info->EventNumber==0 && info->SpillNumber>0) {
 
-     // for (int d=0; d<ndigitizers; d++) {
+      for (int d=0; d<ndigitizers; d++) {
+        // do fit if there are at least
+        // 100 triggers in this spill
+        // skip digitizer 1 (TOF)
+        if (d==1) {
+          slopespill[d][spillNumber_pre] = 0;
+        }
+        else {
+          if (gdriftspill[d]->GetN()>100) {
+            gdriftspill[d]->Fit("pol1","Q");
+            TF1 * fitspill = gdriftspill[d]->GetFunction("pol1");
+            slopespill[d][spillNumber_pre] = fitspill->GetParameter(1);
+            hslope[d]->Fill(fitspill->GetParameter(1));
+            delete fitspill;
+          }
+        }
 
-      if (gdriftspill[0]->GetN()>100) {
-        gdriftspill[0]->Fit("pol1","Q");
-        TF1 * fitspill0 = gdriftspill[0]->GetFunction("pol1");
-        slopespill[0][spillNumber_pre] = fitspill0->GetParameter(1);
-        hslope[0]->Fill(fitspill0->GetParameter(1));
-        delete fitspill0;
-
+        // reset graph
+        delete gdriftspill[d];
+        gdriftspill[d] = new TGraph();
       }
-
-      //slopespill[1][spillNumber_pre] = 0;
-
-      if (gdriftspill[2]->GetN()>100) {
-        gdriftspill[2]->Fit("pol1","Q");
-        TF1 * fitspill2 = gdriftspill[2]->GetFunction("pol1");
-        slopespill[2][spillNumber_pre] = fitspill2->GetParameter(1);
-        hslope[2]->Fill(fitspill2->GetParameter(1));
-        delete fitspill2;
-      }
-
-      delete gdriftspill[0];
-      delete gdriftspill[1];
-      delete gdriftspill[2];
-
-      gdriftspill[0] = new TGraph();
-      gdriftspill[1] = new TGraph();
-      gdriftspill[2] = new TGraph();
 
     }
 
-    // trigger time and time stamp for each digitizer
-    triggerTime[0] = pmt[0] ->triggerTime;
-    triggerTime[1] = pmt[8] ->triggerTime;
-    triggerTime[2] = pmt[16]->triggerTime;
-
-    timeStamp[0] = pmt[0] ->timeStamp;
-    timeStamp[1] = pmt[8] ->timeStamp;
-    timeStamp[2] = pmt[16]->timeStamp;
-
+    // calculate an offset to trigger time to
+    // remove effect of counter overflow
     for (int dg=0; dg<ndigitizers; dg++) {
+
+      // trigger time and time stamp for each digitizer
+      triggerTime[dg] = pmt[dg_pmt[dg]] ->triggerTime;
+      timeStamp[dg] = pmt[dg_pmt[dg]] ->timeStamp;
 
       // initilize
       if (ientry==0) {
@@ -191,12 +242,6 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
         triggerTime_spill[dg]    = triggerTime[dg];
       }
 
-      // trigger time resets after 2^31
-      // so add an offset for every time it resets
-      //if (triggerTime[dg]<triggerTime_pre[dg]) {
-      //  triggerTime_off[dg] += offset;
-      //}
-
       // increase trigger time offset until the total trigger time
       // difference matches the time stamp difference
       unsigned long diffTT = triggerTime[dg]+triggerTime_off[dg]-triggerTime_full_pre[dg];
@@ -212,38 +257,20 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
         triggerTime_spill[dg] = triggerTime[dg] + triggerTime_off[dg];
       }
 
+      // trigger time plus total offset
+      triggerTimeFull[dg] = triggerTime[dg] + triggerTime_off[dg];
+
+      // trigger time from run start
+      triggerTimeFullInit[dg] = triggerTimeFull[dg] - triggerTime_init[dg];
+      timeFullInit[dg] = triggerTimeFullInit[dg] * to_s;
+
+      // trigger time from spill start
+      triggerTimeFullSpill[dg] = triggerTimeFull[dg] - triggerTime_spill[dg];
+      timeFullSpill[dg] = triggerTimeFullSpill[dg] * to_s;
+
     }//ndigitizer
 
-    // add total offset to trigger time
-    unsigned long triggerTimeFull[3];
-    triggerTimeFull[0] = triggerTime[0] + triggerTime_off[0];
-    triggerTimeFull[1] = triggerTime[1] + triggerTime_off[1];
-    triggerTimeFull[2] = triggerTime[2] + triggerTime_off[2];
-
-    // trigger time from run start
-    unsigned long triggerTimeFullInit[3];
-    triggerTimeFullInit[0] = triggerTimeFull[0] - triggerTime_init[0];
-    triggerTimeFullInit[1] = triggerTimeFull[1] - triggerTime_init[1];
-    triggerTimeFullInit[2] = triggerTimeFull[2] - triggerTime_init[2];
-
-    // trigger time from run start in seconds
-    double timeFullInit[3];
-    timeFullInit[0] = triggerTimeFullInit[0] * to_s;
-    timeFullInit[1] = triggerTimeFullInit[1] * to_s;
-    timeFullInit[2] = triggerTimeFullInit[2] * to_s;
-
-    // trigger time from spill start
-    unsigned long triggerTimeFullSpill[3];
-    triggerTimeFullSpill[0] = triggerTimeFull[0] - triggerTime_spill[0];
-    triggerTimeFullSpill[1] = triggerTimeFull[1] - triggerTime_spill[1];
-    triggerTimeFullSpill[2] = triggerTimeFull[2] - triggerTime_spill[2];
-
-    // trigger time from spill start in seconds
-    double timeFullSpill[3];
-    timeFullSpill[0] = triggerTimeFullSpill[0] * to_s;
-    timeFullSpill[1] = triggerTimeFullSpill[1] * to_s;
-    timeFullSpill[2] = triggerTimeFullSpill[2] * to_s;
-
+    // compare with digitizer 1
     for (int dg=0; dg<ndigitizers; dg++) {
 
       // drift since run start
@@ -285,8 +312,8 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     cout << endl;
   }//digitizers
 
-  double slope[ndigitizers] = {0,0,0};
-  double period[ndigitizers] = {8,8,8};
+  vector<double> slope(ndigitizers,0);
+  vector<double> period(ndigitizers,0);
 
   for (int dg=0; dg<ndigitizers; dg++) {
 
