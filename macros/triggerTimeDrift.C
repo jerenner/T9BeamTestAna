@@ -220,7 +220,8 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     }
 
     // calculate an offset to trigger time to
-    // remove effect of counter overflow
+    // remove effect of trigger time overflow
+    // trigger time resets after 2^31
     for (int dg=0; dg<ndigitizers; dg++) {
 
       // trigger time and time stamp for each digitizer
@@ -268,7 +269,17 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
       triggerTimeFullSpill[dg] = triggerTimeFull[dg] - triggerTime_spill[dg];
       timeFullSpill[dg] = triggerTimeFullSpill[dg] * to_s;
 
+      // save times for next loop
+      timeStamp_pre[dg] = timeStamp[dg];
+      triggerTime_pre[dg] = triggerTime[dg];
+      triggerTime_full_pre[dg] = triggerTime[dg] + triggerTime_off[dg];
+
     }//ndigitizer
+
+    // save spill number
+    if (info->SpillNumber!=spillNumber_pre) {
+      spillNumber_pre = info->SpillNumber;
+    }
 
     // compare with digitizer 1
     for (int dg=0; dg<ndigitizers; dg++) {
@@ -289,18 +300,6 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
       }
 
     }//digitizers
-
-    // save times for next loop
-    for (int dg=0; dg<ndigitizers; dg++) {
-      timeStamp_pre[dg] = timeStamp[dg];
-      triggerTime_pre[dg] = triggerTime[dg];
-      triggerTime_full_pre[dg] = triggerTime[dg] + triggerTime_off[dg];
-    }//digitizers
-
-    // save spill number
-    if (info->SpillNumber!=spillNumber_pre) {
-      spillNumber_pre = info->SpillNumber;
-    }
 
   }// end input tree
 
@@ -415,12 +414,13 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
 
   // copy results to a text file
   ofstream fout(slopes_file,ofstream::app);
-  fout << run << " ";
-  fout << setprecision(20);
-  fout << slope[0] << " ";
-  fout << slope[2] << " ";
-  fout << slopespill[0].size() << " ";
-  fout << slopespill[2].size() << endl;
+  fout << run;
+  fout << setprecision(10);
+  for (int dg=0; dg<ndigitizers; dg++) {
+    if (dg==1) continue;//skip tof
+    fout << " " << slope[dg];
+  }
+  fout << endl;
   fout.close();
 
 }
