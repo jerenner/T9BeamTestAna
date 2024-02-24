@@ -29,6 +29,149 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   string title(Form("Run %s",run.c_str()));
   cout << "run number " << run << endl;
 
+  // is low momentum or tagged gamma configuration?
+  int run_number = stoi(run);
+  bool isLM = (run_number<=579) ? true : false;
+
+  // input trees
+  vector<string> tree_name;
+  if (isLM) {
+    tree_name.push_back("ACT0L");//0 - digitizer 0
+    tree_name.push_back("ACT0R");
+    tree_name.push_back("ACT1L");//2
+    tree_name.push_back("ACT1R");
+    tree_name.push_back("ACT2L");//4
+    tree_name.push_back("ACT2R");
+    tree_name.push_back("ACT3L");//6
+    tree_name.push_back("ACT3R");
+    tree_name.push_back("TOF00");//8 - digitizer 1
+    tree_name.push_back("TOF01");
+    tree_name.push_back("TOF02");//10
+    tree_name.push_back("TOF03");
+    tree_name.push_back("TOF10");//12
+    tree_name.push_back("TOF11");
+    tree_name.push_back("TOF12");//14
+    tree_name.push_back("TOF13");
+    tree_name.push_back("Hole0");//16 - digitizer 2
+    tree_name.push_back("Hole1");
+    tree_name.push_back("PbGlass");//18
+  }
+  else {
+    tree_name.push_back("ACT0L");//0 - digitizer 0
+    tree_name.push_back("ACT0R");
+    tree_name.push_back("ACT1L");//2
+    tree_name.push_back("ACT1R");
+    tree_name.push_back("ACT3L");//4
+    tree_name.push_back("ACT3R");
+    tree_name.push_back("TriggerScint");//6
+    tree_name.push_back("TOF00");//7 - digitizer 1
+    tree_name.push_back("TOF01");//8
+    tree_name.push_back("TOF02");
+    tree_name.push_back("TOF03");//10
+    tree_name.push_back("TOF10");
+    tree_name.push_back("TOF11");//12
+    tree_name.push_back("TOF12");
+    tree_name.push_back("TOF13");//14
+    tree_name.push_back("PbGlass");//15 - digitizer 2
+    tree_name.push_back("HD8");//16
+    tree_name.push_back("HD9");
+    tree_name.push_back("HD10");//18
+    tree_name.push_back("HD11");
+    tree_name.push_back("HD12");//20
+    tree_name.push_back("HD13");
+    tree_name.push_back("HD14");//22
+    tree_name.push_back("HD0");//23 - digitizer 3
+    tree_name.push_back("HD1");//24
+    tree_name.push_back("HD2");
+    tree_name.push_back("HD3");//26
+    tree_name.push_back("HD4");
+    tree_name.push_back("HD5");//28
+    tree_name.push_back("HD6");
+    tree_name.push_back("HD7");//30
+  }
+  tree_name.push_back("EventInfo");
+  const int npmts = tree_name.size()-1;
+
+  const int ndigitizers = isLM ? 3 : 4;
+  // all pmt channels in a digitizer have
+  // the same trigger time and time stamp
+  // so pick one to represent each digitizer
+  vector<int> dg_pmt;
+  if (isLM) {
+    dg_pmt.push_back(0);//ACT0L for digitizer 0
+    dg_pmt.push_back(8);//TOF00 for digitizer 1
+    dg_pmt.push_back(16);//PbGlass for digitizer 2
+  }
+  else {
+    dg_pmt.push_back(0);//ACT0L for digitizer 0
+    dg_pmt.push_back(7);//TOF00 for digitizer 1
+    dg_pmt.push_back(15);//PbGlass for digitizer 2
+    dg_pmt.push_back(23);//HD0 digitizer 3
+  }
+
+  // compare these channels times with TOF10
+  vector<int> chan;
+  if (isLM) {
+    for (int i=0;i<8;i++) chan.push_back(i);//ACTs
+    chan.push_back(18);//PbGlass
+  }
+  else {
+    for (int i=0;i<6;i++) chan.push_back(i);//ACTs
+    chan.push_back(6);//TriggerScint
+    chan.push_back(15);//PbGlass
+    for (int i=16;i<31;i++) chan.push_back(i);//HD0-14
+  }
+  const int nchans = chan.size();
+
+  // leadglas channel
+  int leadchan;
+  if (isLM) leadchan = 18;
+  else      leadchan = 15;
+
+  unsigned long offset = 2147483648;//2^31 steps = ~17s
+  double to_s  = 8e-9;
+
+  // read slopes from text file
+  vector<double> slope(ndigitizers,0);
+  ifstream fslopes(slopes_file);
+  while (fslopes.good()) {
+    string line;
+    getline(fslopes,line);
+    if (line.size()==0) continue;
+    istringstream ss(line);
+    string runread;
+    ss >> runread;
+    if (runread==run) {
+      for (int dg=0; dg<ndigitizers; dg++) {
+        if (dg==1) continue;//skip tof
+        ss >> slope[dg];
+      }
+    }
+  }
+
+  bool allok = true;
+  for (int dg=0; dg<ndigitizers; dg++) {
+    if (dg==1) continue;//skip tof
+    if (slope[dg]==0) allok = false;
+  }
+
+  if (allok) {
+    cout << "slopes found" << endl;
+    for (int dg=0; dg<ndigitizers; dg++) {
+      cout << "digitizer " << dg << " slope " << slope[dg] << endl;
+    }
+  }
+  else {
+    cout << "slopes not found for run " << run << endl;
+    return;
+  }
+
+  vector<double> period(ndigitizers,0);
+  for (int dg=0; dg<ndigitizers; dg++) {
+    period[dg] = 8/(1+1e-6*slope[dg]);//ns
+    cout << "digitizer " << dg << " period-8ns " << period[dg]-8 << endl;
+  }
+
   // ACT thresholds
   vector<double> thresholdv;
   thresholdv.push_back(0.20);//ACT0
@@ -49,67 +192,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   thresholdq.push_back(0.05);
   thresholdq.push_back(0.10);//ACT3
   thresholdq.push_back(0.05);
-
-  // input trees
-  vector<string> tree_name;
-  tree_name.push_back("ACT0L");//0
-  tree_name.push_back("ACT0R");
-  tree_name.push_back("ACT1L");//2
-  tree_name.push_back("ACT1R");
-  tree_name.push_back("ACT2L");//4
-  tree_name.push_back("ACT2R");
-  tree_name.push_back("ACT3L");//6
-  tree_name.push_back("ACT3R");
-  tree_name.push_back("TOF00");//8
-  tree_name.push_back("TOF01");
-  tree_name.push_back("TOF02");//10
-  tree_name.push_back("TOF03");
-  tree_name.push_back("TOF10");//12
-  tree_name.push_back("TOF11");
-  tree_name.push_back("TOF12");//14
-  tree_name.push_back("TOF13");
-  tree_name.push_back("Hole0");//16
-  tree_name.push_back("Hole1");
-  tree_name.push_back("PbGlass");//18
-  tree_name.push_back("EventInfo");
-  const int npmts = tree_name.size()-1;
-
-  const int ndigitizers = 3;
-  unsigned long offset = 2147483648;//2^31
-  double to_s  = 8e-9;
-
-  // read slopes from text file
-  double slope[ndigitizers] = {0,0,0};
-  ifstream fslopes(slopes_file);
-  while (fslopes.good()) {
-    string line;
-    getline(fslopes,line);
-    if (line.size()==0) continue;
-    istringstream ss(line);
-    string runread;
-    ss >> runread;
-    if (runread==run) {
-      ss >> slope[0];
-      ss >> slope[2];
-    }
-  }
-
-  if (slope[0]!=0 || slope[2]!=0) {
-    cout << "slopes found" << endl;
-    cout << "digitizer 0 slope " << slope[0] << endl;
-    cout << "digitizer 2 slope " << slope[2] << endl;
-  }
-  else {
-    cout << "no slopes found" << endl;
-    return;
-  }
-
-  double period[ndigitizers];
-  period[1] = 8;//ns
-  period[0] = 8/(1+1e-6*slope[0]);//ns
-  period[2] = 8/(1+1e-6*slope[2]);//ns
-  cout << "digitizer 0 period-8ns " << period[0]-8 << endl;
-  cout << "digitizer 2 period-8ns " << period[2]-8 << endl;
 
   // get trees
   EventInfo * info;
@@ -155,19 +237,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   hlgact23->SetXTitle("Lead Glass Charge");
   hlgact23->SetYTitle("ACT23 Charge");
 
-  // compare these channels times with TOF0
-  vector<int> chan;
-  chan.push_back(0);
-  chan.push_back(1);
-  chan.push_back(2);
-  chan.push_back(3);
-  chan.push_back(4);
-  chan.push_back(5);
-  chan.push_back(6);
-  chan.push_back(7);
-  chan.push_back(18);
-  const int nchans = chan.size();
-
+  // time difference
   TH1D * htdiff[nchans];
   TH1D * htdifftmp[nchans];
   TH1D * htdiffcor[nchans];
@@ -203,23 +273,28 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   }
 
   // act and lg trigger time correction
-  TH1D * httcoract = new TH1D("ttcoract",
-                              ";TT0-TT1 (ns)",
-                              100,-100,100);
-  TH1D * httcorlg  = new TH1D("ttcorlg",
-                              ";TT2-TT1 (ns)",
-                              100,-100,100);
+
+  vector<TH1D*> httcor(ndigitizers);
+  for (int dg=0; dg<ndigitizers; dg++) {
+    httcor[dg] = new TH1D(Form("ttcor%i",dg),Form(";TT%i-TT1 (ns)",dg),100,-100,100);
+  }
 
   // save for each spill
   vector< map<int,double> > off_mean(nchans);
   vector< map<int,double> > off_std(nchans);
 
-  // store previous trigger information
-  unsigned int spillNumber_pre = 0;
+  // trigger times containers for all digitizers
   vector<unsigned long> timeStamp(ndigitizers,0);
+  vector<unsigned long> triggerTime(ndigitizers,0);
+  vector<unsigned long> triggerTimeFull(ndigitizers,0);
+  vector<unsigned long> triggerTimeFullInit(ndigitizers,0);
+  vector<double>        timeFullInit(ndigitizers,0);
+  vector<unsigned long> triggerTimeFullSpill(ndigitizers,0);
+  vector<double>        timeFullSpill(ndigitizers,0);
+
+  unsigned int spillNumber_pre = 0;
   vector<unsigned long> timeStamp_pre(ndigitizers,0);
   vector<unsigned long> timeStamp_init(ndigitizers,0);
-  vector<unsigned long> triggerTime(ndigitizers,0);
   vector<unsigned long> triggerTime_pre(ndigitizers,0);
   vector<unsigned long> triggerTime_full_pre(ndigitizers,0);
   vector<unsigned long> triggerTime_off(ndigitizers,0);
@@ -261,17 +336,14 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       }
     }
 
-    // trigger time and time stamp 
-    // for each digitizer
-    triggerTime[0] = pmt[0] ->triggerTime;
-    triggerTime[1] = pmt[8] ->triggerTime;
-    triggerTime[2] = pmt[16]->triggerTime;
-
-    timeStamp[0] = pmt[0] ->timeStamp;
-    timeStamp[1] = pmt[8] ->timeStamp;
-    timeStamp[2] = pmt[16]->timeStamp;
-
+    // calculate an offset to trigger time to
+    // remove effect of trigger time overflow
+    // trigger time resets after 2^31
     for (int dg=0; dg<ndigitizers; dg++) {
+
+      // trigger time and time stamp for each digitizer
+      triggerTime[dg] = pmt[dg_pmt[dg]] ->triggerTime;
+      timeStamp[dg] = pmt[dg_pmt[dg]] ->timeStamp;
 
       // initilize
       if (ientry==0) {
@@ -288,12 +360,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         triggerTime_spill[dg]    = triggerTime[dg];
       }
 
-      // trigger time resets after 2^31
-      // so add an offset for every time it resets
-      //if (triggerTime[dg]<triggerTime_pre[dg]) {
-      //  triggerTime_off[dg] += offset;
-      //}
-
       // increase trigger time offset until the total trigger time
       // difference matches the time stamp difference
       unsigned long diffTT = triggerTime[dg]+triggerTime_off[dg]-triggerTime_full_pre[dg];
@@ -309,54 +375,51 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         triggerTime_spill[dg] = triggerTime[dg] + triggerTime_off[dg];
       }
 
+      // trigger time plus total offset
+      triggerTimeFull[dg] = triggerTime[dg] + triggerTime_off[dg];
+
+      // trigger time from run start
+      triggerTimeFullInit[dg] = triggerTimeFull[dg] - triggerTime_init[dg];
+      timeFullInit[dg] = triggerTimeFullInit[dg] * to_s;
+
+      // trigger time from spill start
+      triggerTimeFullSpill[dg] = triggerTimeFull[dg] - triggerTime_spill[dg];
+      timeFullSpill[dg] = triggerTimeFullSpill[dg] * to_s;
+
+      // save times for next loop
+      timeStamp_pre[dg] = timeStamp[dg];
+      triggerTime_pre[dg] = triggerTime[dg];
+      triggerTime_full_pre[dg] = triggerTime[dg] + triggerTime_off[dg];
+
     }//ndigitizer
 
-    // save current spill number
+    // save spill number
     if (info->SpillNumber!=spillNumber_pre) {
       spillNumber_pre = info->SpillNumber;
     }
 
-    unsigned long triggerTimeFull[3];
-    triggerTimeFull[0] = triggerTime[0] + triggerTime_off[0];
-    triggerTimeFull[1] = triggerTime[1] + triggerTime_off[1];
-    triggerTimeFull[2] = triggerTime[2] + triggerTime_off[2];
+    // trigger times
+    vector<double> tt(ndigitizers,0);
+    for (int dg=0; dg<ndigitizers; dg++) {
+      tt[dg] = triggerTimeFullSpill[dg]*period[dg];
+    }
 
-    unsigned long triggerTimeFullInit[3];
-    triggerTimeFullInit[0] = triggerTimeFull[0] - triggerTime_init[0];
-    triggerTimeFullInit[1] = triggerTimeFull[1] - triggerTime_init[1];
-    triggerTimeFullInit[2] = triggerTimeFull[2] - triggerTime_init[2];
-
-    double timeFullInit[3];
-    timeFullInit[0] = triggerTimeFullInit[0] * to_s;
-    timeFullInit[1] = triggerTimeFullInit[1] * to_s;
-    timeFullInit[2] = triggerTimeFullInit[2] * to_s;
-
-    unsigned long triggerTimeFullSpill[3];
-    triggerTimeFullSpill[0] = triggerTimeFull[0] - triggerTime_spill[0];
-    triggerTimeFullSpill[1] = triggerTimeFull[1] - triggerTime_spill[1];
-    triggerTimeFullSpill[2] = triggerTimeFull[2] - triggerTime_spill[2];
-
-    // time correction between tof and act digitizers
-    double tt_act = triggerTimeFullSpill[0]*period[0];
-    double tt_tof = triggerTimeFullSpill[1]*period[1];
-    double tt_lg  = triggerTimeFullSpill[2]*period[2];
-
-    // trigger time correction
-    double ttcoract = tt_act-tt_tof;
-    double ttcorlg  = tt_lg -tt_tof;
-
-    httcoract->Fill(ttcoract);
-    httcorlg ->Fill(ttcorlg);
+    // trigger time correction for each digitizer
+    vector<double> ttcor(ndigitizers,0);
+    for (int dg=0; dg<ndigitizers; dg++) {
+      ttcor[dg] = tt[dg]-tt[1];
+      httcor[dg]->Fill(ttcor[dg]);
+    }
 
     // e-like selection
     // one peak cut
     bool cut = true;
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
-    cut = cut && pmt[18]->nPeaks==1;
+    cut = cut && pmt[leadchan]->nPeaks==1;
 
     // signal time in first bunch  cut
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
-    cut = cut && pmt[18]->SignalTime[0]<200;
+    cut = cut && pmt[leadchan]->SignalTime[0]<200;
 
     // pulse charge and voltage histos
     if (cut==true) {
@@ -376,7 +439,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
                      pmt[14]->SignalTime[0]+
                      pmt[15]->SignalTime[0])/4.;
       double tof = tof1-tof0;
-      double lg  = pmt[18]->IntCharge[0];
+      double lg  = pmt[leadchan]->IntCharge[0];
       htoflg->Fill(tof,lg);
 
       // ACT23 charge
@@ -395,14 +458,14 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
               //pmt[acti]->IntCharge[0]>thresholdq[acti]) {
             double actdiff = pmt[acti]->SignalTime[0]-pmt[12]->SignalTime[0];
             htdiff[acti]->Fill(actdiff);
-            htdifftmp[acti]->Fill(actdiff+ttcoract);
+            htdifftmp[acti]->Fill(actdiff+ttcor[0]);
           }
         }
 
         // lead glass digitizer
-        double lgdiff = pmt[18]->SignalTime[0]-pmt[12]->SignalTime[0];
+        double lgdiff = pmt[leadchan]->SignalTime[0]-pmt[12]->SignalTime[0];
         htdiff[8]->Fill(lgdiff);
-        htdifftmp[8]->Fill(lgdiff+ttcorlg);
+        htdifftmp[8]->Fill(lgdiff+ttcor[2]);
 
       }
     }
@@ -471,13 +534,11 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chi].c_str()));
     }
 
-    c = new TCanvas();
-    httcoract->Draw();
-    c->Print(Form("%s_ttcoract.png",plotout.c_str()));
-
-    c = new TCanvas();
-    httcorlg->Draw();
-    c->Print(Form("%s_ttcorlg.png",plotout.c_str()));
+    for (int dg=0; dg<ndigitizers; dg++) {
+      c = new TCanvas();
+      httcor[dg]->Draw();
+      c->Print(Form("%s_ttcor%i.png",plotout.c_str(),dg));
+    }
 
     for (int chi=0;chi<nchans;chi++) {
       c = new TCanvas();
@@ -529,18 +590,25 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     newtree.push_back(t);
   }
 
-  // loop over entries again
-  spillNumber_pre = 0;
+  // reset trigger times containers
   timeStamp.assign(ndigitizers,0);
+  triggerTime.assign(ndigitizers,0);
+  triggerTimeFull.assign(ndigitizers,0);
+  triggerTimeFullInit.assign(ndigitizers,0);
+  timeFullInit.assign(ndigitizers,0);
+  triggerTimeFullSpill.assign(ndigitizers,0);
+  timeFullSpill.assign(ndigitizers,0);
+
+  spillNumber_pre = 0;
   timeStamp_pre.assign(ndigitizers,0);
   timeStamp_init.assign(ndigitizers,0);
-  triggerTime.assign(ndigitizers,0);
   triggerTime_pre.assign(ndigitizers,0);
   triggerTime_full_pre.assign(ndigitizers,0);
   triggerTime_off.assign(ndigitizers,0);
   triggerTime_init.assign(ndigitizers,0);
   triggerTime_spill.assign(ndigitizers,0);
 
+  // loop over entries again
   for (int ientry=0; ientry<nentries; ientry++) {
 
     // load all trees
@@ -549,17 +617,14 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       pmt[ipmt]->GetEntry(ientry);
     }
 
-    // trigger time and time stamp 
-    // for each digitizer
-    triggerTime[0] = pmt[0] ->triggerTime;
-    triggerTime[1] = pmt[8] ->triggerTime;
-    triggerTime[2] = pmt[16]->triggerTime;
-
-    timeStamp[0] = pmt[0] ->timeStamp;
-    timeStamp[1] = pmt[8] ->timeStamp;
-    timeStamp[2] = pmt[16]->timeStamp;
-
+    // calculate an offset to trigger time to
+    // remove effect of trigger time overflow
+    // trigger time resets after 2^31
     for (int dg=0; dg<ndigitizers; dg++) {
+
+      // trigger time and time stamp for each digitizer
+      triggerTime[dg] = pmt[dg_pmt[dg]] ->triggerTime;
+      timeStamp[dg] = pmt[dg_pmt[dg]] ->timeStamp;
 
       // initilize
       if (ientry==0) {
@@ -576,12 +641,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         triggerTime_spill[dg]    = triggerTime[dg];
       }
 
-      // trigger time resets after 2^31
-      // so add an offset for every time it resets
-      //if (triggerTime[dg]<triggerTime_pre[dg]) {
-      //  triggerTime_off[dg] += offset;
-      //}
-
       // increase trigger time offset until the total trigger time
       // difference matches the time stamp difference
       unsigned long diffTT = triggerTime[dg]+triggerTime_off[dg]-triggerTime_full_pre[dg];
@@ -597,6 +656,22 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         triggerTime_spill[dg] = triggerTime[dg] + triggerTime_off[dg];
       }
 
+      // trigger time plus total offset
+      triggerTimeFull[dg] = triggerTime[dg] + triggerTime_off[dg];
+
+      // trigger time from run start
+      triggerTimeFullInit[dg] = triggerTimeFull[dg] - triggerTime_init[dg];
+      timeFullInit[dg] = triggerTimeFullInit[dg] * to_s;
+
+      // trigger time from spill start
+      triggerTimeFullSpill[dg] = triggerTimeFull[dg] - triggerTime_spill[dg];
+      timeFullSpill[dg] = triggerTimeFullSpill[dg] * to_s;
+
+      // save times for next loop
+      timeStamp_pre[dg] = timeStamp[dg];
+      triggerTime_pre[dg] = triggerTime[dg];
+      triggerTime_full_pre[dg] = triggerTime[dg] + triggerTime_off[dg];
+
     }//digitizers
 
     // save current spill number
@@ -604,40 +679,25 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       spillNumber_pre = info->SpillNumber;
     }
 
-    unsigned long triggerTimeFull[3];
-    triggerTimeFull[0] = triggerTime[0] + triggerTime_off[0];
-    triggerTimeFull[1] = triggerTime[1] + triggerTime_off[1];
-    triggerTimeFull[2] = triggerTime[2] + triggerTime_off[2];
+    // trigger times
+    vector<double> tt(ndigitizers,0);
+    for (int dg=0; dg<ndigitizers; dg++) {
+      tt[dg] = triggerTimeFullSpill[dg]*period[dg];
+    }
 
-    unsigned long triggerTimeFullInit[3];
-    triggerTimeFullInit[0] = triggerTimeFull[0] - triggerTime_init[0];
-    triggerTimeFullInit[1] = triggerTimeFull[1] - triggerTime_init[1];
-    triggerTimeFullInit[2] = triggerTimeFull[2] - triggerTime_init[2];
-
-    double timeFullInit[3];
-    timeFullInit[0] = triggerTimeFullInit[0] * to_s;
-    timeFullInit[1] = triggerTimeFullInit[1] * to_s;
-    timeFullInit[2] = triggerTimeFullInit[2] * to_s;
-
-    unsigned long triggerTimeFullSpill[3];
-    triggerTimeFullSpill[0] = triggerTimeFull[0] - triggerTime_spill[0];
-    triggerTimeFullSpill[1] = triggerTimeFull[1] - triggerTime_spill[1];
-    triggerTimeFullSpill[2] = triggerTimeFull[2] - triggerTime_spill[2];
-
-    double tt_act = triggerTimeFullSpill[0]*period[0];
-    double tt_tof = triggerTimeFullSpill[1]*period[1];
-    double tt_lg  = triggerTimeFullSpill[2]*period[2];
-
-    // trigger time correction
-    double ttcoract = tt_act-tt_tof;
-    double ttcorlg  = tt_lg -tt_tof;
+    // trigger time correction for each digitizer
+    vector<double> ttcor(ndigitizers,0);
+    for (int dg=0; dg<ndigitizers; dg++) {
+      ttcor[dg] = tt[dg]-tt[1];
+      httcor[dg]->Fill(ttcor[dg]);
+    }
 
     // full correction of signal time for all channels
     for (int ipmt=0; ipmt<npmts; ipmt++) {
       for (int ipeak=0; ipeak<pmt[ipmt]->nPeaks; ipeak++) {
         // ACT channels
         if (ipmt<8) {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcoract - off_mean[6][info->SpillNumber];
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcor[0] - off_mean[6][info->SpillNumber];
         }
         // TOF channels
         else if (ipmt<16) {
@@ -645,7 +705,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         }
         // Hole and LG channels
         else {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcorlg - off_mean[8][info->SpillNumber];
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcor[2] - off_mean[8][info->SpillNumber];
         }
       }
       newtree[ipmt]->Fill();
@@ -656,11 +716,11 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     // one peak cut
     bool cut = true;
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
-    cut = cut && pmt[18]->nPeaks==1;
+    cut = cut && pmt[leadchan]->nPeaks==1;
 
     // signal time in first bunch  cut
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
-    cut = cut && pmt[18]->SignalTime[0]<200;
+    cut = cut && pmt[leadchan]->SignalTime[0]<200;
 
     if (cut==true) {
 
@@ -674,7 +734,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
                      pmt[14]->SignalTime[0]+
                      pmt[15]->SignalTime[0])/4.;
       double tof = tof1-tof0;
-      double lg  = pmt[18]->IntCharge[0];
+      double lg  = pmt[leadchan]->IntCharge[0];
 
       // e-like selection
       if (tof<12 && lg>0.2) {
@@ -687,7 +747,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
           }
         }
 
-        htdiffcor[8]->Fill(signalTimeCor[18][0]-signalTimeCor[12][0]);
+        htdiffcor[8]->Fill(signalTimeCor[leadchan][0]-signalTimeCor[12][0]);
 
       }
 
