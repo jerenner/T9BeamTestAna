@@ -110,6 +110,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
 
   unsigned long offset = 2147483648;//2^31 steps = ~17s
   double to_s  = 8e-9;
+  int mintrigs = 100;
 
   // get trees
   EventInfo * info;
@@ -117,6 +118,10 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   vector<TTree*> tree;
   for (int itree=0; itree<tree_name.size(); itree++) {
     TTree * t = (TTree*)f->Get(tree_name[itree].c_str());
+    if (t==0) {
+      cout << tree_name[itree] << " tree doesn't exist" << endl;
+      return;
+    }
     tree.push_back(t);
     if (itree<npmts) {
       pmt.push_back(new PMT(t));
@@ -153,12 +158,17 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     if (dg==0) {
       hslope[dg] = new TH1D(Form("hslope%i",dg),
                             Form(";Digitizer %i slope (us/s)",dg),
-                            100,-2.08,-2.0);
+                            100,-2.1,-1.9);
     }
-    else {
+    else if (dg==2) {
       hslope[dg] = new TH1D(Form("hslope%i",dg),
                             Form(";Digitizer %i slope (us/s)",dg),
-                            100,0.5,0.68);
+                            100,0.5,0.7);
+    }
+    else if (dg==3) {
+      hslope[dg] = new TH1D(Form("hslope%i",dg),
+                            Form(";Digitizer %i slope (us/s)",dg),
+                            100,1.2,1.5);
     }
   }
 
@@ -184,7 +194,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   vector<unsigned long> triggerTime_spill(ndigitizers,0);
 
   // loop over entries
-  for (int ientry=0; ientry<nentries; ientry++) {
+  for (int ientry=0; ientry<nentries+1; ientry++) {
 
     // load all trees
     info->GetEntry(ientry);
@@ -192,8 +202,13 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
       pmt[ipmt]->GetEntry(ientry);
     }
 
+    // initialize spill number
+    // because it doesn't always start at 0
+    if (ientry==0) spillNumber_pre = info->SpillNumber;
+
     // calculate slope for previous spill
-    if (info->EventNumber==0 && info->SpillNumber>0) {
+    if ((info->SpillNumber!=spillNumber_pre) ||
+        ientry==nentries ) {
 
       for (int d=0; d<ndigitizers; d++) {
         // do fit if there are at least
@@ -203,12 +218,21 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
           slopespill[d][spillNumber_pre] = 0;
         }
         else {
-          if (gdriftspill[d]->GetN()>100) {
+          if (gdriftspill[d]->GetN()>mintrigs) {
             gdriftspill[d]->Fit("pol1","Q");
             TF1 * fitspill = gdriftspill[d]->GetFunction("pol1");
             slopespill[d][spillNumber_pre] = fitspill->GetParameter(1);
             hslope[d]->Fill(fitspill->GetParameter(1));
             delete fitspill;
+          }
+          else {
+            cout << "spill " << spillNumber_pre;
+            cout << " digitizer " << d;
+            cout << " triggers " << gdriftspill[d]->GetN();
+            double min = TMath::MinElement(gdriftspill[d]->GetN(),gdriftspill[d]->GetX());
+            double max = TMath::MaxElement(gdriftspill[d]->GetN(),gdriftspill[d]->GetX());
+            cout << " range " << max-min;
+            cout << endl;
           }
         }
 
@@ -216,6 +240,8 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
         delete gdriftspill[d];
         gdriftspill[d] = new TGraph();
       }
+
+      if (ientry==nentries) break;
 
     }
 
@@ -234,7 +260,6 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
         cout << " first TT "     << triggerTime[dg];
         cout << " TT (s) " << triggerTime[dg]*to_s;
         cout << endl;
-        spillNumber_pre          = info->SpillNumber;
         timeStamp_pre[dg]        = timeStamp[dg];
         timeStamp_init[dg]       = timeStamp[dg];
         triggerTime_pre[dg]      = triggerTime[dg];
@@ -295,7 +320,7 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
       gdriftspill[dg]->SetPoint(gdriftspill[dg]->GetN(),timeFullSpill[1],tFullSpillDiff);
 
       // 1 spill
-      if (info->SpillNumber==1) {
+      if (info->SpillNumber==8) {
         gdriftspillsingle[dg]->SetPoint(gdriftspillsingle[dg]->GetN(),timeFullSpill[1],tFullSpillDiff);
       }
 
@@ -304,6 +329,9 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   }// end input tree
 
   cout << "last spill number " << info->SpillNumber << endl;
+  cout << "saved spills " << slopespill[1].size() << endl;
+  cout << "lost spills " << int(info->SpillNumber+1) - slopespill[1].size() << endl;
+
   for (int dg=0; dg<ndigitizers; dg++) {
     cout << "digitizer " << dg;
     cout << " TT since run start (s) ";
@@ -312,7 +340,6 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   }//digitizers
 
   vector<double> slope(ndigitizers,0);
-  vector<double> period(ndigitizers,0);
 
   for (int dg=0; dg<ndigitizers; dg++) {
 
@@ -323,46 +350,40 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     double min, max;
 
     // all spills
-    c = new TCanvas();      
-    gdrift[dg]->Draw("ap");
-    gdrift[dg]->GetYaxis()->SetTitle(Form("TT%i-TT1 (us)",dg));
-    gdrift[dg]->GetXaxis()->SetTitle("TT1 (s)");
-    min = gdrift[dg]->GetHistogram()->GetMinimum();
-    max = gdrift[dg]->GetHistogram()->GetMaximum();
-    gdrift[dg]->GetYaxis()->SetRangeUser(min,max*(1.4));
-    gdrift[dg]->SetTitle(Form("%s",title.c_str()));
-    gdrift[dg]->Fit("pol1","Q");
-    gdrift[dg]->Draw("p");
-    if (saveplots) c->Print(Form("%s_drift_%i.png",plotout.c_str(),dg));
+    TF1 * fit = nullptr;
+    if (gdrift[dg]->GetN()>mintrigs) {
+      c = new TCanvas();
+      gdrift[dg]->Draw("ap");
+      gdrift[dg]->GetYaxis()->SetTitle(Form("TT%i-TT1 (us)",dg));
+      gdrift[dg]->GetXaxis()->SetTitle("TT1 (s)");
+      min = gdrift[dg]->GetHistogram()->GetMinimum();
+      max = gdrift[dg]->GetHistogram()->GetMaximum();
+      gdrift[dg]->GetYaxis()->SetRangeUser(min,max*(1.4));
+      gdrift[dg]->SetTitle(Form("%s",title.c_str()));
+      gdrift[dg]->Fit("pol1","Q");
+      gdrift[dg]->Draw("p");
+      if (saveplots) c->Print(Form("%s_drift_%i.png",plotout.c_str(),dg));
+      fit = gdrift[dg]->GetFunction("pol1");
+    }
 
-    // last spill
-    c = new TCanvas();      
-    gdriftspill[dg]->Draw("ap");
-    gdriftspill[dg]->GetYaxis()->SetTitle(Form("TT%i-TT1 (us)",dg));
-    gdriftspill[dg]->GetXaxis()->SetTitle("TT1 (s)");
-    gdriftspill[dg]->SetTitle(Form("%s spill %i",title.c_str(),info->SpillNumber));
-    gdriftspill[dg]->Fit("pol1","Q");
-    min = gdriftspill[dg]->GetHistogram()->GetMinimum();
-    max = gdriftspill[dg]->GetHistogram()->GetMaximum();
-    gdriftspill[dg]->GetYaxis()->SetRangeUser(min,max*(1.4));
-    gdriftspill[dg]->SetTitle(Form("%s",title.c_str()));
-    gdriftspill[dg]->Fit("pol1","Q");
-    gdriftspill[dg]->Draw("p");
-    if (saveplots) c->Print(Form("%s_driftspill_%i.png",plotout.c_str(),dg));
+    // spill 0 fit
+    TF1 * fitspillsingle = nullptr;
+    if (gdriftspillsingle[dg]->GetN()>mintrigs) {
+      c = new TCanvas();
+      gdriftspillsingle[dg]->Draw("ap");
+      gdriftspillsingle[dg]->GetYaxis()->SetTitle(Form("TT%i-TT1 (us)",dg));
+      gdriftspillsingle[dg]->GetXaxis()->SetTitle("TT1 (s)");
+      gdriftspillsingle[dg]->SetTitle(Form("%s spill 0",title.c_str()));
+      gdriftspillsingle[dg]->Fit("pol1","Q");
+      min = gdriftspillsingle[dg]->GetHistogram()->GetMinimum();
+      max = gdriftspillsingle[dg]->GetHistogram()->GetMaximum();
+      gdriftspillsingle[dg]->GetYaxis()->SetRangeUser(min,max*(1.4));
+      gdriftspillsingle[dg]->Draw("p");
+      if (saveplots) c->Print(Form("%s_driftspillsingle_%i.png",plotout.c_str(),dg));
+      fitspillsingle = gdriftspillsingle[dg]->GetFunction("pol1");
+    }
 
-    c = new TCanvas();      
-    gdriftspillsingle[dg]->Draw("ap");
-    gdriftspillsingle[dg]->GetYaxis()->SetTitle(Form("TT%i-TT1 (us)",dg));
-    gdriftspillsingle[dg]->GetXaxis()->SetTitle("TT1 (s)");
-    gdriftspillsingle[dg]->SetTitle(Form("%s spill 1",title.c_str()));
-    gdriftspillsingle[dg]->Fit("pol1","Q");
-    min = gdriftspillsingle[dg]->GetHistogram()->GetMinimum();
-    max = gdriftspillsingle[dg]->GetHistogram()->GetMaximum();
-    gdriftspillsingle[dg]->GetYaxis()->SetRangeUser(min,max*(1.4));
-    gdriftspillsingle[dg]->Draw("p");
-    if (saveplots) c->Print(Form("%s_driftspillsingle_%i.png",plotout.c_str(),dg));
-
-    // remove drift slope
+    // remove drift
     for (int p=0; p<gdrift[dg]->GetN(); p++) {
       double diff1,tt1;
       gdrift[dg]->GetPoint(p,tt1,diff1);
@@ -370,23 +391,15 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
       gdriftcor[dg]->SetPoint(p,tt1,diff1new);
     }
 
-    c = new TCanvas();      
-    gdriftcor[dg]->Draw("ap");
-    gdriftcor[dg]->GetYaxis()->SetTitle(Form("(TT%i-TT1)-fit (us)",dg));
-    gdriftcor[dg]->GetXaxis()->SetTitle("TT1 (min)");
-    gdriftcor[dg]->SetTitle(Form("%s corrected",title.c_str()));
-    gdriftcor[dg]->Draw("p");
-    if (saveplots) c->Print(Form("%s_driftcor_%i.png",plotout.c_str(),dg));
-
-    // get fit values
-    TF1 * fit = gdrift[dg]->GetFunction("pol1");
-    TF1 * fitspill = gdriftspill[dg]->GetFunction("pol1");
-    TF1 * fitspillsingle = gdriftspillsingle[dg]->GetFunction("pol1");
-
-    // add last spill result
-    //cout << "filling last spill " << info->SpillNumber << endl;
-    slopespill[dg][info->SpillNumber] = fitspill->GetParameter(1);
-    hslope[dg]->Fill(fitspill->GetParameter(1));
+    if (gdriftcor[dg]->GetN()>1) {
+      c = new TCanvas();
+      gdriftcor[dg]->Draw("ap");
+      gdriftcor[dg]->GetYaxis()->SetTitle(Form("(TT%i-TT1)-fit (us)",dg));
+      gdriftcor[dg]->GetXaxis()->SetTitle("TT1 (min)");
+      gdriftcor[dg]->SetTitle(Form("%s corrected",title.c_str()));
+      gdriftcor[dg]->Draw("p");
+      if (saveplots) c->Print(Form("%s_driftcor_%i.png",plotout.c_str(),dg));
+    }
 
     //cout << "saved slopes and periods size " << slopespill[dg].size() << endl;
     //for (map<int,double>::iterator sp=slopespill[dg].begin(); sp!=slopespill[dg].end(); sp++) {
@@ -398,19 +411,16 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     hslope[dg]->Draw();             
     if (saveplots) c->Print(Form("%s_slope_%i.png",plotout.c_str(),dg));
 
-    //slope[dg] = slopespill[dg][0];//slope spill 0
-    slope[dg] = hslope[dg]->GetMean();//mean slope
-    period[dg] = 8/(1+1e-6*slope[dg]);
-
     cout << "digitizer " << dg << endl;
-    cout << " slope run " << fit->GetParameter(1) << endl;
-    cout << " slope spill " << fitspill->GetParameter(1) << endl;
-    cout << " slope spill single " << fitspillsingle->GetParameter(1) << endl;
+    cout << " entries full run " << gdrift[dg]->GetN() << endl;
+    cout << " entries spill 0 " << gdriftspillsingle[dg]->GetN() << endl;
+    if (fit) cout << " slope full run " << fit->GetParameter(1) << endl;
+    if (fitspillsingle) cout << " slope 1 spill " << fitspillsingle->GetParameter(1) << endl;
     cout << " slope mean " << hslope[dg]->GetMean() << endl;
     cout << " slope dev  " << hslope[dg]->GetStdDev() << endl;
-    cout << " period-8ns " << period[dg]-8 << endl;
-                            
+    cout << " slope entries " << hslope[dg]->GetEntries() << endl;
   }// ndigitizers
+
 
   // copy results to a text file
   ofstream fout(slopes_file,ofstream::app);
@@ -418,7 +428,9 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
   fout << setprecision(10);
   for (int dg=0; dg<ndigitizers; dg++) {
     if (dg==1) continue;//skip tof
-    fout << " " << slope[dg];
+    fout << " " << hslope[dg]->GetMean();
+    fout << " " << hslope[dg]->GetStdDev();
+    fout << " " << hslope[dg]->GetEntries();
   }
   fout << endl;
   fout.close();
