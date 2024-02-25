@@ -8,8 +8,8 @@ void EventInfo::Loop() {}
 void PMT::Loop() {}
 
 void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_000435.root",
-                    string slopes_file = "triggerTimeDrift.txt",
-                    string output = "ntuple_000435.root")
+                    string output = "ntuple_000435.root",
+                    string slopes_file = "triggerTimeDrift.txt")
 {
 
   gStyle->SetOptStat(1);
@@ -145,6 +145,10 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       for (int dg=0; dg<ndigitizers; dg++) {
         if (dg==1) continue;//skip tof
         ss >> slope[dg];
+        double dev;
+        int num;
+        ss >> dev;//skip slope stddev
+        ss >> num;//skip # triggers
       }
     }
   }
