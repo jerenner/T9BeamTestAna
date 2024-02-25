@@ -339,8 +339,6 @@ void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntupl
     cout << endl;
   }//digitizers
 
-  vector<double> slope(ndigitizers,0);
-
   for (int dg=0; dg<ndigitizers; dg++) {
 
     if (dg==1) continue;
