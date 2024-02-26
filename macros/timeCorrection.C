@@ -306,7 +306,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   vector<unsigned long> triggerTime_spill(ndigitizers,0);
 
   // loop over entries
-  for (int ientry=0; ientry<nentries; ientry++) {
+  for (int ientry=0; ientry<nentries+1; ientry++) {
 
     // load all trees
     info->GetEntry(ientry);
@@ -314,8 +314,13 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       pmt[ipmt]->GetEntry(ientry);
     }
 
+    // initialize spill number
+    // because it doesn't always start at 0
+    if (ientry==0) spillNumber_pre = info->SpillNumber;
+
     // calculate time offset for previous spill
-    if (info->EventNumber==0 && info->SpillNumber>0) {
+    if ((info->SpillNumber!=spillNumber_pre) ||
+        ientry==nentries ) {
 
       for (int chi=0;chi<nchans;chi++) {
         hoffmean[chi]->Fill(htdifftmp[chi]->GetMean());
@@ -338,6 +343,9 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       for (int chi=0;chi<8;chi++) {
         hoffcorre[chi]->Fill(off_mean[chi][spillNumber_pre],off_mean[7][spillNumber_pre]);
       }
+
+      if (ientry==nentries) break;
+
     }
 
     // calculate an offset to trigger time to
@@ -355,7 +363,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         cout << " first TT "     << triggerTime[dg];
         cout << " TT (s) " << triggerTime[dg]*to_s;
         cout << endl;
-        spillNumber_pre          = info->SpillNumber;
         timeStamp_pre[dg]        = timeStamp[dg];
         timeStamp_init[dg]       = timeStamp[dg];
         triggerTime_pre[dg]      = triggerTime[dg];
@@ -483,34 +490,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     cout << (triggerTime[dg]+triggerTime_off[dg]-triggerTime_init[dg])*to_s;
     cout << endl;
   }//digitizers
-
-  for (int chi=0;chi<nchans;chi++) {
-    hoffmean[chi]->Fill(htdifftmp[chi]->GetMean());
-    hoffstd[chi]->Fill(htdifftmp[chi]->GetStdDev());
-    off_mean[chi][info->SpillNumber] = htdifftmp[chi]->GetMean();
-    off_std[chi][info->SpillNumber] = htdifftmp[chi]->GetStdDev();
-    cout << tree_name[chi] << " ";
-    cout << "spill " << spillNumber_pre;
-    cout << " mean (ns) " << htdifftmp[chi]->GetMean();
-    cout << " std (ns) " <<  htdifftmp[chi]->GetStdDev();
-    cout << " entries " <<  htdifftmp[chi]->GetEntries() << endl;
-    cout << tree_name[chi] << " ";
-    cout << "spill " << spillNumber_pre;
-    cout << " mean (ns) " << htdiff[chi]->GetMean();
-    cout << " std (ns) " <<  htdiff[chi]->GetStdDev();
-    cout << " entries " <<  htdiff[chi]->GetEntries() << endl;
-    if (htdifftmp[chi]->GetBinContent(0)>0 ||
-        htdifftmp[chi]->GetBinContent(htdifftmp[chi]->GetNbinsX())>0) {
-      cout << "spill number " << info->SpillNumber << endl;
-      cout << tree_name[chi] << " ";
-      cout << htdifftmp[chi]->GetMean() << " ";
-      cout << htdifftmp[chi]->GetStdDev() << " ";
-      cout << htdifftmp[chi]->GetBinContent(0) << " ";
-      cout << htdifftmp[chi]->GetBinContent(htdifftmp[chi]->GetNbinsX());
-      cout << endl;
-    }
-    htdifftmp[chi]->Reset();
-  }
 
   if (saveplots) {
 
