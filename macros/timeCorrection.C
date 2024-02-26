@@ -3,6 +3,7 @@
 
 #include "EventInfo.h"
 #include "PMT.h"
+#include "runs.h"
 
 void EventInfo::Loop() {}
 void PMT::Loop() {}
@@ -29,8 +30,13 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   string title(Form("Run %s",run.c_str()));
   cout << "run number " << run << endl;
 
-  // is low momentum or tagged gamma configuration?
+  //find momentum
   int run_number = stoi(run);
+  int mom = runsDict[run_number];
+  cout << "momentum " << mom << endl;
+  if (mom==0) return;
+
+  // is low momentum or tagged gamma configuration?
   bool isLM = (run_number<=579) ? true : false;
 
   // input trees
@@ -224,17 +230,31 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   }
 
   // voltage and charge histos
-  TH1D * hv[npmts];
-  TH1D * hq[npmts];
-  for (int ipmt=0; ipmt<npmts; ipmt++) {
-    hv[ipmt] = new TH1D(Form("%s_V",tree_name[ipmt].c_str()),";V",100,0,0.5);
-    hq[ipmt] = new TH1D(Form("%s_Q",tree_name[ipmt].c_str()),";Q",100,0,0.3);
+  TH1D * hv[nchans];
+  TH1D * hq[nchans];
+  for (int chi=0; chi<nchans; chi++) {
+    hv[chi] = new TH1D(Form("%s_V",tree_name[chan[chi]].c_str()),"",100,0,1);
+    hq[chi] = new TH1D(Form("%s_Q",tree_name[chan[chi]].c_str()),"",100,0,0.25);
+    hv[chi]->SetTitle(Form("Run %d %d MeV/c;V",run_number,mom));
+    hq[chi]->SetTitle(Form("Run %d %d MeV/c;Q",run_number,mom));
   }
 
   // tof vs lg
   TH2D * htoflg = new TH2D("toflg","",100,10,15,100,0,0.5);
+  htoflg->SetTitle(Form("Run %d %d MeV/c",run_number,mom));
   htoflg->SetXTitle("TOF (ns)");
   htoflg->SetYTitle("Lead Glass Charge");
+
+  // tof
+  TH1D * htof0 = new TH1D("tof0","",100,0,200);
+  TH1D * htof1 = new TH1D("tof1","",100,0,200);
+  TH1D * htof00 = new TH1D("tof00","",100,0,200);
+  TH1D * htof10 = new TH1D("tof10","",100,0,200);
+
+  htof0->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
+  htof1->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
+  htof00->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
+  htof10->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
 
   // time difference
   TH1D * htdiff[nchans];
@@ -417,25 +437,17 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       httcor[dg]->Fill(ttcor[dg]);
     }
 
-    // e-like selection
-    // one peak cut
+    // one peak in TOF and LeadGlass
     bool cut = true;
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
     cut = cut && pmt[leadchan]->nPeaks==1;
 
-    // signal time in first bunch  cut
+    // TOF and LeadGlass signal time in first bunch
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
     cut = cut && pmt[leadchan]->SignalTime[0]<200;
 
-    // pulse charge and voltage histos
     if (cut==true) {
-      for (int chi=0; chi<19; chi++) {
-        hv[chi]->Fill(pmt[chi]->PeakVoltage[0]);
-        hq[chi]->Fill(pmt[chi]->IntCharge[0]);
-      }
-    }
 
-    if (cut==true) {
       double tof0 = (pmt[8] ->SignalTime[0]+
                      pmt[9] ->SignalTime[0]+
                      pmt[10]->SignalTime[0]+
@@ -446,24 +458,47 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
                      pmt[15]->SignalTime[0])/4.;
       double tof = tof1-tof0;
       double lg  = pmt[leadchan]->IntCharge[0];
-      htoflg->Fill(tof,lg);
+      double tref = pmt[12]->SignalTime[0];
 
-      if (tof<12 && lg>0.2) {
+      htoflg->Fill(tof,lg);
+      htof0->Fill(tof0);
+      htof00->Fill(pmt[8]->SignalTime[0]);
+      htof1->Fill(tof1);
+      htof10->Fill(pmt[12]->SignalTime[0]);
+
+      // e-like selection
+      bool is_electron = false;
+      if (abs(mom)<400) {
+        is_electron = tof<12;
+      }
+      else if(abs(mom)<700) {
+        is_electron = tof<12 && lg>0.2;
+      }
+      else {
+        is_electron = tof<12 && lg>0.3;
+      }
+
+      if (is_electron) {
+
+        // pulse charge and voltage histos
+        for (int chi=0; chi<nchans; chi++) {
+          hv[chi]->Fill(pmt[chan[chi]]->PeakVoltage[0]);
+          hq[chi]->Fill(pmt[chan[chi]]->IntCharge[0]);
+        }
 
         // act digitizer
         for (int acti=0; acti<8; acti++) {
           if (pmt[acti]->nPeaks==1 &&
               pmt[acti]->SignalTime[0]<200 &&
               pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
-              //pmt[acti]->IntCharge[0]>thresholdq[acti]) {
-            double actdiff = pmt[acti]->SignalTime[0]-pmt[12]->SignalTime[0];
+            double actdiff = pmt[acti]->SignalTime[0]-tref;
             htdiff[acti]->Fill(actdiff);
             htdifftmp[acti]->Fill(actdiff+ttcor[0]);
           }
         }
 
         // lead glass digitizer
-        double lgdiff = pmt[leadchan]->SignalTime[0]-pmt[12]->SignalTime[0];
+        double lgdiff = pmt[leadchan]->SignalTime[0]-tref;
         htdiff[8]->Fill(lgdiff);
         htdifftmp[8]->Fill(lgdiff+ttcor[2]);
 
@@ -489,16 +524,40 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     htoflg->Draw("colz");
     c->Print(Form("%s_tof_lg.png",plotout.c_str()));
 
-    for (int chi=0; chi<19; chi++) {
+    c = new TCanvas();
+    htof0->SetStats(0);
+    htof0->SetLineColor(9);
+    htof0->Draw();
+    htof00->SetLineColor(46);
+    htof00->Draw("same");
+    TLegend * leg = new TLegend(0.55,0.7,0.85,0.85);
+    leg->AddEntry(htof0,Form("TOF0 StdDev=%.2f ns",htof0->GetStdDev()),"l");
+    leg->AddEntry(htof00,Form("TOF00 StdDev=%.2f ns",htof00->GetStdDev()),"l");
+    leg->Draw();
+    c->Print(Form("%s_tof0.png",plotout.c_str()));
+
+    c = new TCanvas();
+    htof1->SetStats(0);
+    htof1->SetLineColor(9);
+    htof1->Draw();
+    htof10->SetLineColor(46);
+    htof10->Draw("same");
+    leg = new TLegend(0.55,0.7,0.85,0.85);
+    leg->AddEntry(htof1,Form("TOF1 StdDev=%.2f ns",htof1->GetStdDev()),"l");
+    leg->AddEntry(htof10,Form("TOF10 StdDev=%.2f ns",htof10->GetStdDev()),"l");
+    leg->Draw();
+    c->Print(Form("%s_tof1.png",plotout.c_str()));
+
+    for (int chi=0; chi<nchans; chi++) {
       c = new TCanvas();
       hv[chi]->SetStats(1);
       hv[chi]->Draw();
-      c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chi].c_str()));
+      c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
     
       c = new TCanvas();
       hq[chi]->SetStats(1);
       hq[chi]->Draw();
-      c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chi].c_str()));
+      c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
     }
 
     for (int dg=0; dg<ndigitizers; dg++) {
@@ -520,6 +579,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       hoffcorre[chi]->Draw("colz");
       c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chi].c_str()));
     }
+
   }
 
   // mean and std corrections
