@@ -236,11 +236,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   htoflg->SetXTitle("TOF (ns)");
   htoflg->SetYTitle("Lead Glass Charge");
 
-  // lg vs act23
-  TH2D * hlgact23 = new TH2D("lgact23","",100,0,0.5,100,0,1);
-  hlgact23->SetXTitle("Lead Glass Charge");
-  hlgact23->SetYTitle("ACT23 Charge");
-
   // time difference
   TH1D * htdiff[nchans];
   TH1D * htdifftmp[nchans];
@@ -453,12 +448,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
       double lg  = pmt[leadchan]->IntCharge[0];
       htoflg->Fill(tof,lg);
 
-      // ACT23 charge
-      double act2  = pmt[4]->IntCharge[0]+pmt[5]->IntCharge[0];
-      double act3  = pmt[6]->IntCharge[0]+pmt[7]->IntCharge[0];
-      double act23 = act2+act3;
-      hlgact23->Fill(lg,act23);
-
       if (tof<12 && lg>0.2) {
 
         // act digitizer
@@ -499,11 +488,6 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     htoflg->SetStats(0);
     htoflg->Draw("colz");
     c->Print(Form("%s_tof_lg.png",plotout.c_str()));
-
-    c = new TCanvas();
-    hlgact23->SetStats(0);
-    hlgact23->Draw("colz");
-    c->Print(Form("%s_lg_act23.png",plotout.c_str()));
 
     for (int chi=0; chi<19; chi++) {
       c = new TCanvas();
