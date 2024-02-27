@@ -19,7 +19,7 @@ from scipy.optimize import curve_fit
 ############################### READ ME ###############################################
 #started by acraplet
 #This is the selection of particles and ID
-#Later on can add the momentum measurement using the TOF inoformation for muons and pions
+#Later on can add the momentum measurement using the TOF inoformation for muons and pions - DONE
 #######################################################################################
 
 #the selection variables are global
@@ -47,6 +47,7 @@ def gaussian(x, amplitude, mean, std_dev):
     return amplitude * np.exp(-0.5 * ((x - mean) / std_dev) ** 2)
 
 def noHoleHit(file, conditionInitial):
+    #TODO: this has to be modified to add Deesha's cut on hole counter amplitude (30mV)
     df = file['Hole0'].arrays(library="pd")
     condition = (df['nPeaks']==0) & conditionInitial
     df = file['Hole1'].arrays(library="pd")
@@ -54,6 +55,7 @@ def noHoleHit(file, conditionInitial):
     return condition
 
 def nPeakInToF(file, n):
+    #TODO This will have to be changed for Dean's 2 particle veto selection based on integration of the first 200ns of the waveform.
     if n == False:
         df = file['TOF00'].arrays(library="pd")
         #in the case we want to see everything
@@ -333,7 +335,9 @@ def singlePE(argv):
     #the selection variables are global
     global ACTlinearA, ACTlinearB, piMuBorderACT, ACTlower, thereIsProtons, protonsTOFCut, horizontal_el, LGupper, protonsTOFMax
 
-    global nProtons, nPions, nMuons, nElectrons, nParticles, nDeuterium
+    global nProtons, nPions, nMuons, nElectrons, nParticles, nDeuterium, signalTimeBranch
+
+    signalTimeBranch = "SignalTimeCorrected" #can change for the old timings (SignalTime)
 
     #get some preliminary guesses for the parameters of the selection
     headers = ["Run", "momentum", "refIndex", "nSpill",  "probaBunch", "nParticles", "nElectrons", "nMuons", "nPions", "nProtons", "nDeuterium", "fractionPass1ParticleVeto", "fractionPassNanVeto", "ACTlinearA", "ACTlinearB", "piMuBorderACT", "ACTlower", "thereIsProtons", "protonsTOFCut", "horizontal_el", "LGupper", "bery"]
@@ -351,7 +355,7 @@ def singlePE(argv):
 
     #in case we want to create an identical root file with the particle type included
     #is very slow but can be useful for comparing selections for example.
-    saveRootFile = False
+    saveRootFile = False #True
 
     #Read in the user input run characterisation
     if len(argv) >= 5:
@@ -425,7 +429,7 @@ def singlePE(argv):
     for pmt in range(len(file.keys()[:-1])):
         intCharge = pd.DataFrame(df_all_intPE[pmt]['IntPE'].values.tolist())
         windowCharge = pd.DataFrame(df_all[pmt]['WindowIntPE'].values.tolist())
-        hitTimes = pd.DataFrame(df_all_times[pmt]['SignalTime'].values.tolist())
+        hitTimes = pd.DataFrame(df_all_times[pmt]['%s'%signalTimeBranch].values.tolist())
 
         df_all[pmt] = pd.concat([df_all[pmt],windowCharge], axis=1)
         df_all_intPE[pmt] = pd.concat([df_all_intPE[pmt],intCharge], axis=1)
@@ -522,12 +526,12 @@ def singlePE(argv):
         df_enventInfo['beamMomentum'] =  np.array([momentum] * len(all_index))
 
         print("\nSaving a root file with the particle ID, please be patient, this is a slow process")
-        with ur.recreate('Run%i_p%i_particleID.root'%(run.momentum)) as file1:
-            file1["%s"%(file.keys()[-1][:-2])] = df_enventInfo
+        with ur.recreate('particleIDed_%s'%(argv[1])) as file1:
             for pmt in range(len(file.keys()[:-1])):
                 # tree = ur.newtree'%s'%(file.keys()[pmt]), {col: df_complete_all[pmt][col].dtype for col in df_complete_all[pmt].columns})
                 file1["%s"%(file.keys()[pmt][:-2])] = df_complete_all[pmt]
                 file1["%s"%(file.keys()[pmt][:-2])].show()
+            file1["%s"%(file.keys()[-1][:-2])] = df_enventInfo  #need to add this at the end, otherwise it messes it up
 
 
 
@@ -578,6 +582,7 @@ def singlePE(argv):
     list_ACT0 = []
 
     Mean_ACT23_mu, Std_ACT23_mu, Mean_ACT23_pi, Std_ACT23_pi, Mean_ACT23_p, Std_ACT23_p = 0,0,0,0,0,0
+
 
 
     #read in the data
