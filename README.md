@@ -7,6 +7,7 @@ Analysis package for the T9 beam test
 Since the end of the beam time the analyis of the root files moved to python. Firstly the peak detect algorithm is applied to the root file using:
 
 ```python python/new_analysis/process_waveform_analysis.py data/root_run_000$run.root config/config_noHodoscope.json peakAnalysed_$run.root```
+(note: you might have to use python3 instead of python, if you get errors)
 
 where the config file contains:
  1. information about the analysis portion of the waveform and the pedestal portion
