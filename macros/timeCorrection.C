@@ -1,5 +1,8 @@
 #define EventInfo_cxx
 #define PMT_cxx
+#include <TTreeReader.h>
+#include <TTreeReaderValue.h>
+
 
 #include "EventInfo.h"
 #include "PMT.h"
@@ -8,8 +11,8 @@
 void EventInfo::Loop() {}
 void PMT::Loop() {}
 
-void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_000435.root",
-                    string output = "ntuple_000435.root",
+void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
+                    string output = "test_run462_corrected.root",
                     string slopes_file = "triggerTimeDrift.txt")
 {
 
@@ -595,13 +598,20 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
   // new values
   // save cloned tree in a different file
   TFile * newfile = new TFile(output.c_str(),"recreate");
-
-  double signalTimeCor[npmts][100];
+  int nPeaksMax = 100;
+  double signalTimeCor[npmts][nPeaksMax];
   for (int ipmt=0; ipmt<npmts; ipmt++) {
-    for (int i=0;i<100;i++){
-      signalTimeCor[ipmt][i] = 0;
+    for (int i=0;i<nPeaksMax;i++){
+      //setting nans instead of 0s to keep the correct structure and only fill the relevant peaks
+      signalTimeCor[ipmt][i] = std::numeric_limits<double>::quiet_NaN();
     }
   }
+
+
+  // TTreeReader reader(inputTree);
+
+
+  double signalTimeCorVal = 0;
 
   vector<TTree*> newtree;
   for (int itree=0; itree<tree.size(); itree++) {
@@ -609,10 +619,13 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     TTree * t;
     if (itree<npmts) {
       t = tree[itree]->CloneTree(0);
-      t->SetBranchAddress("SignalTime",&signalTimeCor[itree]);
+      //Modified the new signalTimeCorrected branch to actually hold the corrected timings
+      //previously it contains the base signal Times
+      t->SetBranchAddress("SignalTimeCorrected",&signalTimeCor[itree]);
+
     }
     else {
-      t = tree[itree]->CloneTree();
+      t = tree[itree]->CloneTree(0);
     }
     newtree.push_back(t);
   }
@@ -642,6 +655,7 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
     info->GetEntry(ientry);
     for (int ipmt=0; ipmt<npmts; ipmt++) {
       pmt[ipmt]->GetEntry(ientry);
+
     }
 
     // calculate an offset to trigger time to
@@ -734,7 +748,11 @@ void timeCorrection(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_
         else {
           signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcor[2] - off_mean[8][info->SpillNumber];
         }
+        // signalTimeCorVal = signalTimeCor[ipmt][ipeak];
+
       }
+      // std::cout << signalTimeCor[ipmt][0] << " " <<   signalTimeCor[ipmt][1] << " " <<  signalTimeCor[ipmt][2] << std::endl;
+
       newtree[ipmt]->Fill();
     }
 

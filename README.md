@@ -4,9 +4,23 @@ Analysis package for the T9 beam test
 2023
 ## Cleaned up version:
 
+Timing PR: following the addition of the SignalTimeCorrected branch (Arturo's timing corrections) the pre-processing can now be run automatically with the following line:
+```bash complete_pre-processing.sh 000393``` 
+replacing the run withe correct run number. It follows a similar structure to what is presented below with the extra steps correcting the timing namely:
+```root -l -b -q 'macros/triggerTimeDrift.C("peakAnalysed_'$run'.root")'; root -l -b -q 'macros/timeCorrection.C("peakAnalysed_'$run'.root", "triggerTimeDrift.txt", "peakAnalysed_timeCorr_'$run'.root")'```
+Tested with ROOT 6.26/10. This step is not crutial in the analysis, if you choose to comment the two commands above out then the SignalTimeCorrected branch is a simple copy of the SignalTime branch. 
+
+TODO: The window integration is still performed with respect to the SignalTime values because it is based on sample points instead of absolute time, the window is wide enough that there is no risk of missing signal but having the option of integration with respect to SignalTimeCorrected could help cut down on scintillation.
+
+TODO: The pedestal value is taken as the most probable out of the non-analysis part of the waveform which is different for each event and can be influenced by the presence of a particle in the following bunch, especially in the ACT0 and lead glass. Eventually we might want to move to a fixed, run-dependant pedestal value. 
+
+Minor bug fixes and improvements. 
+
+
 Since the end of the beam time the analyis of the root files moved to python. Firstly the peak detect algorithm is applied to the root file using:
 
 ```python python/new_analysis/process_waveform_analysis.py data/root_run_000$run.root config/config_noHodoscope.json peakAnalysed_$run.root```
+(note: you might have to use python3 instead of python, if you get errors)
 
 where the config file contains:
  1. information about the analysis portion of the waveform and the pedestal portion
@@ -64,8 +78,9 @@ The analysis code outputs a bunch of numbers to a ```numberParticles.txt``` file
 22. bery (whether the target is beryllium, or Aluminium, 1 for beryllium, 0 for Al)
 
 Coding still left to do:
-1. change the reference timing to be an average of TOF10, TOF11, TOF12 and TOF13 to limit risks of accidentals in TOF01 biasing the signal
-2. probably merge the config files into 1 to have something cleaner
+1. change the reference timing to be an average of TOF10, TOF11, TOF12 and TOF13 over peaks in coincidence (study ongoing) to limit risks of accidentals in TOF01 biasing the signal
+2. look into pedestal estimation
+3. probably merge the config files into 1 to have something cleaner
    
 
 

@@ -7,7 +7,7 @@
 void EventInfo::Loop() {}
 void PMT::Loop() {}
 
-void triggerTimeDrift(string input = "/neut/datasrv2a/jrenner/ntuple_files/ntuple_000435.root",
+void triggerTimeDrift(string input = "singlePE_-16ns_45ns_run462.root",
                       string slopes_file = "triggerTimeDrift.txt")
 {
 

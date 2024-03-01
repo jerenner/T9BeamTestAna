@@ -19,7 +19,7 @@ class WaveformAnalysis:
     impedance = 50  # for calculating integrated charge
     use_global_pedestal = True  # assume pedestal is stable and use one value for all waveforms for the channel
 
-    def __init__(self, waveforms, df, window_lower_bound = -15, window_upper_bound = 35, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
+    def __init__(self, waveforms, window_lower_bound = -15, window_upper_bound = 35, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
                  reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0, window_time_offset=0, PMTgain = 1):
         self.raw_waveforms = np.array(waveforms)
         self.threshold = threshold
@@ -56,7 +56,8 @@ class WaveformAnalysis:
         #new - window integration
         self.window_int_charge = None
         self.window_int_pe = None
-        self.df = df
+        #new - complete waveform integration for two particle ID
+        self.whole_waveform_int = None
         self.max_voltage = None
         self.PMTgain = PMTgain
 
@@ -200,20 +201,15 @@ class WaveformAnalysis:
             pulse_pe[end_of_pulse, n_peaks[end_of_pulse]] = my_pulse_charges[end_of_pulse]/self.PMTgain
         self.pulse_charges = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
         self.pulse_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
-        print(self.pulse_charges)
+        # print(self.pulse_charges)
 
 
     def integrate_charge_in_window(self):
         """using a window of known position and width to integrate - this will only be meaningful for the ACT data"""
+        # self.smoothed_waveforms = signal.savgol_filter(self.waveforms, 5, 2, mode='nearest')
         analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
-
-
         #for each hit we need to find the earlier hit in the first TOF detector
         #down the line we will do that over a for loop on the number of hits in TOF1
-
-        print(self.df["nPeaks"])
-
-
         allAnalysisBins = np.tile(self.analysis_bins,(self.waveforms.shape[0],1))
 
         list_high = []
@@ -224,7 +220,7 @@ class WaveformAnalysis:
         pulse_charges = np.zeros((self.waveforms.shape[0], max(self.df["nPeaks"])))
         pulse_pe = np.zeros((self.waveforms.shape[0], max(self.df["nPeaks"])))
 
-        print(self.df, 'The dataframe')
+        # print(self.df, 'The dataframe')
 
         for i in range(max(self.df["nPeaks"])):
             over_integration_threshold = False
@@ -265,36 +261,6 @@ class WaveformAnalysis:
             self.window_int_charge = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
             self.window_int_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
 
-        # print(len(self.window_int_charge))
-        #needed to reshape to save to the same zip output
-        # self.window_int_charge = self.window_int_charge.reshape(self.pulse_charges.shape)
-
-        #A bit of plotting to check the waveforms and the region of integration
-        list_events = np.array([450, 550, 850, 950])+1
-        plt.figure(figsize = (20,15))
-
-        for i in range(len(list_events)):
-            event = list_events[i]
-            #making subplots for each event
-            plt.subplot(int(len(list_events)/2)+(int((len(list_events)+1)/2)-int(len(list_events)/2)), int(len(list_events)/2), i+1)
-
-            #plt.plot(np.array(self.analysis_bins) * self.ns_per_sample, analysis_waveform[event, :]/self.PMTgain, 'x--', label = 'Event %i\nPedestalSigma%.2e\n PeakIntPE %s \n WindowIntPE %s \n Peak Times %s'%(event, self.my_pedestal_sigmas, self.pulse_pe[event], self.window_int_pe[event], self.pulse_signal_times[event]))
-
-            #for hit in range(max(self.df["nPeaks"])):
-            #    if list_low[hit][event] != -9999:
-            #        plt.fill_betweenx([min(analysis_waveform[event, :]/self.PMTgain), max(analysis_waveform[event, :]/self.PMTgain)], list_low[hit][event] * self.ns_per_sample, list_high[hit][event]*self.ns_per_sample, alpha = 0.3, label = "Hit %i Window (%.1f, %.1f)"%(hit, list_low[hit][event]*self.ns_per_sample, list_high[hit][event]*self.ns_per_sample))
-
-
-            plt.xlabel("ns")
-            plt.ylabel("number of pe")
-            plt.grid()
-            plt.legend()
-
-
-
-        # need to go back to the first one foe adding a title later
-        plt.subplot(int(len(list_events)/2)+(int((len(list_events)+1)/2)-int(len(list_events)/2)), int(len(list_events)/2), 1)
-
 
     def calculate_signal_times(self):
         """Finds the signal time of each waveform as the interpolated time before the peak when the voltage passes 0.4*[peak voltage]"""
@@ -325,8 +291,14 @@ class WaveformAnalysis:
         self.integrated_charges *= self.ns_per_sample / self.impedance
         return self.integrated_charges
 
-    # def calibrate_timing_offset_window_integration(self):
-    #     """Use self.df to calculate the required offset """
+    def integrate_whole_waveform(self):
+        """Calculates the total charge in the analysis window, to be used for two particle event
+        identification, as per Dean Karlen's study:  https://wcte.hyperk.ca/wg/beam/meetings/2023/20231211/meeting/beam-structure-and-two-particle-events/beam_structure_v5.pdf
+        There is a correction of 1000, this is not a charge, no impedance correction and get back to ADC counts instead of volts"""
+        analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
+        self.whole_waveform_int = np.sum(analysis_waveform, axis=1, keepdims=True)
+        self.whole_waveform_int *= 1 / (self.voltage_scale * 1000)
+        return self.whole_waveform_int
 
 
     def run_analysis(self):
@@ -339,4 +311,11 @@ class WaveformAnalysis:
         self.find_all_peak_voltages()
         self.calculate_all_signal_times()
         self.calculate_all_pulse_charges()
+        # self.integrate_charge_in_window()
+        self.integrate_whole_waveform()
+
+    def run_window_analysis(self, df):
+        #df is the ntuple holding the hit timings
+        self.df = df
+        self.find_peaks()
         self.integrate_charge_in_window()
