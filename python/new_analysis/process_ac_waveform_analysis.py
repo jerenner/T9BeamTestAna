@@ -69,13 +69,29 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
 
     ref_file = ur.open(ntuple_filename)
 
+    #reding the timings for calibration, technically we shouldn't need following Arturo's
+    #modifications but good sanity check
+
+    signalTimeBranch = "SignalTime" #eventually we should move to SignalTimeCorrected
+    #for a narrower integration window but because the integration is made with respect to the actual
+    #waveforms it doesn't work well for now, we would have to apply the timing corrections there
+    #I don't think that it is a big deal because the window is set quite large so it does capture all the signal, even if it uses the old timing.
+
     df_TOF10 = ref_file['TOF10'].arrays(library="pd")
-    #add the hit times in single entries - easier, we are so far only looking at one PMT but could do the
-    #average of them in the TOF1 module
-    hit_times = pd.DataFrame(df_TOF10['SignalTime'].values.tolist())
+    hit_times = pd.DataFrame(df_TOF10['%s'%signalTimeBranch].values.tolist())
     df_TOF10 =  pd.concat([df_TOF10, hit_times], axis=1)
-    # #this is the first hit time
-    # df_TOF10["hit0"] = df_TOF10[0]
+
+    df_TOF11 = ref_file['TOF11'].arrays(library="pd")
+    hit_times = pd.DataFrame(df_TOF11['%s'%signalTimeBranch].values.tolist())
+    df_TOF11 =  pd.concat([df_TOF11, hit_times], axis=1)
+
+    df_TOF12 = ref_file['TOF12'].arrays(library="pd")
+    hit_times = pd.DataFrame(df_TOF12['%s'%signalTimeBranch].values.tolist())
+    df_TOF12 =  pd.concat([df_TOF12, hit_times], axis=1)
+
+    df_TOF13 = ref_file['TOF13'].arrays(library="pd")
+    hit_times = pd.DataFrame(df_TOF13['%s'%signalTimeBranch].values.tolist())
+    df_TOF13 =  pd.concat([df_TOF13, hit_times], axis=1)
 
 
     digitizers = ["midas_data_D300", "midas_data_D301", "midas_data_D302", "midas_data_D303"]
@@ -115,11 +131,13 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                 print(f"... ... processing {d}/{c} into {config['ChannelNames'][i]}", end="", flush=True)
                 #calculate the time offset to the reference
                 df = ref_file[config['ChannelNames'][i]].arrays(library="pd")
-                hit_times = pd.DataFrame(df['SignalTime'].values.tolist())
+                hit_times = pd.DataFrame(df['%s'%signalTimeBranch].values.tolist())
                 df =  pd.concat([df, hit_times], axis=1)
-                WindowTimeOffset = (df[0]-df_TOF10[0]).mean()
+                #absolute hit time offset
+                WindowTimeOffset = (df[0]-(df_TOF10[0]+df_TOF11[0]+df_TOF12[0]+df_TOF13[0])/4).mean()
 
-                #print(config["WindowTimeOffset"][i], WindowTimeOffset)
+                #still removing the mean delay between the detector and the reference detector
+                print("\nThe required timing calibration is: ", WindowTimeOffset, '\n')
 
                 config_args = {
                     "threshold": config["Thresholds"][i],
@@ -133,12 +151,8 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                 }
                 waveforms = batch[c]
                 optional_branches = {b: batch[b] for b in optional_branch_names}
-                print(df_TOF10, df_TOF10[0], c, i)
-                process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF10.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], window_lower_bound, window_upper_bound)
-                #save the waveforms pictures
-                # plt.figure(2)
-                plt.title(f"{config['ChannelNames'][i]} - Window ({window_lower_bound}_{window_upper_bound})")
-                plt.savefig(f"pdf_results/sample_waveforms_40nsWindow503_{config['ChannelNames'][i]}_run{run_number}_{window_lower_bound}_{window_upper_bound}.pdf")
+
+                process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF10.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], window_lower_bound, window_upper_bound, df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1])
 
 
     print(f"Saving event info for run {run_number}")
@@ -150,37 +164,49 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
     run_file.close()
 
 
-def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF10, window_lower_bound, window_upper_bound):
-    waveform_analysis = WaveformAnalysis(waveforms, df_TOF10, window_lower_bound, window_upper_bound, **config_args)
-    waveform_analysis.run_analysis()
-    pedestals = ak.Array(waveform_analysis.pedestals.squeeze())
-    pedestal_sigmas = ak.Array(waveform_analysis.pedestal_sigmas.squeeze())
-    peak_voltages = waveform_analysis.pulse_peak_voltages
-    peak_times = waveform_analysis.pulse_peak_times
-    signal_times = waveform_analysis.pulse_signal_times
-    integrated_charges = waveform_analysis.pulse_charges
-    integrated_pe = waveform_analysis.pulse_pe
+def read_nTuple(df, branch_name, isSqueezed = False):
+    #reading the information from the pre-processed ntuple to limit the computing time and not overwrite entries branches that are 1D (i.e. not arrays) need to be squeezed
+    if isSqueezed:
+        branch = ak.Array(np.array(pd.DataFrame(df['%s'%branch_name].values.tolist()).values.tolist()).squeeze())
+    else:
+        #faster option
+        branch = pd.DataFrame(df['%s'%branch_name].values.tolist()).values.tolist()
+        branch = ak.Array([[value for value in row if not pd.isna(value)] for row in branch])
+        #slower option
+        # branch = ak.Array(df['%s'%branch_name].dropna().tolist())
+    return branch
+
+
+def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF10, window_lower_bound, window_upper_bound, df):
+
+    waveform_analysis = WaveformAnalysis(waveforms, window_lower_bound, window_upper_bound, **config_args)
+
+    #instead of overwriting the variables, copy them from the root file
+    #TODO: impose coincidence and only perform the integration on peaks that have been matched
+    waveform_analysis.run_window_analysis(df_TOF10)
+    #window integration which has to be done here as it uses the timing
     window_integrated_charges = waveform_analysis.window_int_charge
     window_integrated_pe = waveform_analysis.window_int_pe
-    max_voltage = ak.Array(waveform_analysis.max_voltage.squeeze())
 
-    print(type(integrated_charges), type(window_integrated_charges))
 
-    peaks = ak.zip({"PeakVoltage": peak_voltages,
-                    "PeakTime": peak_times,
-                    "SignalTime": signal_times,
-                    "IntCharge": integrated_charges,
-                    "IntPE": integrated_pe})
+    peaks = ak.zip({"PeakVoltage": read_nTuple(df, "PeakVoltage", isSqueezed = False),
+                    "PeakTime": read_nTuple(df, "PeakTime", isSqueezed = False),
+                    "SignalTime": read_nTuple(df, "SignalTime", isSqueezed = False),
+                    "IntCharge": read_nTuple(df, "IntCharge", isSqueezed = False),
+                    "IntPE": read_nTuple(df, "IntPE", isSqueezed = False),
+                    "SignalTimeCorrected": read_nTuple(df, "SignalTimeCorrected", isSqueezed = False)})
 
     #needs to be handled separately because it has another format
     window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
                            "WindowIntPE": window_integrated_pe})
 
-    branches = {"Pedestal": pedestals,
-                "PedestalSigma": pedestal_sigmas,
-                "MaxVoltage": max_voltage,
+    branches = {"Pedestal": read_nTuple(df, "Pedestal", isSqueezed = True),
+                "PedestalSigma": read_nTuple(df, "PedestalSigma", isSqueezed = True),
+                "MaxVoltage": read_nTuple(df, "MaxVoltage", isSqueezed = True),
+                "WholeWaveformInt": read_nTuple(df, "WholeWaveformInt", isSqueezed = True),
                 "Peaks": peaks,
                 "WindowPeaks": window_peaks,
+
                 **optional_branches}
 
     print(f" ... writing {channel} to {output_file.file_path}")
@@ -232,7 +258,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
 #         "EventNumber": run_file[digitizers[0]]["eventNumber"].array(),
 #         "SpillNumber": run_file[digitizers[0]]["spillNumber"].array()
 #     }
-#     run_file.close()
+#     run_file.close()4
 #
 #
 # def process_batch(waveforms, optional_branches, channel, output_file, config_args):

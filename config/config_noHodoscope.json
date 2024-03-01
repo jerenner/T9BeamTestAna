@@ -51,6 +51,12 @@
 				    540, 540, 80, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300],
 
+		"comment" : "1pe position in the signal in V from a DR data run (502)",
+			"PMTgain" : [0.09009, 0.09009, 0.2150617, 0.316799, 0.2275831, 0.171613, 0.2256, 0.295012,
+						 1, 1, 1, 1, 1, 1, 1, 1,
+						 1, 1, 1, 1, 1, 1, 1, 1,
+						 1, 1, 1, 1, 1, 1, 1, 1],
+
         "comment" : "Analysis is done on the data in the analysis bin window.",
             "AnalysisWindowLow"  : [ 0, 0, 0, 0, 0, 0, 0, 0,
 				    0, 0, 0, 0, 0, 0, 0, 0,

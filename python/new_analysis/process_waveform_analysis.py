@@ -12,7 +12,7 @@ import sys
 import numpy as np
 import uproot as ur
 import json5
-from waveform_analysis import WaveformAnalysis
+from waveform_analysis_ac import WaveformAnalysis
 import awkward as ak
 
 
@@ -88,6 +88,8 @@ def process_file(root_filename, config, output_file):
                     "reverse_polarity": (config["Polarity"][i] == 0),
                     "voltage_scale": config["VoltageScale"],
                     "time_offset": config["TimeOffset"][i],
+                    "PMTgain": config["PMTgain"][i],
+
                 }
                 waveforms = batch[c]
                 optional_branches = {b: batch[b] for b in optional_branch_names}
@@ -112,15 +114,28 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
     peak_times = waveform_analysis.pulse_peak_times
     signal_times = waveform_analysis.pulse_signal_times
     integrated_charges = waveform_analysis.pulse_charges
+    integrated_pe = waveform_analysis.pulse_pe
+    #useful variables for analysis
+    #new: novel way to identify 2 particle events, based on Dean's study, note: this is 1000th of the
+    #total ADC count, this is a hard coded factor as we do not expect it to change but please be aware
+    #refer tho these slides: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231211/meeting/beam-structure-and-two-particle-events/beam_structure_v5.pdf
+    integrated_analysis_waveform = ak.Array(waveform_analysis.whole_waveform_int.squeeze())
+    max_voltage = ak.Array(waveform_analysis.max_voltage.squeeze())
 
     peaks = ak.zip({"PeakVoltage": peak_voltages,
                     "PeakTime": peak_times,
                     "SignalTime": signal_times,
+                    #need to create a spare copy of the timing that is later corrected by Aruro's code
+                    #So far, haven't found a better way to do this, could be useful to do
+                    "SignalTimeCorrected": signal_times,
+                    "IntPE": integrated_pe,
                     "IntCharge": integrated_charges})
 
     branches = {"Pedestal": pedestals,
                 "PedestalSigma": pedestal_sigmas,
                 "Peaks": peaks,
+                "MaxVoltage": max_voltage,
+                "WholeWaveformInt": integrated_analysis_waveform,
                 **optional_branches}
 
     print(f" ... writing {channel} to {output_file.file_path}")
@@ -129,6 +144,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
     except KeyError:
         branch_types = {name: branch.type for name, branch in branches.items()}
         output_file.mktree(channel, branch_types, counter_name=(lambda s: "nPeaks"), field_name=(lambda s, f: f))
+        # counter_name=(lambda s: "nPeaks"),
         output_file[channel].extend(branches)
 
 if __name__ == "__main__":
