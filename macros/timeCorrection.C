@@ -12,8 +12,8 @@ void EventInfo::Loop() {}
 void PMT::Loop() {}
 
 void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
-                    string output = "test_run462_corrected.root",
-                    string slopes_file = "triggerTimeDrift.txt")
+                    string slopes_file = "triggerTimeDrift.txt",
+                    string output = "test_run462_corrected.root")
 {
 
   gStyle->SetOptStat(1);
