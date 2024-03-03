@@ -20,7 +20,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   gStyle->SetFuncWidth(1);
   gStyle->SetMarkerStyle(6);
 
-  bool saveplots = false;
+  bool saveplots = true;
 
   // input file
   TFile * f = new TFile(input.c_str());
@@ -248,17 +248,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   htoflg->SetXTitle("TOF (ns)");
   htoflg->SetYTitle("Lead Glass Charge");
 
-  // tof
-  TH1D * htof0 = new TH1D("tof0","",100,0,200);
-  TH1D * htof1 = new TH1D("tof1","",100,0,200);
-  TH1D * htof00 = new TH1D("tof00","",100,0,200);
-  TH1D * htof10 = new TH1D("tof10","",100,0,200);
-
-  htof0->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
-  htof1->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
-  htof00->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
-  htof10->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
-
   // time difference
   const int nspills = 5;
   TH1D * htdiff[nchans];
@@ -481,12 +470,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       double tof = tof1-tof0;
       double lg  = pmt[lgchan]->IntCharge[0];
       double tref = pmt[12]->SignalTime[0];
-
-      htoflg->Fill(tof,lg);
-      htof0->Fill(tof0);
-      htof00->Fill(pmt[8]->SignalTime[0]);
-      htof1->Fill(tof1);
-      htof10->Fill(pmt[12]->SignalTime[0]);
 
       // e-like selection
       bool is_electron = false;
