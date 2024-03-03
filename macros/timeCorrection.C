@@ -133,9 +133,9 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   const int nchans = chan.size();
 
   // leadglas channel
-  int leadchan;
-  if (isLM) leadchan = 18;
-  else      leadchan = 15;
+  int lgchan;
+  if (isLM) lgchan = 18;
+  else      lgchan = 15;
 
   unsigned long offset = 2147483648;//2^31 steps = ~17s
   double to_s  = 8e-9;
@@ -260,9 +260,13 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   htof10->SetTitle(Form("Run %d %d MeV/c;Signal time (ns)",run_number,mom));
 
   // time difference
+  const int nspills = 5;
   TH1D * htdiff[nchans];
-  TH1D * htdifftmp[nchans];
   TH1D * htdiffcor[nchans];
+  TH1D * htdiffcorfull[nchans];
+  TH1D * htdifftmp[nchans];
+  TH1D * htdiffspill[nchans][nspills];
+  TH1D * htdiffspillcor[nchans][nspills];
   TH1D * hoffmean [nchans];
   TH1D * hoffstd[nchans];
   TH2D * hoffcorre[nchans];
@@ -273,24 +277,39 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     htdiff[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
     htdiff[chi]->SetTitle("e-like");
 
+    htdiffcor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,200);
+    htdiffcor[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiffcor[chi]->SetTitle("e-like corr.");
+
+    htdiffcorfull[chi] = new TH1D(Form("%s_TOF10_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,200);
+    htdiffcorfull[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiffcorfull[chi]->SetTitle("e-like full corr.");
+
     htdifftmp[chi] = new TH1D(Form("%s_TOF10_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
     htdifftmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
     htdifftmp[chi]->SetTitle("e-like");
 
-    htdiffcor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,200);
-    htdiffcor[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    htdiffcor[chi]->SetTitle("e-like");
+    for (int spilli=0;spilli<nspills;spilli++) {
+
+      htdiffspill[chi][spilli] = new TH1D(Form("%s_TOF10_%d",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
+      htdiffspill[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+      htdiffspill[chi][spilli]->SetTitle("e-like");
+
+      htdiffspillcor[chi][spilli] = new TH1D(Form("%s_TOF10_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,200);
+      htdiffspillcor[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+      htdiffspillcor[chi][spilli]->SetTitle("e-like corr.");
+    }
 
     hoffmean[chi] = new TH1D(Form("%soffmean",tree_name[chi].c_str()),
-                           Form(";%s-TOF10 mean per spill (ns)",tree_name[chi].c_str()),
+                           Form(";%s-TOF10 mean (ns)",tree_name[chi].c_str()),
                            100,-100,100);
 
     hoffstd[chi] = new TH1D(Form("%soffstd",tree_name[chan[chi]].c_str()),
-                                 Form(";%s-TOF10 stddev per spill (ns)",tree_name[chan[chi]].c_str()),
+                                 Form(";%s-TOF10 stddev (ns)",tree_name[chan[chi]].c_str()),
                                  100,0,20);
 
     hoffcorre[chi] = new TH2D(Form("%soffcorre",tree_name[chan[chi]].c_str()),
-                                 Form(";%s-TOF01 (ns);ACT3R-TOF10",tree_name[chan[chi]].c_str()),
+                                 Form(";%s-TOF01 mean (ns);ACT3L-TOF10 mean (ns)",tree_name[chan[chi]].c_str()),
                                  100,-100,100,100,-100,100);
   }
 
@@ -359,7 +378,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       }
 
       for (int chi=0;chi<8;chi++) {
-        hoffcorre[chi]->Fill(off_mean[chi][spillNumber_pre],off_mean[7][spillNumber_pre]);
+        hoffcorre[chi]->Fill(off_mean[chi][spillNumber_pre],off_mean[6][spillNumber_pre]);
       }
 
       if (ientry==nentries) break;
@@ -443,11 +462,11 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     // one peak in TOF and LeadGlass
     bool cut = true;
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
-    cut = cut && pmt[leadchan]->nPeaks==1;
+    cut = cut && pmt[lgchan]->nPeaks==1;
 
     // TOF and LeadGlass signal time in first bunch
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
-    cut = cut && pmt[leadchan]->SignalTime[0]<200;
+    cut = cut && pmt[lgchan]->SignalTime[0]<200;
 
     if (cut==true) {
 
@@ -460,7 +479,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
                      pmt[14]->SignalTime[0]+
                      pmt[15]->SignalTime[0])/4.;
       double tof = tof1-tof0;
-      double lg  = pmt[leadchan]->IntCharge[0];
+      double lg  = pmt[lgchan]->IntCharge[0];
       double tref = pmt[12]->SignalTime[0];
 
       htoflg->Fill(tof,lg);
@@ -496,14 +515,24 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
               pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
             double actdiff = pmt[acti]->SignalTime[0]-tref;
             htdiff[acti]->Fill(actdiff);
+            htdiffcor[acti]->Fill(actdiff+ttcor[0]);
             htdifftmp[acti]->Fill(actdiff+ttcor[0]);
+            if (info->SpillNumber<nspills) {
+              htdiffspill[acti][info->SpillNumber]->Fill(actdiff);
+              htdiffspillcor[acti][info->SpillNumber]->Fill(actdiff+ttcor[0]);
+            }
           }
         }
 
         // lead glass digitizer
-        double lgdiff = pmt[leadchan]->SignalTime[0]-tref;
+        double lgdiff = pmt[lgchan]->SignalTime[0]-tref;
         htdiff[8]->Fill(lgdiff);
+        htdiffcor[8]->Fill(lgdiff+ttcor[2]);
         htdifftmp[8]->Fill(lgdiff+ttcor[2]);
+        if (info->SpillNumber<nspills) {
+          htdiffspill[8][info->SpillNumber]->Fill(lgdiff);
+          htdiffspillcor[8][info->SpillNumber]->Fill(lgdiff+ttcor[2]);
+        }
 
       }
     }
@@ -527,40 +556,16 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     htoflg->Draw("colz");
     c->Print(Form("%s_tof_lg.png",plotout.c_str()));
 
-    c = new TCanvas();
-    htof0->SetStats(0);
-    htof0->SetLineColor(9);
-    htof0->Draw();
-    htof00->SetLineColor(46);
-    htof00->Draw("same");
-    TLegend * leg = new TLegend(0.55,0.7,0.85,0.85);
-    leg->AddEntry(htof0,Form("TOF0 StdDev=%.2f ns",htof0->GetStdDev()),"l");
-    leg->AddEntry(htof00,Form("TOF00 StdDev=%.2f ns",htof00->GetStdDev()),"l");
-    leg->Draw();
-    c->Print(Form("%s_tof0.png",plotout.c_str()));
-
-    c = new TCanvas();
-    htof1->SetStats(0);
-    htof1->SetLineColor(9);
-    htof1->Draw();
-    htof10->SetLineColor(46);
-    htof10->Draw("same");
-    leg = new TLegend(0.55,0.7,0.85,0.85);
-    leg->AddEntry(htof1,Form("TOF1 StdDev=%.2f ns",htof1->GetStdDev()),"l");
-    leg->AddEntry(htof10,Form("TOF10 StdDev=%.2f ns",htof10->GetStdDev()),"l");
-    leg->Draw();
-    c->Print(Form("%s_tof1.png",plotout.c_str()));
-
     for (int chi=0; chi<nchans; chi++) {
       c = new TCanvas();
       hv[chi]->SetStats(1);
       hv[chi]->Draw();
-      c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+      //c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
     
       c = new TCanvas();
       hq[chi]->SetStats(1);
       hq[chi]->Draw();
-      c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+      //c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
     }
 
     for (int dg=0; dg<ndigitizers; dg++) {
@@ -572,27 +577,19 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     for (int chi=0;chi<nchans;chi++) {
       c = new TCanvas();
       hoffmean[chi]->Draw();
-      c->Print(Form("%s_%s_T10_offmean.png",plotout.c_str(),tree_name[chi].c_str()));
+      c->Print(Form("%s_%s_T10_offmean.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
 
       c = new TCanvas();
       hoffstd[chi]->Draw();
-      c->Print(Form("%s_%s_T10_offstd.png",plotout.c_str(),tree_name[chi].c_str()));
+      c->Print(Form("%s_%s_T10_offstd.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
 
       c = new TCanvas();
+      hoffcorre[chi]->SetStats(0);
       hoffcorre[chi]->Draw("colz");
-      c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chi].c_str()));
+      c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
     }
 
   }
-
-  // mean and std corrections
-  //for (int i=0; i<9; i++) {
-  //  cout << "channel " << i << endl;
-  //  cout << "saved spill corrections size " << off_mean[i].size() << endl;
-  //  for (map<int,double>::iterator sp=off_mean[i].begin(); sp!=off_mean[i].end(); sp++) {
-  //    cout << "  spill " << sp->first << " " << sp->second << endl;
-  //  }
-  //}
 
   // clone input tree and replace Signal time with
   // new values
@@ -756,20 +753,17 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       newtree[ipmt]->Fill();
     }
 
-    // e-like selection
-    // with full corrections
-    // one peak cut
+    // one peak in TOF and LeadGlass
     bool cut = true;
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
-    cut = cut && pmt[leadchan]->nPeaks==1;
+    cut = cut && pmt[lgchan]->nPeaks==1;
 
-    // signal time in first bunch  cut
+    // TOF and LeadGlass signal time in first bunch
     for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
-    cut = cut && pmt[leadchan]->SignalTime[0]<200;
+    cut = cut && pmt[lgchan]->SignalTime[0]<200;
 
     if (cut==true) {
 
-      // TOF and LG
       double tof0 = (pmt[8] ->SignalTime[0]+
                      pmt[9] ->SignalTime[0]+
                      pmt[10]->SignalTime[0]+
@@ -779,20 +773,34 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
                      pmt[14]->SignalTime[0]+
                      pmt[15]->SignalTime[0])/4.;
       double tof = tof1-tof0;
-      double lg  = pmt[leadchan]->IntCharge[0];
+      double lg  = pmt[lgchan]->IntCharge[0];
+      double tref = pmt[12]->SignalTime[0];
 
       // e-like selection
-      if (tof<12 && lg>0.2) {
+      bool is_electron = false;
+      if (abs(mom)<400) {
+        is_electron = tof<12;
+      }
+      else if(abs(mom)<700) {
+        is_electron = tof<12 && lg>0.2;
+      }
+      else {
+        is_electron = tof<12 && lg>0.3;
+      }
 
+      if (is_electron) {
+
+        // act digitizer
         for (int acti=0; acti<8; acti++) {
           if (pmt[acti]->nPeaks==1 &&
               pmt[acti]->SignalTime[0]<200 &&
               pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
-            htdiffcor[acti]->Fill(signalTimeCor[acti][0]-signalTimeCor[12][0]);
+            htdiffcorfull[acti]->Fill(signalTimeCor[acti][0]-signalTimeCor[12][0]);
           }
         }
 
-        htdiffcor[8]->Fill(signalTimeCor[leadchan][0]-signalTimeCor[12][0]);
+        // lead glass digitizer
+        htdiffcorfull[8]->Fill(signalTimeCor[lgchan][0]-signalTimeCor[12][0]);
 
       }
 
@@ -808,27 +816,45 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     cout << endl;
   }//digitizers
 
-  gStyle->SetOptTitle(0);
-
   if (saveplots) {
     for (int chi=0; chi<nchans; chi++) {
+
       TCanvas * c = new TCanvas();
       THStack * s = new THStack();
-      htdiff[chi]->SetStats(0);
-      htdiffcor[chi]->SetStats(0);
-      htdiff[chi]->SetLineColor(kBlue);
-      htdiffcor[chi]->SetLineColor(kRed);
+      TLegend * l = new TLegend(0.6,0.7,0.88,0.89);
+      htdiff[chi]->SetLineColor(9);
+      htdiffcorfull[chi]->SetLineColor(46);
       s->Add(htdiff[chi]);
-      s->Add(htdiffcor[chi]);
-      htdiff[chi]->SetTitle("e-like");
-      htdiffcor[chi]->SetTitle("e-like corr.");
+      s->Add(htdiffcorfull[chi]);
+      s->SetTitle(Form("Run %d %d MeV/c e-like",run_number,mom));
       s->Draw("nostack");
       s->GetXaxis()->SetTitle(htdiff[chi]->GetXaxis()->GetTitle());
       s->GetYaxis()->SetTitle(htdiff[chi]->GetYaxis()->GetTitle());
-      gPad->BuildLegend(0.6,0.7,0.88,0.89);
-      //gPad->SetLogy();          
-      c->Print(Form("%s_%s_T10_cor_stack.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-      //c->Print(Form("%s_%s_T10_cor_stack_logy.png",plotout.c_str(),tnames[chi].c_str()));
+      l->AddEntry(htdiff[chi],Form("SD=%.2f ns",htdiff[chi]->GetStdDev()),"l");
+      l->AddEntry(htdiffcorfull[chi],Form("Full corr. SD=%.2f ns",htdiffcorfull[chi]->GetStdDev()),"l");
+      l->Draw();
+      c->Print(Form("%s_%s_T10.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+
+      for (int spilli=0;spilli<nspills;spilli++) {
+
+        c = new TCanvas();
+        s = new THStack();
+        l = new TLegend(0.6,0.7,0.88,0.89);
+        htdiffspill[chi][spilli]->SetLineColor(9);
+        htdiffspillcor[chi][spilli]->SetLineColor(46);
+        cout << "spill " << spilli << " " << htdiffspill[chi][spilli]->GetEntries() << " " << htdiffspillcor[chi][spilli]->GetEntries() << endl;
+        s->Add(htdiffspill[chi][spilli]);
+        s->Add(htdiffspillcor[chi][spilli]);
+        s->SetTitle(Form("Run %d %d MeV/c e-like Spill %d",run_number,mom,spilli));
+        s->Draw("nostack");
+        s->GetXaxis()->SetTitle(htdiffspill[chi][0]->GetXaxis()->GetTitle());
+        s->GetYaxis()->SetTitle(htdiffspill[chi][0]->GetYaxis()->GetTitle());
+        l->AddEntry(htdiffspill[chi][spilli],Form("SD=%.2f ns",htdiffspill[chi][spilli]->GetStdDev()),"l");
+        l->AddEntry(htdiffspillcor[chi][spilli],Form("Corr. SD=%.2f ns",htdiffspillcor[chi][spilli]->GetStdDev()),"l");
+        l->Draw();
+        c->Print(Form("%s_%s_T10_%d.png",plotout.c_str(),tree_name[chan[chi]].c_str(),spilli));
+      }
+
     }
   }
 
@@ -837,7 +863,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   fout << run;
   for (int chi=0;chi<nchans;chi++) {
     fout << " " << htdiff[chi]->GetStdDev();
-    fout << " " << htdiffcor[chi]->GetStdDev();
+    fout << " " << htdiffcorfull[chi]->GetStdDev();
   }
   fout << endl;
   fout.close();
