@@ -16,11 +16,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
                     string output = "test_run462_corrected.root")
 {
 
-  gStyle->SetOptStat(1);
-  gStyle->SetFuncWidth(1);
-  gStyle->SetMarkerStyle(6);
-
-  bool saveplots = true;
+  bool saveplots = false;
 
   // input file
   TFile * f = new TFile(input.c_str());
@@ -236,15 +232,12 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   TH1D * hv[nchans];
   TH1D * hq[nchans];
   for (int chi=0; chi<nchans; chi++) {
-    hv[chi] = new TH1D(Form("%s_V",tree_name[chan[chi]].c_str()),"",100,0,1);
-    hq[chi] = new TH1D(Form("%s_Q",tree_name[chan[chi]].c_str()),"",100,0,0.25);
-    hv[chi]->SetTitle(Form("Run %d %d MeV/c;V",run_number,mom));
-    hq[chi]->SetTitle(Form("Run %d %d MeV/c;Q",run_number,mom));
+    hv[chi] = new TH1D(Form("%s_V",tree_name[chan[chi]].c_str()),";V",100,0,1);
+    hq[chi] = new TH1D(Form("%s_Q",tree_name[chan[chi]].c_str()),";Q",100,0,0.25);
   }
 
   // tof vs lg
   TH2D * htoflg = new TH2D("toflg","",100,10,15,100,0,0.5);
-  htoflg->SetTitle(Form("Run %d %d MeV/c",run_number,mom));
   htoflg->SetXTitle("TOF (ns)");
   htoflg->SetYTitle("Lead Glass Charge");
 
@@ -264,29 +257,23 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
     htdiff[chi] = new TH1D(Form("%s_TOF10",tree_name[chan[chi]].c_str()),"",100,-100,100);
     htdiff[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    htdiff[chi]->SetTitle("e-like");
 
     htdiffcor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,200);
     htdiffcor[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    htdiffcor[chi]->SetTitle("e-like corr.");
 
     htdiffcorfull[chi] = new TH1D(Form("%s_TOF10_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,200);
     htdiffcorfull[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    htdiffcorfull[chi]->SetTitle("e-like full corr.");
 
     htdifftmp[chi] = new TH1D(Form("%s_TOF10_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
     htdifftmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-    htdifftmp[chi]->SetTitle("e-like");
 
     for (int spilli=0;spilli<nspills;spilli++) {
 
       htdiffspill[chi][spilli] = new TH1D(Form("%s_TOF10_%d",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
       htdiffspill[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-      htdiffspill[chi][spilli]->SetTitle("e-like");
 
       htdiffspillcor[chi][spilli] = new TH1D(Form("%s_TOF10_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,200);
       htdiffspillcor[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
-      htdiffspillcor[chi][spilli]->SetTitle("e-like corr.");
     }
 
     hoffmean[chi] = new TH1D(Form("%soffmean",tree_name[chi].c_str()),
@@ -530,50 +517,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     cout << endl;
   }//digitizers
 
-  if (saveplots) {
-
-    TCanvas * c;
-
-    c = new TCanvas();
-    htoflg->SetStats(0);
-    htoflg->Draw("colz");
-    c->Print(Form("%s_tof_lg.png",plotout.c_str()));
-
-    for (int chi=0; chi<nchans; chi++) {
-      c = new TCanvas();
-      hv[chi]->SetStats(1);
-      hv[chi]->Draw();
-      //c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-    
-      c = new TCanvas();
-      hq[chi]->SetStats(1);
-      hq[chi]->Draw();
-      //c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-    }
-
-    for (int dg=0; dg<ndigitizers; dg++) {
-      c = new TCanvas();
-      httcor[dg]->Draw();
-      c->Print(Form("%s_ttcor%i.png",plotout.c_str(),dg));
-    }
-
-    for (int chi=0;chi<nchans;chi++) {
-      c = new TCanvas();
-      hoffmean[chi]->Draw();
-      c->Print(Form("%s_%s_T10_offmean.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-
-      c = new TCanvas();
-      hoffstd[chi]->Draw();
-      c->Print(Form("%s_%s_T10_offstd.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-
-      c = new TCanvas();
-      hoffcorre[chi]->SetStats(0);
-      hoffcorre[chi]->Draw("colz");
-      c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-    }
-
-  }
-
   // clone input tree and replace Signal time with
   // new values
   // save cloned tree in a different file
@@ -800,16 +743,70 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   }//digitizers
 
   if (saveplots) {
+
+    gStyle->SetOptStat(1);
+    gStyle->SetFuncWidth(1);
+    gStyle->SetMarkerStyle(6);
+
+    string title = Form("Run %d %d MeV/c",run_number,mom);
+
+    TCanvas * c;
+
+    c = new TCanvas();
+    htoflg->SetStats(0);
+    htoflg->SetTitle(title.c_str());
+    htoflg->Draw("colz");
+    c->Print(Form("%s_tof_lg.png",plotout.c_str()));
+
+    for (int chi=0; chi<nchans; chi++) {
+      c = new TCanvas();
+      hv[chi]->SetStats(1);
+      hv[chi]->SetTitle(title.c_str());
+      hv[chi]->Draw();
+      c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+
+      c = new TCanvas();
+      hq[chi]->SetStats(1);
+      hq[chi]->SetTitle(title.c_str());
+      hq[chi]->Draw();
+      c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+    }
+
+    for (int dg=0; dg<ndigitizers; dg++) {
+      c = new TCanvas();
+      httcor[dg]->SetTitle(title.c_str());
+      httcor[dg]->Draw();
+      c->Print(Form("%s_ttcor%i.png",plotout.c_str(),dg));
+    }
+
+    for (int chi=0;chi<nchans;chi++) {
+      c = new TCanvas();
+      hoffmean[chi]->SetTitle(title.c_str());
+      hoffmean[chi]->Draw();
+      c->Print(Form("%s_%s_T10_offmean.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+
+      c = new TCanvas();
+      hoffstd[chi]->SetTitle(title.c_str());
+      hoffstd[chi]->Draw();
+      c->Print(Form("%s_%s_T10_offstd.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+
+      c = new TCanvas();
+      hoffcorre[chi]->SetStats(0);
+      hoffcorre[chi]->SetTitle(title.c_str());
+      hoffcorre[chi]->Draw("colz");
+      c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+    }
+
     for (int chi=0; chi<nchans; chi++) {
 
-      TCanvas * c = new TCanvas();
+      c = new TCanvas();
       THStack * s = new THStack();
-      TLegend * l = new TLegend(0.6,0.7,0.88,0.89);
+      TLegend * l = new TLegend(0.55,0.7,0.88,0.89);
       htdiff[chi]->SetLineColor(9);
       htdiffcorfull[chi]->SetLineColor(46);
       s->Add(htdiff[chi]);
       s->Add(htdiffcorfull[chi]);
-      s->SetTitle(Form("Run %d %d MeV/c e-like",run_number,mom));
+      s->SetTitle(Form("%s e-like",title.c_str()));
       s->Draw("nostack");
       s->GetXaxis()->SetTitle(htdiff[chi]->GetXaxis()->GetTitle());
       s->GetYaxis()->SetTitle(htdiff[chi]->GetYaxis()->GetTitle());
@@ -822,13 +819,12 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
         c = new TCanvas();
         s = new THStack();
-        l = new TLegend(0.6,0.7,0.88,0.89);
+        l = new TLegend(0.55,0.7,0.88,0.89);
         htdiffspill[chi][spilli]->SetLineColor(9);
         htdiffspillcor[chi][spilli]->SetLineColor(46);
-        cout << "spill " << spilli << " " << htdiffspill[chi][spilli]->GetEntries() << " " << htdiffspillcor[chi][spilli]->GetEntries() << endl;
         s->Add(htdiffspill[chi][spilli]);
         s->Add(htdiffspillcor[chi][spilli]);
-        s->SetTitle(Form("Run %d %d MeV/c e-like Spill %d",run_number,mom,spilli));
+        s->SetTitle(Form("%s e-like Spill %d",title.c_str(),spilli));
         s->Draw("nostack");
         s->GetXaxis()->SetTitle(htdiffspill[chi][0]->GetXaxis()->GetTitle());
         s->GetYaxis()->SetTitle(htdiffspill[chi][0]->GetYaxis()->GetTitle());
