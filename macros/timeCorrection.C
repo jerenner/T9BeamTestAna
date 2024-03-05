@@ -757,12 +757,12 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
           if (pmt[acti]->nPeaks==1 &&
               pmt[acti]->SignalTime[0]<200 &&
               pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
-            htdiffcorfull[acti]->Fill(signalTimeCor[acti][0]-signalTimeCor[12][0]);
+            htdiffcorfull[acti]->Fill(signalTimeCor[acti][0]-tref);
           }
         }
 
         // lead glass digitizer
-        htdiffcorfull[8]->Fill(signalTimeCor[lgchan][0]-signalTimeCor[12][0]);
+        htdiffcorfull[8]->Fill(signalTimeCor[lgchan][0]-tref);
 
       }
 
