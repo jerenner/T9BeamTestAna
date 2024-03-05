@@ -280,8 +280,8 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       htdiffspillcor[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
     }
 
-    hoffmean[chi] = new TH1D(Form("%soffmean",tree_name[chi].c_str()),
-                           Form(";%s-TOF10 mean (ns)",tree_name[chi].c_str()),
+    hoffmean[chi] = new TH1D(Form("%soffmean",tree_name[chan[chi]].c_str()),
+                           Form(";%s-TOF10 mean (ns)",tree_name[chan[chi]].c_str()),
                            100,-100,100);
 
     hoffstd[chi] = new TH1D(Form("%soffstd",tree_name[chan[chi]].c_str()),
@@ -491,6 +491,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       double tref = pmt[12]->SignalTime[0];
 
       // e-like selection
+      htoflg->Fill(tof,lg);
       bool is_electron = false;
       if (abs(mom)<400) {
         is_electron = tof<12;
