@@ -800,6 +800,13 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     hspillsize->Draw();
     c->Print(Form("%s_spillsize.png",plotout.c_str()));
 
+    for (int dg=0; dg<ndigitizers; dg++) {
+      c = new TCanvas();
+      httcor[dg]->SetTitle(title.c_str());
+      httcor[dg]->Draw();
+      c->Print(Form("%s_ttcor%i.png",plotout.c_str(),dg));
+    }
+
     for (int chi=0; chi<nchans; chi++) {
       c = new TCanvas();
       hv[chi]->SetStats(1);
@@ -812,16 +819,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       hq[chi]->SetTitle(title.c_str());
       hq[chi]->Draw();
       c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-    }
 
-    for (int dg=0; dg<ndigitizers; dg++) {
-      c = new TCanvas();
-      httcor[dg]->SetTitle(title.c_str());
-      httcor[dg]->Draw();
-      c->Print(Form("%s_ttcor%i.png",plotout.c_str(),dg));
-    }
-
-    for (int chi=0;chi<nchans;chi++) {
       c = new TCanvas();
       hoffmean[chi]->SetTitle(title.c_str());
       hoffmean[chi]->Draw();
@@ -837,9 +835,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       hoffcorre[chi]->SetTitle(title.c_str());
       hoffcorre[chi]->Draw("colz");
       c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-    }
-
-    for (int chi=0; chi<nchans; chi++) {
 
       c = new TCanvas();
       THStack * s = new THStack();
