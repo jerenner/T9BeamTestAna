@@ -247,6 +247,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   TH1D * htdiffcor[nchans];
   TH1D * htdiffcorfull[nchans];
   TH1D * htdifftmp[nchans];
+  TH1D * htdiffcortmp[nchans];
   TH1D * htdiffspill[nchans][nspills];
   TH1D * htdiffspillcor[nchans][nspills];
   TH1D * hoffmean [nchans];
@@ -258,21 +259,24 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     htdiff[chi] = new TH1D(Form("%s_TOF10",tree_name[chan[chi]].c_str()),"",100,-100,100);
     htdiff[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,200);
+    htdiffcor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,100);
     htdiffcor[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcorfull[chi] = new TH1D(Form("%s_TOF10_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,200);
+    htdiffcorfull[chi] = new TH1D(Form("%s_TOF10_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,100);
     htdiffcorfull[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
 
     htdifftmp[chi] = new TH1D(Form("%s_TOF10_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
     htdifftmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+
+    htdiffcortmp[chi] = new TH1D(Form("%s_TOF10_cor_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiffcortmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
 
     for (int spilli=0;spilli<nspills;spilli++) {
 
       htdiffspill[chi][spilli] = new TH1D(Form("%s_TOF10_%d",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
       htdiffspill[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
 
-      htdiffspillcor[chi][spilli] = new TH1D(Form("%s_TOF10_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,200);
+      htdiffspillcor[chi][spilli] = new TH1D(Form("%s_TOF10_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
       htdiffspillcor[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
     }
 
@@ -290,15 +294,19 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   }
 
   // act and lg trigger time correction
-
   vector<TH1D*> httcor(ndigitizers);
   for (int dg=0; dg<ndigitizers; dg++) {
     httcor[dg] = new TH1D(Form("ttcor%i",dg),Form(";TT%i-TT1 (ns)",dg),100,-100,100);
   }
 
+  // spill size
+  TH1D * hspillsize = new TH1D("spillsize","",50,0,5);
+  bool spills_ok;
+
   // save for each spill
   vector< map<int,double> > off_mean(nchans);
   vector< map<int,double> > off_std(nchans);
+  map<int,bool> off_good;
 
   // trigger times containers for all digitizers
   vector<unsigned long> timeStamp(ndigitizers,0);
@@ -335,15 +343,37 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     if ((info->SpillNumber!=spillNumber_pre) ||
         ientry==nentries ) {
 
+      // if spill is too large, flag it as bad
+      if (timeFullSpill[1]>1) {
+        off_good[spillNumber_pre] = false;
+        cout << "spill " << spillNumber_pre;
+        cout << " flagged as bad because is too long ";
+        cout << timeFullSpill[1] << " s" << endl;
+      }
+      else {
+        off_good[spillNumber_pre] = true;
+      }
+      hspillsize->Fill(timeFullSpill[1]);
+
+      // save spill offset for each channel
       for (int chi=0;chi<nchans;chi++) {
-        hoffmean[chi]->Fill(htdifftmp[chi]->GetMean());
-        hoffstd[chi]->Fill(htdifftmp[chi]->GetStdDev());
-        off_mean[chi][spillNumber_pre] = htdifftmp[chi]->GetMean();
-        off_std[chi][spillNumber_pre] = htdifftmp[chi]->GetStdDev();
+        if (off_good[spillNumber_pre]) {
+          hoffmean[chi]->Fill(htdiffcortmp[chi]->GetMean());
+          hoffstd[chi]->Fill(htdiffcortmp[chi]->GetStdDev());
+          off_mean[chi][spillNumber_pre] = htdiffcortmp[chi]->GetMean();
+          off_std[chi][spillNumber_pre] = htdiffcortmp[chi]->GetStdDev();
+        }
+        else {
+          hoffmean[chi]->Fill(htdifftmp[chi]->GetMean());
+          hoffstd[chi]->Fill(htdifftmp[chi]->GetStdDev());
+          off_mean[chi][spillNumber_pre] = htdifftmp[chi]->GetMean();
+          off_std[chi][spillNumber_pre] = htdifftmp[chi]->GetStdDev();
+        }
+        // check outliers
         if (htdifftmp[chi]->GetBinContent(0)>0 ||
             htdifftmp[chi]->GetBinContent(htdifftmp[chi]->GetNbinsX())>0) {
           cout << "spill number " << spillNumber_pre << endl;
-          cout << tree_name[chi] << " ";
+          cout << tree_name[chan[chi]] << " ";
           cout << htdifftmp[chi]->GetMean() << " ";
           cout << htdifftmp[chi]->GetStdDev() << " ";
           cout << htdifftmp[chi]->GetBinContent(0) << " ";
@@ -351,8 +381,10 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
           cout << endl;
         }
         htdifftmp[chi]->Reset();
+        htdiffcortmp[chi]->Reset();
       }
 
+      // compare ACT channel offset with ACT3L
       for (int chi=0;chi<8;chi++) {
         hoffcorre[chi]->Fill(off_mean[chi][spillNumber_pre],off_mean[6][spillNumber_pre]);
       }
@@ -486,7 +518,8 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
             double actdiff = pmt[acti]->SignalTime[0]-tref;
             htdiff[acti]->Fill(actdiff);
             htdiffcor[acti]->Fill(actdiff+ttcor[0]);
-            htdifftmp[acti]->Fill(actdiff+ttcor[0]);
+            htdifftmp[acti]->Fill(actdiff);
+            htdiffcortmp[acti]->Fill(actdiff+ttcor[0]);
             if (info->SpillNumber<nspills) {
               htdiffspill[acti][info->SpillNumber]->Fill(actdiff);
               htdiffspillcor[acti][info->SpillNumber]->Fill(actdiff+ttcor[0]);
@@ -498,7 +531,8 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
         double lgdiff = pmt[lgchan]->SignalTime[0]-tref;
         htdiff[8]->Fill(lgdiff);
         htdiffcor[8]->Fill(lgdiff+ttcor[2]);
-        htdifftmp[8]->Fill(lgdiff+ttcor[2]);
+        htdifftmp[8]->Fill(lgdiff);
+        htdiffcortmp[8]->Fill(lgdiff+ttcor[2]);
         if (info->SpillNumber<nspills) {
           htdiffspill[8][info->SpillNumber]->Fill(lgdiff);
           htdiffspillcor[8][info->SpillNumber]->Fill(lgdiff+ttcor[2]);
@@ -661,7 +695,8 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       for (int ipeak=0; ipeak<pmt[ipmt]->nPeaks; ipeak++) {
         // ACT channels
         if (ipmt<8) {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcor[0] - off_mean[6][info->SpillNumber];
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[6][info->SpillNumber];
+          if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[0];
         }
         // TOF channels
         else if (ipmt<16) {
@@ -669,7 +704,8 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
         }
         // Hole and LG channels
         else {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcor[2] - off_mean[8][info->SpillNumber];
+          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[8][info->SpillNumber];
+          if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[2];
         }
         // signalTimeCorVal = signalTimeCor[ipmt][ipeak];
 
@@ -757,6 +793,12 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     htoflg->SetTitle(title.c_str());
     htoflg->Draw("colz");
     c->Print(Form("%s_tof_lg.png",plotout.c_str()));
+
+    c = new TCanvas();
+    hspillsize->SetStats(0);
+    hspillsize->SetTitle(title.c_str());
+    hspillsize->Draw();
+    c->Print(Form("%s_spillsize.png",plotout.c_str()));
 
     for (int chi=0; chi<nchans; chi++) {
       c = new TCanvas();
