@@ -114,7 +114,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     dg_pmt.push_back(23);//HD0 digitizer 3
   }
 
-  // compare these channels times with TOF10
+  // compare these channels times with T0
   vector<int> chan;
   if (isLM) {
     for (int i=0;i<8;i++) chan.push_back(i);//ACTs
@@ -257,44 +257,44 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
   for (int chi=0;chi<nchans;chi++) {
 
-    htdiff[chi] = new TH1D(Form("%s_TOF10",tree_name[chan[chi]].c_str()),"",100,-100,100);
-    htdiff[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiff[chi] = new TH1D(Form("%s_T0",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiff[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcor[chi] = new TH1D(Form("%s_TOF10_cor",tree_name[chan[chi]].c_str()),"",100,-100,100);
-    htdiffcor[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiffcor[chi] = new TH1D(Form("%s_T0_cor",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiffcor[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcorfull[chi] = new TH1D(Form("%s_TOF10_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,100);
-    htdiffcorfull[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiffcorfull[chi] = new TH1D(Form("%s_T0_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiffcorfull[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdifftmp[chi] = new TH1D(Form("%s_TOF10_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
-    htdifftmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdifftmp[chi] = new TH1D(Form("%s_T0_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdifftmp[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcortmp[chi] = new TH1D(Form("%s_TOF10_cor_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
-    htdiffcortmp[chi]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+    htdiffcortmp[chi] = new TH1D(Form("%s_T0_cor_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiffcortmp[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
     for (int spilli=0;spilli<nspills;spilli++) {
 
-      htdiffspill[chi][spilli] = new TH1D(Form("%s_TOF10_%d",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
-      htdiffspill[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+      htdiffspill[chi][spilli] = new TH1D(Form("%s_T0_%d",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
+      htdiffspill[chi][spilli]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-      htdiffspillcor[chi][spilli] = new TH1D(Form("%s_TOF10_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
-      htdiffspillcor[chi][spilli]->SetXTitle(Form("%s-TOF10 (ns)",tree_name[chan[chi]].c_str()));
+      htdiffspillcor[chi][spilli] = new TH1D(Form("%s_T0_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
+      htdiffspillcor[chi][spilli]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
     }
 
     hoffentries[chi] = new TH1D(Form("%soffentries",tree_name[chan[chi]].c_str()),
-                           Form(";%s-TOF10 entries (ns)",tree_name[chan[chi]].c_str()),
+                           Form(";%s-T0 entries (ns)",tree_name[chan[chi]].c_str()),
                            100,0,2000);
 
     hoffmean[chi] = new TH1D(Form("%soffmean",tree_name[chan[chi]].c_str()),
-                           Form(";%s-TOF10 mean (ns)",tree_name[chan[chi]].c_str()),
+                           Form(";%s-T0 mean (ns)",tree_name[chan[chi]].c_str()),
                            100,-100,100);
 
     hoffstd[chi] = new TH1D(Form("%soffstd",tree_name[chan[chi]].c_str()),
-                                 Form(";%s-TOF10 stddev (ns)",tree_name[chan[chi]].c_str()),
+                                 Form(";%s-T0 stddev (ns)",tree_name[chan[chi]].c_str()),
                                  100,0,20);
 
     hoffcorre[chi] = new TH2D(Form("%soffcorre",tree_name[chan[chi]].c_str()),
-                                 Form(";%s-TOF01 mean (ns);ACT3L-TOF10 mean (ns)",tree_name[chan[chi]].c_str()),
+                                 Form(";%s-T0 mean (ns);ACT3L-T0 mean (ns)",tree_name[chan[chi]].c_str()),
                                  100,-100,100,100,-100,100);
   }
 
@@ -494,7 +494,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
                      pmt[15]->SignalTime[0])/4.;
       double tof = tof1-tof0;
       double lg  = pmt[lgchan]->IntCharge[0];
-      double tref = pmt[12]->SignalTime[0];
+      double tref = tof0;
 
       // e-like selection
       htoflg->Fill(tof,lg);
@@ -743,7 +743,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
                      pmt[15]->SignalTime[0])/4.;
       double tof = tof1-tof0;
       double lg  = pmt[lgchan]->IntCharge[0];
-      double tref = pmt[12]->SignalTime[0];
+      double tref = tof0;
 
       // e-like selection
       bool is_electron = false;
@@ -830,17 +830,17 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       c = new TCanvas();
       hoffentries[chi]->SetTitle(title.c_str());
       hoffentries[chi]->Draw();
-      c->Print(Form("%s_%s_T10_offentries.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+      c->Print(Form("%s_%s_T0_offentries.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
 
       c = new TCanvas();
       hoffmean[chi]->SetTitle(title.c_str());
       hoffmean[chi]->Draw();
-      c->Print(Form("%s_%s_T10_offmean.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+      c->Print(Form("%s_%s_T0_offmean.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
 
       c = new TCanvas();
       hoffstd[chi]->SetTitle(title.c_str());
       hoffstd[chi]->Draw();
-      c->Print(Form("%s_%s_T10_offstd.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+      c->Print(Form("%s_%s_T0_offstd.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
 
       c = new TCanvas();
       hoffcorre[chi]->SetStats(0);
@@ -862,7 +862,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       l->AddEntry(htdiff[chi],Form("SD=%.2f ns",htdiff[chi]->GetStdDev()),"l");
       l->AddEntry(htdiffcorfull[chi],Form("Full corr. SD=%.2f ns",htdiffcorfull[chi]->GetStdDev()),"l");
       l->Draw();
-      c->Print(Form("%s_%s_T10.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
+      c->Print(Form("%s_%s_T0.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
 
       for (int spilli=0;spilli<nspills;spilli++) {
 
@@ -880,7 +880,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
         l->AddEntry(htdiffspill[chi][spilli],Form("SD=%.2f ns",htdiffspill[chi][spilli]->GetStdDev()),"l");
         l->AddEntry(htdiffspillcor[chi][spilli],Form("Corr. SD=%.2f ns",htdiffspillcor[chi][spilli]->GetStdDev()),"l");
         l->Draw();
-        c->Print(Form("%s_%s_T10_%d.png",plotout.c_str(),tree_name[chan[chi]].c_str(),spilli));
+        c->Print(Form("%s_%s_T0_%d.png",plotout.c_str(),tree_name[chan[chi]].c_str(),spilli));
       }
 
     }
