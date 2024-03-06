@@ -320,7 +320,7 @@ void triggerTimeDrift(string input = "singlePE_-16ns_45ns_run462.root",
       gdriftspill[dg]->SetPoint(gdriftspill[dg]->GetN(),timeFullSpill[1],tFullSpillDiff);
 
       // 1 spill
-      if (info->SpillNumber==8) {
+      if (info->SpillNumber==0) {
         gdriftspillsingle[dg]->SetPoint(gdriftspillsingle[dg]->GetN(),timeFullSpill[1],tFullSpillDiff);
       }
 
