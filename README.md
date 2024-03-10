@@ -4,9 +4,23 @@ Analysis package for the T9 beam test
 2023
 ## Cleaned up version:
 
+Timing PR: following the addition of the SignalTimeCorrected branch (Arturo's timing corrections) the pre-processing can now be run automatically with the following line:
+```bash complete_pre-processing.sh 000393``` 
+replacing the run withe correct run number. It follows a similar structure to what is presented below with the extra steps correcting the timing namely:
+```root -l -b -q 'macros/triggerTimeDrift.C("peakAnalysed_'$run'.root")'; root -l -b -q 'macros/timeCorrection.C("peakAnalysed_'$run'.root", "triggerTimeDrift.txt", "peakAnalysed_timeCorr_'$run'.root")'```
+Tested with ROOT 6.26/10. This step is not crutial in the analysis, if you choose to comment the two commands above out then the SignalTimeCorrected branch is a simple copy of the SignalTime branch. 
+
+TODO: The window integration is still performed with respect to the SignalTime values because it is based on sample points instead of absolute time, the window is wide enough that there is no risk of missing signal but having the option of integration with respect to SignalTimeCorrected could help cut down on scintillation.
+
+TODO: The pedestal value is taken as the most probable out of the non-analysis part of the waveform which is different for each event and can be influenced by the presence of a particle in the following bunch, especially in the ACT0 and lead glass. Eventually we might want to move to a fixed, run-dependant pedestal value. 
+
+Minor bug fixes and improvements. 
+
+
 Since the end of the beam time the analyis of the root files moved to python. Firstly the peak detect algorithm is applied to the root file using:
 
 ```python python/new_analysis/process_waveform_analysis.py data/root_run_000$run.root config/config_noHodoscope.json peakAnalysed_$run.root```
+(note: you might have to use python3 instead of python, if you get errors)
 
 where the config file contains:
  1. information about the analysis portion of the waveform and the pedestal portion
@@ -31,12 +45,45 @@ The whole analysis can be run for multiple files using:
 
 ```bash process_all_1PE.sh```
 
-There are three helper python code for accessing the data and producing some (more or less) useful plots. These are ```python/multipeak_qualityChecks.py```, ```python/peakMatching.py``` and ```python/studyLenWindow.py```.
+There are three helper python code for accessing the data and producing some (more or less) useful plots. These are ```python/multipeak_qualityChecks.py```, ```python/peakMatching.py``` and ```python/studyLenWindow.py```. There is now a comprehensive code that does particle ID and momentum measurements that can be called with:
+
+```python python/particleID.py windowPE_-16ns_45ns_run$run.root runNumber +/-Momentum refractiveIndex isBerylliumTarget probabilityThatThereisAparticleInBunch``` e.g.: ```python python/particleID.py singlePEstudy/singlePE_-16ns_45ns_run432.root 432 +460 1.047 1 0.0023```
+
+This code reads in the information stored in referenceParticleNumbers.txt to give a first proposition of the selection cuts that could be applied, depending on the beam momentum. This file has the same format as ```numberParticles.txt``` (see below) 
+
+More information about how to use this code and what it does are here: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231204/meeting/charge-particle-updates-and-future-studies/acraplet_041223_chargedparticlesetupupdates.pdf/view [1] 
+
+The analysis code outputs a bunch of numbers to a ```numberParticles.txt``` file that stores the following informations:
+1. run number
+2. momentum (positive or negative depending on beam charge)
+3. refIndex (index of refraction of aerogels ACT2 and ACT3)
+4. nSpills (number of spills, calculated in the code)
+5. probaBunch (probability for a bunch to contain a particle, see Dean's slides: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231127/meeting/beam-structure-and-dead-time-studies-continued/beam_structure_v3.pdf/view
+6. nParticles (total number of particles identified)
+7. nElectrons
+8. nMuons
+9. nPions
+10. nProtons
+11. nDeuterium (if TOF is very large)
+12. fractionPass1ParticleVeto (fraction of events where there is *exactly* one peak in *all* of the TOF PMTs, 8 in total)
+13. fractionPassNanVeto (always one, just checking if there are any file corruptions)
+14. ACTlinearA (linear coefficient for the selection cut in the ACT2+3 vs ACT1 plane, see ref [1]
+15. ACTlinearB (second line coefficient for the selection)
+16. piMuBorderACT (separation between the pion and muon (in units of PE) populations in ACT23)
+17. ACTlower (lowest ACT23 bound, to avoid noise)
+18. thereIsProtons (1 or 0 depending on the charge of the beam)
+19. protonsTOFCut (in ns, 0 if there are no protons at all)
+20. horizontal_el (in PE, horizontal cut to account for the scintillation and not misID pions/muons as electrons)
+21. LGupper (lead glass signal above which the particle has to be an electron, to account for weird eletrons, see [1])
+22. bery (whether the target is beryllium, or Aluminium, 1 for beryllium, 0 for Al)
 
 Coding still left to do:
-1. change the reference timing to be an average of TOF10, TOF11, TOF12 and TOF13 to limit risks of accidentals in TOF01 biasing the signal
-2. probably merge the config files into 1 to have something cleaner
-3. make a cleaner general python plotting script
+1. change the reference timing to be an average of TOF10, TOF11, TOF12 and TOF13 over peaks in coincidence (study ongoing) to limit risks of accidentals in TOF01 biasing the signal
+2. look into pedestal estimation
+3. probably merge the config files into 1 to have something cleaner
+   
+
+
 
 please get in touch if anything's unclear,
 
