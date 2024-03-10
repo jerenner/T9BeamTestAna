@@ -497,8 +497,9 @@ def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_ran
     
     # Lead glass
     # --------------------------------------------------------------------------------------------
-    pb_filtered = filter_range("PbGlass",df_dict['PbGlass'],'PeakTime',pb_timing_range,debug=debug)
-    #pb_filtered = filter_range("PbGlass",df_dict['PbGlass'],'nPeaks',(1,1),debug=debug)
+    # Note: we require 1 lead glass peak in the final analysis
+    pb_1peak = filter_range("PbGlass",df_dict['PbGlass'],'nPeaks',(1,1),debug=debug)
+    pb_filtered = filter_range("PbGlass",pb_1peak,'PeakTime',pb_timing_range,debug=debug)
     npeaks_pre  = len(df_dict['PbGlass'])
     npeaks_post = len(pb_filtered)
     #if(debug): print(f"-- Peaks {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
