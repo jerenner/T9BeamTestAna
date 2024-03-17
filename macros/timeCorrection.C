@@ -228,16 +228,19 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     }
   }
 
+  // output file
+  TFile * newfile = new TFile(output.c_str(),"recreate");
+
   // voltage and charge histos
   TH1D * hv[nchans];
   TH1D * hq[nchans];
   for (int chi=0; chi<nchans; chi++) {
-    hv[chi] = new TH1D(Form("%s_V",tree_name[chan[chi]].c_str()),";V",100,0,1);
-    hq[chi] = new TH1D(Form("%s_Q",tree_name[chan[chi]].c_str()),";Q",100,0,0.25);
+    hv[chi] = new TH1D(Form("%s_V",tree_name[chan[chi]].c_str()),";V",200,0,2);
+    hq[chi] = new TH1D(Form("%s_Q",tree_name[chan[chi]].c_str()),";Q",200,0,1);
   }
 
   // tof vs lg
-  TH2D * htoflg = new TH2D("toflg","",100,10,15,100,0,0.5);
+  TH2D * htoflg = new TH2D("toflg","",100,10,15,100,0,1);
   htoflg->SetXTitle("TOF (ns)");
   htoflg->SetYTitle("Lead Glass Charge");
 
@@ -498,18 +501,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
       // e-like selection
       htoflg->Fill(tof,lg);
-      bool is_electron = false;
-      if (abs(mom)<400) {
-        is_electron = tof<12;
-      }
-      else if(abs(mom)<700) {
-        is_electron = tof<12 && lg>0.2;
-      }
-      else {
-        is_electron = tof<12 && lg>0.3;
-      }
-
-      if (is_electron) {
+      if (tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6) {
 
         // pulse charge and voltage histos
         for (int chi=0; chi<nchans; chi++) {
@@ -561,7 +553,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   // clone input tree and replace Signal time with
   // new values
   // save cloned tree in a different file
-  TFile * newfile = new TFile(output.c_str(),"recreate");
   int nPeaksMax = 100;
   double signalTimeCor[npmts][nPeaksMax];
   for (int ipmt=0; ipmt<npmts; ipmt++) {
@@ -746,18 +737,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       double tref = tof0;
 
       // e-like selection
-      bool is_electron = false;
-      if (abs(mom)<400) {
-        is_electron = tof<12;
-      }
-      else if(abs(mom)<700) {
-        is_electron = tof<12 && lg>0.2;
-      }
-      else {
-        is_electron = tof<12 && lg>0.3;
-      }
-
-      if (is_electron) {
+      if (tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6) {
 
         // act digitizer
         for (int acti=0; acti<8; acti++) {
@@ -885,16 +865,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
     }
   }
-
-  // copy results to a text file
-  ofstream fout("timeCorrection.txt",ofstream::app);
-  fout << run;
-  for (int chi=0;chi<nchans;chi++) {
-    fout << " " << htdiff[chi]->GetStdDev();
-    fout << " " << htdiffcorfull[chi]->GetStdDev();
-  }
-  fout << endl;
-  fout.close();
 
   // save new ntuple
   newfile->Write();
