@@ -192,16 +192,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   thresholdv.push_back(0.10);//ACT3
   thresholdv.push_back(0.05);
 
-  vector<double> thresholdq;
-  thresholdq.push_back(0.20);//ACT0
-  thresholdq.push_back(0.20);
-  thresholdq.push_back(0.05);//ACT1
-  thresholdq.push_back(0.05);
-  thresholdq.push_back(0.10);//ACT2
-  thresholdq.push_back(0.05);
-  thresholdq.push_back(0.10);//ACT3
-  thresholdq.push_back(0.05);
-
   // get trees
   EventInfo * info;
   vector<PMT*> pmt;
@@ -232,12 +222,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   TFile * newfile = new TFile(output.c_str(),"recreate");
 
   // voltage and charge histos
-  TH1D * hv[nchans];
-  TH1D * hq[nchans];
-  for (int chi=0; chi<nchans; chi++) {
-    hv[chi] = new TH1D(Form("%s_V",tree_name[chan[chi]].c_str()),";V",200,0,2);
-    hq[chi] = new TH1D(Form("%s_Q",tree_name[chan[chi]].c_str()),";Q",200,0,1);
-  }
+  TH2D * hv = new TH2D("V",";channel;peak voltage (V)",nchans,0,nchans,200,0,2);
 
   // tof vs lg
   TH2D * htoflg = new TH2D("toflg","",100,10,15,100,0,1);
@@ -253,62 +238,56 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   TH1D * htdiffcortmp[nchans];
   TH1D * htdiffspill[nchans][nspills];
   TH1D * htdiffspillcor[nchans][nspills];
-  TH1D * hoffentries[nchans];
-  TH1D * hoffmean [nchans];
-  TH1D * hoffstd[nchans];
-  TH2D * hoffcorre[nchans];
 
   for (int chi=0;chi<nchans;chi++) {
 
-    htdiff[chi] = new TH1D(Form("%s_T0",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiff[chi] = new TH1D(Form("%s_T0",tree_name[chan[chi]].c_str()),"",100,-100,200);
     htdiff[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcor[chi] = new TH1D(Form("%s_T0_cor",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiffcor[chi] = new TH1D(Form("%s_T0_cor",tree_name[chan[chi]].c_str()),"",100,-100,200);
     htdiffcor[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcorfull[chi] = new TH1D(Form("%s_T0_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiffcorfull[chi] = new TH1D(Form("%s_T0_cor_full",tree_name[chan[chi]].c_str()),"",100,-100,200);
     htdiffcorfull[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdifftmp[chi] = new TH1D(Form("%s_T0_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdifftmp[chi] = new TH1D(Form("%s_T0_tmp",tree_name[chan[chi]].c_str()),"",100,-100,200);
     htdifftmp[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-    htdiffcortmp[chi] = new TH1D(Form("%s_T0_cor_tmp",tree_name[chan[chi]].c_str()),"",100,-100,100);
+    htdiffcortmp[chi] = new TH1D(Form("%s_T0_cor_tmp",tree_name[chan[chi]].c_str()),"",100,-100,200);
     htdiffcortmp[chi]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
     for (int spilli=0;spilli<nspills;spilli++) {
 
-      htdiffspill[chi][spilli] = new TH1D(Form("%s_T0_%d",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
+      htdiffspill[chi][spilli] = new TH1D(Form("%s_T0_%d",tree_name[chan[chi]].c_str(),spilli),"",100,-100,200);
       htdiffspill[chi][spilli]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
 
-      htdiffspillcor[chi][spilli] = new TH1D(Form("%s_T0_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,100);
+      htdiffspillcor[chi][spilli] = new TH1D(Form("%s_T0_%d_cor",tree_name[chan[chi]].c_str(),spilli),"",100,-100,200);
       htdiffspillcor[chi][spilli]->SetXTitle(Form("%s-T0 (ns)",tree_name[chan[chi]].c_str()));
     }
 
-    hoffentries[chi] = new TH1D(Form("%soffentries",tree_name[chan[chi]].c_str()),
-                           Form(";%s-T0 entries (ns)",tree_name[chan[chi]].c_str()),
-                           100,0,2000);
-
-    hoffmean[chi] = new TH1D(Form("%soffmean",tree_name[chan[chi]].c_str()),
-                           Form(";%s-T0 mean (ns)",tree_name[chan[chi]].c_str()),
-                           100,-100,100);
-
-    hoffstd[chi] = new TH1D(Form("%soffstd",tree_name[chan[chi]].c_str()),
-                                 Form(";%s-T0 stddev (ns)",tree_name[chan[chi]].c_str()),
-                                 100,0,20);
-
-    hoffcorre[chi] = new TH2D(Form("%soffcorre",tree_name[chan[chi]].c_str()),
-                                 Form(";%s-T0 mean (ns);ACT3L-T0 mean (ns)",tree_name[chan[chi]].c_str()),
-                                 100,-100,100,100,-100,100);
   }
 
-  // act and lg trigger time correction
+  // offsets
+  TH2D * hoffentries = new TH2D("offentries",
+                                ";channel;spill entries",
+                                nchans,0,nchans,100,0,1500);
+
+  TH2D * hoffmean = new TH2D("offmean",
+                             ";channel;signal time-T0 mean (ns)",
+                             nchans,0,nchans,100,-100,200);
+
+  TH2D * hoffstd = new TH2D("offstd",
+                            ";channel;signal time-T0 stddev (ns)",
+                            nchans,0,nchans,100,0,20);
+
+  // trigger time correction
   vector<TH1D*> httcor(ndigitizers);
   for (int dg=0; dg<ndigitizers; dg++) {
     httcor[dg] = new TH1D(Form("ttcor%i",dg),Form(";TT%i-TT1 (ns)",dg),100,-100,100);
   }
 
   // spill size
-  TH1D * hspillsize = new TH1D("spillsize","",50,0,5);
+  TH1D * hspillsize = new TH1D("spillsize",";spill width (s)",50,0,5);
   bool spills_ok;
 
   // save for each spill
@@ -367,17 +346,17 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       for (int chi=0;chi<nchans;chi++) {
         // good spills use corrected time distributions
         if (off_good[spillNumber_pre]) {
-          hoffentries[chi]->Fill(htdiffcortmp[chi]->GetEntries());
-          hoffmean[chi]->Fill(htdiffcortmp[chi]->GetMean());
-          hoffstd[chi]->Fill(htdiffcortmp[chi]->GetStdDev());
+          hoffentries->Fill(chi,htdiffcortmp[chi]->GetEntries());
+          hoffmean->Fill(chi,htdiffcortmp[chi]->GetMean());
+          hoffstd->Fill(chi,htdiffcortmp[chi]->GetStdDev());
           off_mean[chi][spillNumber_pre] = htdiffcortmp[chi]->GetMean();
           off_std[chi][spillNumber_pre] = htdiffcortmp[chi]->GetStdDev();
         }
         // bad spills use uncorrected time distributions
         else {
-          hoffentries[chi]->Fill(htdifftmp[chi]->GetEntries());
-          hoffmean[chi]->Fill(htdifftmp[chi]->GetMean());
-          hoffstd[chi]->Fill(htdifftmp[chi]->GetStdDev());
+          hoffentries->Fill(chi,htdifftmp[chi]->GetEntries());
+          hoffmean->Fill(chi,htdifftmp[chi]->GetMean());
+          hoffstd->Fill(chi,htdifftmp[chi]->GetStdDev());
           off_mean[chi][spillNumber_pre] = htdifftmp[chi]->GetMean();
           off_std[chi][spillNumber_pre] = htdifftmp[chi]->GetStdDev();
         }
@@ -391,11 +370,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
         // reset for next spill
         htdifftmp[chi]->Reset();
         htdiffcortmp[chi]->Reset();
-      }
-
-      // compare ACT channel offset with ACT3L
-      for (int chi=0;chi<nchans;chi++) {
-        hoffcorre[chi]->Fill(off_mean[chi][spillNumber_pre],off_mean[6][spillNumber_pre]);
       }
 
       if (ientry==nentries) break;
@@ -505,8 +479,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
         // pulse charge and voltage histos
         for (int chi=0; chi<nchans; chi++) {
-          hv[chi]->Fill(pmt[chan[chi]]->PeakVoltage[0]);
-          hq[chi]->Fill(pmt[chan[chi]]->IntCharge[0]);
+          hv->Fill(chi,pmt[chan[chi]]->PeakVoltage[0]);
         }
 
         // act digitizer
@@ -775,6 +748,31 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     hspillsize->Draw();
     c->Print(Form("%s_spillsize.png",plotout.c_str()));
 
+    c = new TCanvas();
+    hv->SetStats(0);
+    hv->SetTitle(title.c_str());
+    hv->Draw("colz");
+    if (!isLM) gPad->SetLogz();
+    c->Print(Form("%s_V.png",plotout.c_str()));
+
+    c = new TCanvas();
+    hoffentries->SetStats(0);
+    hoffentries->SetTitle(title.c_str());
+    hoffentries->Draw("colz");
+    c->Print(Form("%s_offentries.png",plotout.c_str()));
+
+    c = new TCanvas();
+    hoffmean->SetStats(0);
+    hoffmean->SetTitle(title.c_str());
+    hoffmean->Draw("colz");
+    c->Print(Form("%s_offmean.png",plotout.c_str()));
+
+    c = new TCanvas();
+    hoffstd->SetStats(0);
+    hoffstd->SetTitle(title.c_str());
+    hoffstd->Draw("colz");
+    c->Print(Form("%s_offstd.png",plotout.c_str()));
+
     for (int dg=0; dg<ndigitizers; dg++) {
       c = new TCanvas();
       httcor[dg]->SetTitle(title.c_str());
@@ -783,38 +781,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     }
 
     for (int chi=0; chi<nchans; chi++) {
-      c = new TCanvas();
-      hv[chi]->SetStats(1);
-      hv[chi]->SetTitle(title.c_str());
-      hv[chi]->Draw();
-      c->Print(Form("%s_%s_V.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-
-      c = new TCanvas();
-      hq[chi]->SetStats(1);
-      hq[chi]->SetTitle(title.c_str());
-      hq[chi]->Draw();
-      c->Print(Form("%s_%s_Q.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-
-      c = new TCanvas();
-      hoffentries[chi]->SetTitle(title.c_str());
-      hoffentries[chi]->Draw();
-      c->Print(Form("%s_%s_T0_offentries.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-
-      c = new TCanvas();
-      hoffmean[chi]->SetTitle(title.c_str());
-      hoffmean[chi]->Draw();
-      c->Print(Form("%s_%s_T0_offmean.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-
-      c = new TCanvas();
-      hoffstd[chi]->SetTitle(title.c_str());
-      hoffstd[chi]->Draw();
-      c->Print(Form("%s_%s_T0_offstd.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
-
-      c = new TCanvas();
-      hoffcorre[chi]->SetStats(0);
-      hoffcorre[chi]->SetTitle(title.c_str());
-      hoffcorre[chi]->Draw("colz");
-      c->Print(Form("%s_%s_offcorre.png",plotout.c_str(),tree_name[chan[chi]].c_str()));
 
       c = new TCanvas();
       THStack * s = new THStack();
