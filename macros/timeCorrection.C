@@ -542,14 +542,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
   }// end input tree
 
-  cout << "last spill number " << info->SpillNumber << endl;
-  for (int dg=0; dg<ndigitizers; dg++) {
-    cout << "digitizer " << dg;
-    cout << " TT since run start (s) ";
-    cout << (triggerTime[dg]+triggerTime_off[dg]-triggerTime_init[dg])*to_s;
-    cout << endl;
-  }//digitizers
-
   // clone input tree and replace Signal time with
   // new values
   // save cloned tree in a different file
@@ -624,10 +616,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
       // initilize
       if (ientry==0) {
-        cout << "digitizer " << dg;
-        cout << " first TT "     << triggerTime[dg];
-        cout << " TT (s) " << triggerTime[dg]*to_s;
-        cout << endl;
         spillNumber_pre          = info->SpillNumber;
         timeStamp_pre[dg]        = timeStamp[dg];
         timeStamp_init[dg]       = timeStamp[dg];
