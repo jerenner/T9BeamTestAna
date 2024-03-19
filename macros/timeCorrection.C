@@ -183,15 +183,28 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
   // ACT thresholds
   vector<double> thresholdv;
-  thresholdv.push_back(0.20);//ACT0
-  thresholdv.push_back(0.20);
-  thresholdv.push_back(0.05);//ACT1
-  thresholdv.push_back(0.05);
-  thresholdv.push_back(0.10);//ACT2
-  thresholdv.push_back(0.05);
-  thresholdv.push_back(0.10);//ACT3
-  thresholdv.push_back(0.05);
-  thresholdv.push_back(0);//lead glass
+  if (isLM) {
+    thresholdv.push_back(0.20);//ACT0
+    thresholdv.push_back(0.20);
+    thresholdv.push_back(0.05);//ACT1
+    thresholdv.push_back(0.05);
+    thresholdv.push_back(0.10);//ACT2
+    thresholdv.push_back(0.05);
+    thresholdv.push_back(0.10);//ACT3
+    thresholdv.push_back(0.05);
+    thresholdv.push_back(0);//lead glass
+  }
+  else {
+    thresholdv.push_back(0.20);//ACT0
+    thresholdv.push_back(0.20);
+    thresholdv.push_back(0.05);//ACT1
+    thresholdv.push_back(0.05);
+    thresholdv.push_back(0.10);//ACT2
+    thresholdv.push_back(0.05);
+    thresholdv.push_back(0.05);//TriggerScint
+    thresholdv.push_back(0.05);//PbGlass
+    for (int i=16;i<31;i++) thresholdv.push_back(0.2);//HD0-14
+  }
 
   // get trees
   EventInfo * info;
@@ -451,32 +464,57 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       httcor[dg]->Fill(ttcor[dg]);
     }
 
-    // one peak in TOF and LeadGlass
+    // one TOF peak in first bunch
     bool cut = true;
-    for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
-    cut = cut && pmt[lgchan]->nPeaks==1;
+    if (isLM) {
+      for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
+      for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
+    }
+    else {
+      for (int ch=7; ch<15; ch++) cut = cut && (pmt[ch]->nPeaks==1);
+      for (int ch=7; ch<15; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
+    }
 
-    // TOF and LeadGlass signal time in first bunch
-    for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
-    cut = cut && pmt[lgchan]->SignalTime[0]<200;
+    // one lead glass peak in first bunch
+    if (isLM) {
+      cut = cut && pmt[lgchan]->nPeaks==1;
+      cut = cut && pmt[lgchan]->SignalTime[0]<200;
+    }
 
     if (cut==true) {
 
-      double tof0 = (pmt[8] ->SignalTime[0]+
-                     pmt[9] ->SignalTime[0]+
-                     pmt[10]->SignalTime[0]+
-                     pmt[11]->SignalTime[0])/4.;
-      double tof1 = (pmt[12]->SignalTime[0]+
-                     pmt[13]->SignalTime[0]+
-                     pmt[14]->SignalTime[0]+
-                     pmt[15]->SignalTime[0])/4.;
+      double tof0 = 0;
+      double tof1 = 0;
+      if (isLM) {
+        tof0 = (pmt[8] ->SignalTime[0]+
+                pmt[9] ->SignalTime[0]+
+                pmt[10]->SignalTime[0]+
+                pmt[11]->SignalTime[0])/4.;
+        tof1 = (pmt[12]->SignalTime[0]+
+                pmt[13]->SignalTime[0]+
+                pmt[14]->SignalTime[0]+
+                pmt[15]->SignalTime[0])/4.;
+      }
+      else {
+        tof0 = (pmt[7] ->SignalTime[0]+
+                pmt[8] ->SignalTime[0]+
+                pmt[9]->SignalTime[0]+
+                pmt[10]->SignalTime[0])/4.;
+        tof1 = (pmt[11]->SignalTime[0]+
+                pmt[12]->SignalTime[0]+
+                pmt[13]->SignalTime[0]+
+                pmt[14]->SignalTime[0])/4.;
+      }
       double tof = tof1-tof0;
       double lg  = pmt[lgchan]->IntCharge[0];
       double tref = tof0;
+      htoflg->Fill(tof,lg);
 
       // e-like selection
-      htoflg->Fill(tof,lg);
-      if (tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6) {
+      bool is_elike = false;
+      if (isLM) is_elike = tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6;
+      else      is_elike = tof<13;
+      if (is_elike) {
 
         for (int chi=0; chi<nchans; chi++) {
 
@@ -489,8 +527,15 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
             if (pmt[chan[chi]]->PeakVoltage[0]>thresholdv[chi]) {
               double tdiff = pmt[chan[chi]]->SignalTime[0]-tref;
               double tdiffcor = 0;
-              if (chi<8) tdiffcor = tdiff+ttcor[0];
-              else tdiffcor = tdiff+ttcor[2];
+              if (isLM) {
+                if (chi<8) tdiffcor = tdiff+ttcor[0];
+                else tdiffcor = tdiff+ttcor[2];
+              }
+              else {
+                if (chi<7) tdiffcor = tdiff+ttcor[0];
+                else if (chi<15) tdiffcor = tdiff+ttcor[2];
+                else tdiffcor = tdiff+ttcor[3];
+              }
               htdiff[chi]->Fill(tdiff);
               htdiffcor[chi]->Fill(tdiffcor);
               htdifftmp[chi]->Fill(tdiff);
@@ -646,19 +691,42 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     // full correction of signal time for all channels
     for (int ipmt=0; ipmt<npmts; ipmt++) {
       for (int ipeak=0; ipeak<pmt[ipmt]->nPeaks; ipeak++) {
-        // ACT channels
-        if (ipmt<8) {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[6][info->SpillNumber];
-          if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[0];
+        if (isLM) {
+          // ACT channels
+          if (ipmt<8) {
+            signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[6][info->SpillNumber];
+            if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[0];
+          }
+          // TOF channels
+          else if (ipmt<16) {
+            signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak];
+          }
+          // Hole and LG channels
+          else {
+            signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[8][info->SpillNumber];
+            if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[2];
+          }
         }
-        // TOF channels
-        else if (ipmt<16) {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak];
-        }
-        // Hole and LG channels
         else {
-          signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[8][info->SpillNumber];
-          if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[2];
+          // ACT channels
+          if (ipmt<7) {
+            signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[6][info->SpillNumber];
+            if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[0];
+          }
+          // TOF channels
+          else if (ipmt<15) {
+            signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak];
+          }
+          // LG and HD8-14 channels
+          else if (ipmt<23) {
+            signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[7][info->SpillNumber];
+            if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[2];
+          }
+          // HD0-7 channels
+          else {
+            signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[22][info->SpillNumber];
+            if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[3];
+          }
         }
         // signalTimeCorVal = signalTimeCor[ipmt][ipeak];
 
@@ -668,31 +736,56 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       newtree[ipmt]->Fill();
     }
 
-    // one peak in TOF and LeadGlass
+    // one TOF peak in first bunch
     bool cut = true;
-    for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
-    cut = cut && pmt[lgchan]->nPeaks==1;
+    if (isLM) {
+      for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->nPeaks==1);
+      for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
+    }
+    else {
+      for (int ch=7; ch<15; ch++) cut = cut && (pmt[ch]->nPeaks==1);
+      for (int ch=7; ch<15; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
+    }
 
-    // TOF and LeadGlass signal time in first bunch
-    for (int ch=8; ch<16; ch++) cut = cut && (pmt[ch]->SignalTime[0]<200);
-    cut = cut && pmt[lgchan]->SignalTime[0]<200;
+    // one lead glass peak in first bunch
+    if (isLM) {
+      cut = cut && pmt[lgchan]->nPeaks==1;
+      cut = cut && pmt[lgchan]->SignalTime[0]<200;
+    }
 
     if (cut==true) {
 
-      double tof0 = (pmt[8] ->SignalTime[0]+
-                     pmt[9] ->SignalTime[0]+
-                     pmt[10]->SignalTime[0]+
-                     pmt[11]->SignalTime[0])/4.;
-      double tof1 = (pmt[12]->SignalTime[0]+
-                     pmt[13]->SignalTime[0]+
-                     pmt[14]->SignalTime[0]+
-                     pmt[15]->SignalTime[0])/4.;
+      double tof0 = 0;
+      double tof1 = 0;
+      if (isLM) {
+        tof0 = (pmt[8] ->SignalTime[0]+
+                pmt[9] ->SignalTime[0]+
+                pmt[10]->SignalTime[0]+
+                pmt[11]->SignalTime[0])/4.;
+        tof1 = (pmt[12]->SignalTime[0]+
+                pmt[13]->SignalTime[0]+
+                pmt[14]->SignalTime[0]+
+                pmt[15]->SignalTime[0])/4.;
+      }
+      else {
+        tof0 = (pmt[7] ->SignalTime[0]+
+                pmt[8] ->SignalTime[0]+
+                pmt[9]->SignalTime[0]+
+                pmt[10]->SignalTime[0])/4.;
+        tof1 = (pmt[11]->SignalTime[0]+
+                pmt[12]->SignalTime[0]+
+                pmt[13]->SignalTime[0]+
+                pmt[14]->SignalTime[0])/4.;
+      }
       double tof = tof1-tof0;
       double lg  = pmt[lgchan]->IntCharge[0];
       double tref = tof0;
 
       // e-like selection
-      if (tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6) {
+      bool is_elike = false;
+      if (isLM) is_elike = tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6;
+      else      is_elike = tof<13;
+      if (is_elike) {
 
         for (int chi=0; chi<nchans; chi++) {
 
