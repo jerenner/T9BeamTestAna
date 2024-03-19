@@ -191,6 +191,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   thresholdv.push_back(0.05);
   thresholdv.push_back(0.10);//ACT3
   thresholdv.push_back(0.05);
+  thresholdv.push_back(0);//lead glass
 
   // get trees
   EventInfo * info;
@@ -477,39 +478,32 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       htoflg->Fill(tof,lg);
       if (tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6) {
 
-        // pulse charge and voltage histos
         for (int chi=0; chi<nchans; chi++) {
-          hv->Fill(chi,pmt[chan[chi]]->PeakVoltage[0]);
-        }
 
-        // act digitizer
-        for (int acti=0; acti<8; acti++) {
-          if (pmt[acti]->nPeaks==1 &&
-              pmt[acti]->SignalTime[0]-tref<50 &&
-              pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
-            double actdiff = pmt[acti]->SignalTime[0]-tref;
-            htdiff[acti]->Fill(actdiff);
-            htdiffcor[acti]->Fill(actdiff+ttcor[0]);
-            htdifftmp[acti]->Fill(actdiff);
-            htdiffcortmp[acti]->Fill(actdiff+ttcor[0]);
-            if (info->SpillNumber<nspills) {
-              htdiffspill[acti][info->SpillNumber]->Fill(actdiff);
-              htdiffspillcor[acti][info->SpillNumber]->Fill(actdiff+ttcor[0]);
+          if (pmt[chan[chi]]->nPeaks==1) {
+
+            // pulse peak voltage histos
+            hv->Fill(chi,pmt[chan[chi]]->PeakVoltage[0]);
+
+            // peak voltage cut
+            if (pmt[chan[chi]]->PeakVoltage[0]>thresholdv[chi]) {
+              double tdiff = pmt[chan[chi]]->SignalTime[0]-tref;
+              double tdiffcor = 0;
+              if (chi<8) tdiffcor = tdiff+ttcor[0];
+              else tdiffcor = tdiff+ttcor[2];
+              htdiff[chi]->Fill(tdiff);
+              htdiffcor[chi]->Fill(tdiffcor);
+              htdifftmp[chi]->Fill(tdiff);
+              htdiffcortmp[chi]->Fill(tdiffcor);
+              if (info->SpillNumber<nspills) {
+                htdiffspill[chi][info->SpillNumber]->Fill(tdiff);
+                htdiffspillcor[chi][info->SpillNumber]->Fill(tdiffcor);
+              }
             }
+
           }
-        }
 
-        // lead glass digitizer
-        double lgdiff = pmt[lgchan]->SignalTime[0]-tref;
-        htdiff[8]->Fill(lgdiff);
-        htdiffcor[8]->Fill(lgdiff+ttcor[2]);
-        htdifftmp[8]->Fill(lgdiff);
-        htdiffcortmp[8]->Fill(lgdiff+ttcor[2]);
-        if (info->SpillNumber<nspills) {
-          htdiffspill[8][info->SpillNumber]->Fill(lgdiff);
-          htdiffspillcor[8][info->SpillNumber]->Fill(lgdiff+ttcor[2]);
         }
-
       }
     }
 
@@ -700,18 +694,18 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       // e-like selection
       if (tof<12 && lg>(abs(mom*1e-3)-0.2)*0.6) {
 
-        // act digitizer
-        for (int acti=0; acti<8; acti++) {
-          if (pmt[acti]->nPeaks==1 &&
-              pmt[acti]->SignalTime[0]-tref<50 &&
-              pmt[acti]->PeakVoltage[0]>thresholdv[acti]) {
-            htdiffcorfull[acti]->Fill(signalTimeCor[acti][0]-tref);
+        for (int chi=0; chi<nchans; chi++) {
+
+          if (pmt[chan[chi]]->nPeaks==1) {
+
+            // peak voltage cut
+            if (pmt[chan[chi]]->PeakVoltage[0]>thresholdv[chi]) {
+              htdiffcorfull[chi]->Fill(signalTimeCor[chan[chi]][0]-tref);
+            }
+
           }
+
         }
-
-        // lead glass digitizer
-        htdiffcorfull[8]->Fill(signalTimeCor[lgchan][0]-tref);
-
       }
 
     }
@@ -818,6 +812,16 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       }
 
     }
+
+    // print timing improvement
+    cout << "signal time-T0 stddev" << endl;
+    for (int chi=0; chi<nchans; chi++) {
+      cout << tree_name[chan[chi]];
+      cout << ": " << htdiff[chi]->GetStdDev();
+      cout << " corrected: " << htdiffcorfull[chi]->GetStdDev();
+      cout << endl;
+    }
+
   }
 
   // save new ntuple
