@@ -13,10 +13,9 @@ void PMT::Loop() {}
 
 void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
                     string slopes_file = "triggerTimeDrift.txt",
-                    string output = "test_run462_corrected.root")
+                    string output = "test_run462_corrected.root",
+                    bool saveplots = false)
 {
-
-  bool saveplots = false;
 
   // input file
   TFile * f = new TFile(input.c_str());
@@ -906,15 +905,15 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
     }
 
-    // print timing improvement
-    cout << "signal time-T0 stddev" << endl;
-    for (int chi=0; chi<nchans; chi++) {
-      cout << tree_name[chan[chi]];
-      cout << ": " << htdiff[chi]->GetStdDev();
-      cout << " corrected: " << htdiffcorfull[chi]->GetStdDev();
-      cout << endl;
-    }
+  }
 
+  // print timing improvement
+  cout << "signal time-T0 stddev" << endl;
+  for (int chi=0; chi<nchans; chi++) {
+    cout << tree_name[chan[chi]];
+    cout << ": " << htdiff[chi]->GetStdDev();
+    cout << " corrected: " << htdiffcorfull[chi]->GetStdDev();
+    cout << endl;
   }
 
   // save new ntuple
