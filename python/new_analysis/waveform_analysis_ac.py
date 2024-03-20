@@ -207,26 +207,46 @@ class WaveformAnalysis:
     def integrate_charge_in_window(self):
         """using a window of known position and width to integrate - this will only be meaningful for the ACT data"""
         # self.smoothed_waveforms = signal.savgol_filter(self.waveforms, 5, 2, mode='nearest')
-        analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
-        #for each hit we need to find the earlier hit in the first TOF detector
-        #down the line we will do that over a for loop on the number of hits in TOF1
-        allAnalysisBins = np.tile(self.analysis_bins,(self.waveforms.shape[0],1))
+        #Accept the entire waveform, because of digitiser slipping  we can have spillage over into the pedestal region, but the only important thing is the reference timing
+        #technically, peaks are only found in the analysis region so only a tiny number of peaks might
+        #end up being outside fo that range, but it is the most robust way to do it
+        analysis_waveform = self.smoothed_waveforms
+        #npew the analysis is over all bins
+        print(self.analysis_bins)
+        waveformEnd = len(self.smoothed_waveforms[0])
+        allAnalysisBins = np.tile(np.arange(0, waveformEnd),(self.waveforms.shape[0],1))
 
         list_high = []
         list_low = []
         #select all of the windows of integration
 
-        # print(sum(self.df["nPeaks"]))
-        pulse_charges = np.zeros((self.waveforms.shape[0], max(self.df["nPeaks"])))
-        pulse_pe = np.zeros((self.waveforms.shape[0], max(self.df["nPeaks"])))
+        # print(sum(self.df_TOF1_hitTimes["nPeaks"]))
+        pulse_charges = np.zeros((self.waveforms.shape[0], max(self.df_TOF1_hitTimes["nPeaks"])))
+        pulse_pe = np.zeros((self.waveforms.shape[0], max(self.df_TOF1_hitTimes["nPeaks"])))
 
-        # print(self.df, 'The dataframe')
+        print("The max number of nPeak is", max(self.df_TOF1_hitTimes["nPeaks"]))
 
-        for i in range(max(self.df["nPeaks"])):
+        # print(self.df_TOF1_hitTimes, 'The dataframe')
+
+        for i in range(max(self.df_TOF1_hitTimes["nPeaks"])):
             over_integration_threshold = False
             #need to get rid of the NaN issues and look at bin id instead of ns
-            rangeLow = np.where(np.isnan(self.df[i]), -9999, (self.df[i]+self.window_lower_bound+self.window_time_offset)/self.ns_per_sample)
-            rangeHigh = np.where(np.isnan(self.df[i]), -9999, (self.df[i]+self.window_upper_bound+self.window_time_offset)/self.ns_per_sample)
+
+            #Look at the timing as signal time: need to shift the waveform and make sure we stay within the waveform boundary
+            expectedMin = (self.df_TOF1_hitTimes[i]+self.window_lower_bound+self.window_time_offset + np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+            rangeLow = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(0>expectedMin,0, expectedMin))
+
+            print("Range Low:", rangeLow)
+
+            expectedMax = (self.df_TOF1_hitTimes[i]+self.window_upper_bound+self.window_time_offset + np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+
+
+            rangeHigh = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, expectedMax)
+
+            #np.where(waveformEnd>expectedMax, expectedMax, waveformEnd-1), np.where(0>expectedMin,0, expectedMin) could have that but it slows down the code
+
+
+            print("Range High:", rangeHigh, waveformEnd, max(rangeHigh))
 
             list_high.append(rangeHigh)
             list_low.append(rangeLow)
@@ -260,6 +280,7 @@ class WaveformAnalysis:
 
             self.window_int_charge = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
             self.window_int_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
+        print("At the end of the loop, the int charge is", self.window_int_charge)
 
 
     def calculate_signal_times(self):
@@ -314,8 +335,9 @@ class WaveformAnalysis:
         # self.integrate_charge_in_window()
         self.integrate_whole_waveform()
 
-    def run_window_analysis(self, df):
+    def run_window_analysis(self, df_TOF1_hitTimes, df_PMT):
         #df is the ntuple holding the hit timings
-        self.df = df
+        self.df_TOF1_hitTimes = df_TOF1_hitTimes
+        self.df_PMT = df_PMT
         self.find_peaks()
         self.integrate_charge_in_window()

@@ -524,7 +524,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
   // TTreeReader reader(inputTree);
 
 
-  double signalTimeCorVal = 0;
+  double digiTimingOffset = 0;
 
   vector<TTree*> newtree;
   for (int itree=0; itree<tree.size(); itree++) {
@@ -535,6 +535,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
       //Modified the new signalTimeCorrected branch to actually hold the corrected timings
       //previously it contains the base signal Times
       t->SetBranchAddress("SignalTimeCorrected",&signalTimeCor[itree]);
+      t->SetBranchAddress("DigiTimingOffset",&digiTimingOffset);
 
     }
     else {
@@ -649,6 +650,20 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
     // full correction of signal time for all channels
     for (int ipmt=0; ipmt<npmts; ipmt++) {
+
+    //Saving the offset for later waveform calibration
+      if (ipmt<8) {
+        digiTimingOffset = ttcoract - off_mean[6][info->SpillNumber];
+      }
+
+      else if (ipmt<16) {
+        digiTimingOffset = 0;
+      }
+
+      else {
+        digiTimingOffset = ttcorlg - off_mean[8][info->SpillNumber];
+      }
+
       for (int ipeak=0; ipeak<pmt[ipmt]->nPeaks; ipeak++) {
         // ACT channels
         if (ipmt<8) {
@@ -662,7 +677,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
         else {
           signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] + ttcorlg - off_mean[8][info->SpillNumber];
         }
-        // signalTimeCorVal = signalTimeCor[ipmt][ipeak];
+
 
       }
       // std::cout << signalTimeCor[ipmt][0] << " " <<   signalTimeCor[ipmt][1] << " " <<  signalTimeCor[ipmt][2] << std::endl;

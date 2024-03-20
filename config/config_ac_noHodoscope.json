@@ -42,24 +42,26 @@
         "comment"            : "Pedestal is estimated inside the pedestal bin window.",
 	"comment"	     : "The peak is centered at 50ns, instead of using the begining of the pusle to define the pedestal (which is very short) we will use the end of the waveform instead. The only case in which this doesn't work is for the hole counter for which the pulse ringing is too wide, there we will look at the begining of the pulse instead. Also note that the window durations are different for digitised zero (420 for digi0, 540 for the others)",
 
+
+	"comment": "Be caerful, changed the integration window for the lead glass for the window integration, acraplet",
             "PedestalWindowLow"  : [200, 200, 200, 200, 200, 200, 200, 200,
 				    300, 300, 300, 300, 300, 300, 300, 300,
-				    300, 300, 0, 0, 0, 0, 0, 0,
+				    300, 300, 300, 0, 0, 0, 0, 0,
 				    0, 0, 0, 0, 0, 0, 0, 0],
             "PedestalWindowHigh" : [420, 420, 420, 420, 420, 420, 420, 420,
 				    540, 540, 540, 540, 540, 540, 540, 540,
-				    540, 540, 80, 300, 300, 300, 300, 300,
+				    540, 540, 540, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300],
 
         "comment" : "Analysis is done on the data in the analysis bin window.",
             "AnalysisWindowLow"  : [ 0, 0, 0, 0, 0, 0, 0, 0,
 				    0, 0, 0, 0, 0, 0, 0, 0,
-				    0, 0, 80, 300, 300, 300, 300, 300,
+				    0, 0, 0, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300],
           
 	     "AnalysisWindowHigh" : [200, 200, 200, 200, 200, 200, 200, 200,
 				    200, 200, 200, 200, 200, 200, 200, 200,
-				    200, 200, 540, 540, 540, 540, 540, 540,
+				    200, 200, 200, 540, 540, 540, 540, 540,
 				    540, 540, 540, 540, 540, 540, 540, 540],
 
 		"comment" : "Timing calibration offsets for TOF1",
