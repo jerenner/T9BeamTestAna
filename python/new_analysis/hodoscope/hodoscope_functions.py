@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 import seaborn as sns
+import uproot
 from matplotlib.lines import Line2D
 
 from scipy.optimize import curve_fit
@@ -19,6 +20,8 @@ custom_order = [
 ]
 
 # Define the computed electron energy for hitting each hodoscope element.
+
+# Monte Carlo using measured field map
 elec_hit_momenta_MC_fieldmap = {0: 0.09783230585487263,
                     1: 0.11089383662305125,
                     2: 0.11718751862628744,
@@ -35,6 +38,7 @@ elec_hit_momenta_MC_fieldmap = {0: 0.09783230585487263,
                     13: 0.32090114397989367,
                     14: 0.3746842330143378}
 
+# Monte Carlo using a basic Gaussian field, 1.7 T max strength, 16 cm FWHM
 elec_hit_momenta_MC_basicfield = {0: 0.15582261018870644,
                                 1: 0.16651505160688465,
                                 2: 0.17289996548544717,
@@ -51,6 +55,7 @@ elec_hit_momenta_MC_basicfield = {0: 0.15582261018870644,
                                 13: 0.33559257093775985,
                                 14: 0.38199036544635756}
 
+# Basic calculation using T = 0.23
 elec_hit_momenta_calc = {0: 0.15058755351819803,
                     1: 0.1632022173955016,
                     2: 0.16454507453432862,
@@ -66,6 +71,23 @@ elec_hit_momenta_calc = {0: 0.15058755351819803,
                     12: 0.31449359776978913,
                     13: 0.3393035715640493,
                     14: 0.38511992183555954}
+
+# Monte Carlo with basic field, peak strength 1.45 T, FWHM 16 cm
+elec_hit_momenta_MC_basicfield_023 = {0: 0.12361035824602186,
+                    1: 0.13419643819082488,
+                    2: 0.13483201299353584,
+                    3: 0.14691429066598574,
+                    4: 0.14966754679692848,
+                    5: 0.16145761445206483,
+                    6: 0.1658093192200073,
+                    7: 0.18023848856239158,
+                    8: 0.1880710571442945,
+                    9: 0.20398582703742546,
+                    10: 0.2163091607774861,
+                    11: 0.23465759024961597,
+                    12: 0.25566811886247226,
+                    13: 0.2757369003402639,
+                    14: 0.31329070854248603}
 
 elec_hit_momenta = elec_hit_momenta_calc
 
@@ -85,6 +107,8 @@ momentum_range = {0: 0.0063047132725456145,
                     12: 0.030648203744867764,
                     13: 0.03271156068397968,
                     14: 0.04630141916160452}
+
+
 
 def ntuple_to_pd(filename):
     """
@@ -117,7 +141,7 @@ def ntuple_to_pd(filename):
         
     return df
 
-def ntuple_to_pd_multipeak(filename):
+def ntuple_to_pd_multipeak(filename,windowInt=False):
     """
     Converts an ntuple to multiple Pandas dataframes containing per-peak information.
     """
@@ -137,24 +161,44 @@ def ntuple_to_pd_multipeak(filename):
             continue
         
         print("Processing dataframe for",key,"...")
+        print("-- Contains keys:",events[key].keys())
+
+        # Old code to determine if we have window integration information (now pass this as a boolean argument).
+        # windowInt = 'nWindowPeaks' in events[key].keys()
         
         # Get the number of peaks and timestamps
-        nPeaks        = events[key]['nPeaks'].array()
-        timeStamp     = events[key]['timeStamp'].array()
-        triggerTime   = events[key]['triggerTime'].array()
-        Pedestal      = events[key]['Pedestal'].array()
-        PedestalSigma = events[key]['PedestalSigma'].array()
-        PeakVoltage   = events[key]['PeakVoltage'].array()
-        PeakTime      = events[key]['PeakTime'].array()
-        SignalTime    = events[key]['SignalTime'].array()
-        IntCharge     = events[key]['IntCharge'].array()
+        Pedestal            = events[key]['Pedestal'].array()
+        PedestalSigma       = events[key]['PedestalSigma'].array()
+        nPeaks              = events[key]['nPeaks'].array()
+        PeakVoltage         = events[key]['PeakVoltage'].array()
+        PeakTime            = events[key]['PeakTime'].array()
+        SignalTime          = events[key]['SignalTime'].array()
+        SignalTimeCorrected = events[key]['SignalTimeCorrected'].array()
+        IntPE               = events[key]['IntPE'].array()
+        IntCharge           = events[key]['IntCharge'].array()
+        MaxVoltage          = events[key]['MaxVoltage'].array()
+        WholeWaveformInt    = events[key]['WholeWaveformInt'].array()
+        timeStamp           = events[key]['timeStamp'].array()
+        triggerTime         = events[key]['triggerTime'].array()
+        spillNumber         = events[key]['spillNumber'].array()
+        if(windowInt):
+            nWindowPeaks    = events[key]['nWindowPeaks'].array()
+            WindowIntCharge = events[key]['WindowIntCharge'].array()
+            WindowIntPE     = events[key]['WindowIntPE'].array()
+        else:
+            nWindowPeaks    = -1*np.ones(len(nPeaks))
+            WindowIntCharge = -1*np.ones(len(nPeaks))
+            WindowIntPE     = -1*np.ones(len(nPeaks))
         
         # Iterate through the array elements and save information for each peak.
         l_evt, l_ipk, l_nPeaks, l_timeStamp, l_triggerTime = [], [], [], [], []
         l_Pedestal, l_PedestalSigma = [], []
-        l_PeakVoltage, l_PeakTime, l_SignalTime, l_IntCharge = [], [], [], []
-        for evt, (npk, tstamp, ttime, pedestal, spedestal, pkv, pkt, sigt, chg) in enumerate(zip(nPeaks,timeStamp,triggerTime,Pedestal,PedestalSigma,PeakVoltage,PeakTime,SignalTime,IntCharge)):
-            
+        l_PeakVoltage, l_MaxVoltage = [], []
+        l_IntCharge, l_IntPE, l_WholeWaveformInt = [], [], []
+        l_PeakTime, l_SignalTime, l_SignalTimeCorrected = [], [], []
+        l_nWindowPeaks, l_WindowIntCharge, l_WindowIntPE, l_spillNumber = [], [], [], []
+        for evt, (npk, tstamp, ttime, pedestal, spedestal, pkv, pkt, sigt, chg, sigtcorr, chgpe, maxv, wwint, npkwin, chgwin, chgpewin, nspill) in enumerate(zip(nPeaks,timeStamp,triggerTime,Pedestal,PedestalSigma,PeakVoltage,PeakTime,SignalTime,IntCharge,SignalTimeCorrected,IntPE,MaxVoltage,WholeWaveformInt,nWindowPeaks,WindowIntCharge,WindowIntPE,spillNumber)):
+
             # Update the lists for each peak.
             if(npk == 0):
                 l_evt.append(evt)
@@ -165,22 +209,63 @@ def ntuple_to_pd_multipeak(filename):
                 l_Pedestal.append(pedestal)
                 l_PedestalSigma.append(spedestal)
                 l_PeakVoltage.append(-1)
+                l_IntCharge.append(-1)
+                l_IntPE.append(-1)
+                l_WholeWaveformInt.append(wwint)
+                l_MaxVoltage.append(-1)
                 l_PeakTime.append(-1)
                 l_SignalTime.append(-1)
-                l_IntCharge.append(-1)
+                l_SignalTimeCorrected.append(-1)
+                l_nWindowPeaks.append(npkwin)
+                l_WindowIntCharge.append(-1)
+                l_WindowIntPE.append(-1)
+                l_spillNumber.append(nspill)
             else:
-                for ipk in range(npk):
-                    l_evt.append(evt)
-                    l_ipk.append(ipk)
-                    l_nPeaks.append(npk)
-                    l_timeStamp.append(tstamp)
-                    l_triggerTime.append(ttime)
-                    l_Pedestal.append(pedestal)
-                    l_PedestalSigma.append(spedestal)
-                    l_PeakVoltage.append(pkv[ipk])
-                    l_PeakTime.append(pkt[ipk])
-                    l_SignalTime.append(sigt[ipk])
-                    l_IntCharge.append(chg[ipk])
+                # Add the window-integrated peaks if using window integration.
+                if(windowInt):
+                    for ipk in range(npkwin):
+                        l_evt.append(evt)
+                        l_ipk.append(ipk)
+                        l_nPeaks.append(-1)
+                        l_timeStamp.append(tstamp)
+                        l_triggerTime.append(ttime)
+                        l_Pedestal.append(pedestal)
+                        l_PedestalSigma.append(spedestal)
+                        l_PeakVoltage.append(-1)
+                        l_PeakTime.append(-1)
+                        l_SignalTime.append(-1)
+                        l_IntCharge.append(-1)
+                        l_IntPE.append(-1)
+                        l_WholeWaveformInt.append(wwint)
+                        l_MaxVoltage.append(maxv)
+                        l_SignalTimeCorrected.append(-1)
+                        l_spillNumber.append(nspill)
+                        l_nWindowPeaks.append(npkwin)
+                        l_WindowIntCharge.append(chgwin[ipk])
+                        l_WindowIntPE.append(chgpewin[ipk])
+                # Otherwise add the normal peaks.
+                else:
+                    for ipk in range(npk):
+                        l_evt.append(evt)
+                        l_ipk.append(ipk)
+                        l_nPeaks.append(npk)
+                        l_timeStamp.append(tstamp)
+                        l_triggerTime.append(ttime)
+                        l_Pedestal.append(pedestal)
+                        l_PedestalSigma.append(spedestal)
+                        l_PeakVoltage.append(pkv[ipk])
+                        l_PeakTime.append(pkt[ipk])
+                        l_SignalTime.append(sigt[ipk])
+                        l_IntCharge.append(chg[ipk])
+                        l_IntPE.append(chgpe[ipk])
+                        l_WholeWaveformInt.append(wwint)
+                        l_MaxVoltage.append(maxv)
+                        l_SignalTimeCorrected.append(sigtcorr[ipk])
+                        l_spillNumber.append(nspill)
+                        l_nWindowPeaks.append(-1)
+                        l_WindowIntCharge.append(-1)
+                        l_WindowIntPE.append(-1)
+
         
         # Create a new dataframe.
         df = pd.DataFrame({'event':  l_evt,
@@ -193,7 +278,15 @@ def ntuple_to_pd_multipeak(filename):
                            'PeakVoltage': l_PeakVoltage,
                            'PeakTime': l_PeakTime,
                            'SignalTime': l_SignalTime,
-                           'IntCharge': l_IntCharge
+                           'IntCharge': l_IntCharge,
+                           'SignalTimeCorrected': l_SignalTimeCorrected,
+                           'IntPE': l_IntPE,
+                           'MaxVoltage': l_MaxVoltage,
+                           'WholeWaveformInt': l_WholeWaveformInt,
+                           'nWindowPeaks': l_nWindowPeaks,
+                           'WindowIntCharge': l_WindowIntCharge,
+                           'WindowIntPE': l_WindowIntPE,
+                           'spillNumber': l_spillNumber
                           })
 
         # Set this as the dataframe or concatenate it to the one that is already there.
@@ -294,7 +387,7 @@ def plot_2D_histogram(df_dict, detector1, quantity1, detector2, quantity2, evt_l
     plt.close()
 
 
-def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum = 0, quantity='nPeaks', select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
+def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum = 0, quantity='nPeaks', windowInt=False, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
     """
     Generate plots of histograms for each signal.
     """
@@ -320,17 +413,22 @@ def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum =
             print(f"[{key}] before selection {len(df)}")
             df_select = df[df['event'].isin(evt_list)]
             print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select)}")
+        else:
+            df_select = df
         
         # Select only non-zero peaks if specified.
         if(select_nonzero_peaks):
-            df_select = df_select[df_select['nPeaks'] > 0]
+            if(windowInt):
+                df_select = df_select[df_select['nWindowPeaks'] > 0]
+            else:
+                df_select = df_select[df_select['nPeaks'] > 0]
         # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
         else:
             df_select = df_select.drop_duplicates(subset=['event'], keep='first')
             
         # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
-        if(key[0:2] == 'HD' and (quantity == 'IntCharge' or quantity == 'PeakVoltage')):
-            df_select = df_select[df_select[quantity] > -2.0]
+        if((key[0:2] == 'HD' or key == 'PbGlass') and (quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE')):
+            df_select = df_select[df_select[quantity] > 2e-2]
 
         # Plot histogram for the current signal on its corresponding axis
         n, bins, patches = ax.hist(df_select[quantity], bins=nbins, edgecolor='black', alpha=0.7, label=key)  # capture output to use in legend
