@@ -6,7 +6,8 @@ Analysis package for the T9 beam test
 
 Timing PR: following the addition of the SignalTimeCorrected branch (Arturo's timing corrections) the pre-processing can now be run automatically with the following line:
 ```bash complete_pre-processing.sh 000393``` 
-replacing the run withe correct run number. It follows a similar structure to what is presented below with the extra steps correcting the timing namely:
+
+replacing the run withe correct run number AND CHANGING THE CONFIG FILE PATH IN THE CODE IF YOU ARE USING THE HODOSCOPE RUNS. It follows a similar structure to what is presented below with the extra steps correcting the timing namely:
 ```root -l -b -q 'macros/triggerTimeDrift.C("peakAnalysed_'$run'.root")'; root -l -b -q 'macros/timeCorrection.C("peakAnalysed_'$run'.root", "triggerTimeDrift.txt", "peakAnalysed_timeCorr_'$run'.root")'```
 Tested with ROOT 6.26/10. This step is not crutial in the analysis, if you choose to comment the two commands above out then the SignalTimeCorrected branch is a simple copy of the SignalTime branch. 
 
