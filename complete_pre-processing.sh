@@ -4,7 +4,7 @@ for run in $@
 do
 #     echo "Starting the pre-processing for run "$run""
 #     #this code does the peak finding and timing and creates the first ntuple, careful at this stage the signalTimeCorrected branch doesn't actually have the corrected timings
-    python python/new_analysis/process_waveform_analysis.py data/root_run_$run.root config/config_noHodoscope.json peakAnalysed_$run.root
+    python python/new_analysis/process_waveform_analysis.py data/root_run_$run.root config/config_hodoscope.json peakAnalysed_$run.root
 #
     #These codes, written by Arturo synchronise the timings across digitisers and then overwrites the signalTimeCorrected with the correctly shifted timings
     root -l -b -q 'macros/triggerTimeDrift.C("peakAnalysed_'$run'.root")'
