@@ -19,8 +19,8 @@ class WaveformAnalysis:
     impedance = 50  # for calculating integrated charge
     use_global_pedestal = True  # assume pedestal is stable and use one value for all waveforms for the channel
 
-    def __init__(self, waveforms, window_lower_bound = -15, window_upper_bound = 35, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
-                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0, window_time_offset=0, PMTgain = 1):
+    def __init__(self, waveforms, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
+                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0, window_time_offset=0, PMTgain = 1, window_lower_bound = -15, window_upper_bound = 35):
         self.raw_waveforms = np.array(waveforms)
         self.threshold = threshold
         self.reverse_polarity = reverse_polarity
@@ -233,12 +233,15 @@ class WaveformAnalysis:
             #need to get rid of the NaN issues and look at bin id instead of ns
 
             #Look at the timing as signal time: need to shift the waveform and make sure we stay within the waveform boundary
-            expectedMin = (self.df_TOF1_hitTimes[i]+self.window_lower_bound+self.window_time_offset + np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+            expectedMin = (self.df_TOF1_hitTimes[i]+self.window_lower_bound+self.window_time_offset- np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+
+            #+ np.array(self.df_PMT["DigiTimingOffset"])
+
             rangeLow = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(0>expectedMin,0, expectedMin))
 
             print("Range Low:", rangeLow)
 
-            expectedMax = (self.df_TOF1_hitTimes[i]+self.window_upper_bound+self.window_time_offset + np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+            expectedMax = (self.df_TOF1_hitTimes[i]+self.window_upper_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
 
 
             rangeHigh = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, expectedMax)

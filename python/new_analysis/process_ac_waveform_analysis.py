@@ -41,17 +41,7 @@ def process_waveforms(argv):
     ntuple_filename = argv[2]
     config_filename = argv[-2]
     output_filename = argv[-1]
-    window_lower_bound = -15 #ns - the default value
-    window_upper_bound = 35
 
-    if len(argv) > 5:
-        print("Using lower and upper bounds for the integration window.")
-        print("Careful, lower bound need to be negative number")
-        window_lower_bound = float(argv[3])
-        window_upper_bound = float(argv[4])
-
-
-    print("Using integration window: (%.2f,%.2f)"%(window_lower_bound, window_upper_bound))
 
     print(f"Using config file {config_filename}")
     with open(config_filename) as file:
@@ -60,17 +50,26 @@ def process_waveforms(argv):
     output_file = ur.recreate(output_filename)
     print(f"{len(root_filenames)} input root files to process.")
     # for f in root_filenames:
-    process_file(root_filenames, ntuple_filename, config, output_file, window_lower_bound, window_upper_bound)
+    process_file(root_filenames, ntuple_filename, config, output_file)
     output_file.close()
 
 #
-def process_file(root_filename, ntuple_filename, config, output_file, window_lower_bound, window_upper_bound):
-    print(f"Processing root file {root_filename}")
+def process_file(root_filename, ntuple_filename, config, output_file):
+    print(f"Processing root file {root_filename}\n")
 #     "open the root file"
     run_file = ur.open(root_filename)
     ref_file = ur.open(ntuple_filename)
     global checkCoincidence
-    checkCoincidence = True
+    checkCoincidence = config["checkCoincidence"]
+    mainCoincidencePMTa = config["mainCoincidencePMTa"]
+    mainCoincidencePMTb = config["mainCoincidencePMTb"]
+    looseCoincidencePMT = config["looseCoincidencePMT"]
+
+    #TODO: make check coincidence and the PMTs used part of the config file (and merge the config files)
+    print("You have chosen to set the CheckCoincidence to", checkCoincidence)
+    if (checkCoincidence):
+        print("The PMTs used for the main coincidence are %i and %i and the PMT used for loose coincidence is %i \n"%(mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT))
+
     signalTimeBranch = "SignalTimeCorrected" #eventually we should move to SignalTimeCorrected
 
     if not(checkCoincidence):
@@ -102,8 +101,10 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
 
     else: #look at the coincidence
         #now instead check the coincidence
-        #the order will depend on the ones you choose, becareful
-        SignalTimeMatchedTOF1, SignalTimeMatchedTOF0 = coincidence.checkCoincidence(ntuple_filename, 4, 6, 1)
+        #the order will depend on the ones you choose, be careful
+        #By default we take the coincidence between two PMTs in TOF1 and loosely match it with another PMT in TOF0,
+        #TODO: make this coincidence accross all PMTs (increase efficiency)
+        SignalTimeMatchedTOF1, SignalTimeMatchedTOF0 = coincidence.checkCoincidence(ntuple_filename, mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT)
         #set the reference timing for the hits as the time matched dataframe
         df_TOF1_hitTimes = SignalTimeMatchedTOF1.copy()
         max_column_labels = df_TOF1_hitTimes.idxmax(axis=1, skipna=True)
@@ -113,7 +114,7 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
         # Create a new DataFrame with max column labels to have the number of matched hits
         df_TOF1_hitTimes["nPeaks"] = max_column_labels.astype('int32')+1
 
-        print(df_TOF1_hitTimes)
+        # print("In coincidence mode here are the timing of the hits:", df_TOF1_hitTimes)
 
 
 
@@ -158,13 +159,12 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                 #absolute hit time offset
                 df =  pd.concat([df, hit_times], axis=1)
                 if not(checkCoincidence):
+                    #the wire length calibration that need to be made is the mean of the difference between the PMTs hit time and the TOF1 mean hit time (taking the earliest hit)
                     WindowTimeOffset = (df[0]-(df_TOF1_hitTimes[0]+df_TOF11[0]+df_TOF12[0]+df_TOF13[0])/4).mean()
 
                 else:
+                    #If there is coincidence, no need to offset, aligment has been done by Arturo's timing corrections
                     WindowTimeOffset = 0 #(df[0] - SignalTimeMatchedTOF1[0]).mean()
-
-                #still removing the mean delay between the detector and the reference detector
-                print("\nThe required timing calibration is: ", WindowTimeOffset, '\n')
 
                 config_args = {
                     "threshold": config["Thresholds"][i],
@@ -175,12 +175,14 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                     "time_offset": config["TimeOffset"][i],
                     "window_time_offset": WindowTimeOffset,
                     "PMTgain": config["PMTgain"][i],
+                    "window_lower_bound": config["window_lower_bound"][i],
+                    "window_upper_bound": config["window_upper_bound"][i],
                 }
                 waveforms = batch[c]
                 optional_branches = {b: batch[b] for b in optional_branch_names}
 
                 if not(checkCoincidence):
-                    process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], window_lower_bound, window_upper_bound, df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1])
+                    process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1])
 
                 if checkCoincidence:
                     #reshape the timing entires so we can save them with the data
@@ -196,7 +198,7 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                     # SignalTimeMatchedTOF1 = ak.Array([[values] for values in SignalTimeMatchedTOF1])
 
 
-                    process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], window_lower_bound, window_upper_bound, df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], SignalTimeMatchedTOF1_reduced, SignalTimeMatchedTOF0_reduced )
+                    process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], SignalTimeMatchedTOF1_reduced, SignalTimeMatchedTOF0_reduced)
 
 
 
@@ -222,13 +224,12 @@ def read_nTuple(df, branch_name, isSqueezed = False):
     return branch
 
 
-def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF1_hitTimes, window_lower_bound, window_upper_bound, df, SignalTimeMatchedTOF1 =None, SignalTimeMatchedTOF0 = None):
+def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF1_hitTimes, df, SignalTimeMatchedTOF1 =None, SignalTimeMatchedTOF0 = None):
 
-    waveform_analysis = WaveformAnalysis(waveforms, window_lower_bound, window_upper_bound, **config_args)
+    waveform_analysis = WaveformAnalysis(waveforms, **config_args)
 
     #instead of overwriting the variables, copy them from the root file
     #TODO: impose coincidence and only perform the integration on peaks that have been matched
-    print(df_TOF1_hitTimes)
     waveform_analysis.run_window_analysis(df_TOF1_hitTimes, df)
     #window integration which has to be done here as it uses the timing
     window_integrated_charges = waveform_analysis.window_int_charge
@@ -244,22 +245,11 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
 
     #needs to be handled separately because it has another format
     if not(checkCoincidence):
-        print(type(window_integrated_charges))
         window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
                             "WindowIntPE": window_integrated_pe})
 
 
     else:
-        print("The timings are: ", SignalTimeMatchedTOF0)
-        # print(SignalTimeMatchedTOF0-window_integrated_charges)
-
-        print(ak.num(SignalTimeMatchedTOF0, axis=-1))
-        print(ak.num(window_integrated_charges, axis=-1))
-
-        print(sum((ak.num(SignalTimeMatchedTOF1, axis=-1)-ak.num(window_integrated_charges, axis=-1))**2))
-        print(sum((ak.num(SignalTimeMatchedTOF0, axis=-1)-ak.num(window_integrated_pe, axis=-1))**2))
-
-        print(sum(ak.num(SignalTimeMatchedTOF0, axis=-1)) , sum(ak.num(SignalTimeMatchedTOF1, axis=-1)))
         window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
                             "WindowIntPE": window_integrated_pe,
                             "SignalTimeMatchedTOF1": SignalTimeMatchedTOF1,
@@ -275,7 +265,6 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
                 "DigiTimingOffset": read_nTuple(df, "DigiTimingOffset", isSqueezed = True),
                 "Peaks": peaks,
                 "WindowPeaks": window_peaks,
-
                 **optional_branches}
 
     print(f" ... writing {channel} to {output_file.file_path}")

@@ -14,7 +14,9 @@ void PMT::Loop() {}
 void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
                     string slopes_file = "triggerTimeDrift.txt",
                     string output = "test_run462_corrected.root",
-                    bool saveplots = false)
+                    string output_timing = "output_timing_corrections.root",
+                    bool saveplots = false
+                    )
 {
 
   // input file
@@ -231,8 +233,11 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     }
   }
 
-  // output file
+  // output file, new: have two output files, one with the timing corrections and one with
+  //the inital root file modified: cleaner
   TFile * newfile = new TFile(output.c_str(),"recreate");
+  TFile * newfile_timing = new TFile(output_timing.c_str(),"recreate");
+
 
   // voltage and charge histos
   TH2D * hv = new TH2D("V",";channel;peak voltage (V)",nchans,0,nchans,200,0,2);
@@ -460,7 +465,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     vector<double> ttcor(ndigitizers,0);
     for (int dg=0; dg<ndigitizers; dg++) {
       ttcor[dg] = tt[dg]-tt[1];
-      httcor[dg]->Fill(ttcor[dg]);
+      // httcor[dg]->Fill(ttcor[dg]); //done twice
     }
 
     // one TOF peak in first bunch
@@ -588,6 +593,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     }
     newtree.push_back(t);
   }
+  newfile_timing->cd();
 
   // reset trigger times containers
   timeStamp.assign(ndigitizers,0);
@@ -692,17 +698,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
     for (int ipmt=0; ipmt<npmts; ipmt++) {
 
     //Saving the offset for later waveform calibration
-      if (ipmt<8) {
-        digiTimingOffset = ttcoract - off_mean[6][info->SpillNumber];
-      }
-
-      else if (ipmt<16) {
-        digiTimingOffset = 0;
-      }
-
-      else {
-        digiTimingOffset = ttcorlg - off_mean[8][info->SpillNumber];
-      }
 
       for (int ipeak=0; ipeak<pmt[ipmt]->nPeaks; ipeak++) {
         if (isLM) {
@@ -720,7 +715,7 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
             signalTimeCor[ipmt][ipeak] = pmt[ipmt]->SignalTime[ipeak] - off_mean[8][info->SpillNumber];
             if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[2];
           }
-        }
+        } //isLM
         else {
           // ACT channels
           if (ipmt<7) {
@@ -742,10 +737,9 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
             if (off_good[info->SpillNumber]) signalTimeCor[ipmt][ipeak] += ttcor[3];
           }
         }
-
-
+        //saving the timimng offset for each event, can be useful later
+        digiTimingOffset = signalTimeCor[ipmt][ipeak] - pmt[ipmt]->SignalTime[ipeak];
       }
-      // std::cout << signalTimeCor[ipmt][0] << " " <<   signalTimeCor[ipmt][1] << " " <<  signalTimeCor[ipmt][2] << std::endl;
 
       newtree[ipmt]->Fill();
     }
@@ -933,5 +927,6 @@ void timeCorrection(string input = "singlePE_-16ns_45ns_run462.root",
 
   // save new ntuple
   newfile->Write();
+  newfile_timing->Write();
 
 }
