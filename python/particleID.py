@@ -386,7 +386,7 @@ def singlePE(argv):
     file = ur.open(root_filenames)
 
     #Require only one particle in all of the runs
-    nPeaksInToF = nPeakInToF(file, 1)
+    nPeaksInToF = nPeakInToF(file, False)
 
     #Might be useful to calculate the fractions of events that pass this 1 particle cut
     fractionPass1ParticleVeto = np.sum(nPeaksInToF)/len(nPeaksInToF)

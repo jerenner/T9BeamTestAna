@@ -134,6 +134,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
     branches = {"Pedestal": pedestals,
                 "PedestalSigma": pedestal_sigmas,
                 "Peaks": peaks,
+                "DigiTimingOffset": max_voltage,
                 "MaxVoltage": max_voltage,
                 "WholeWaveformInt": integrated_analysis_waveform,
                 **optional_branches}

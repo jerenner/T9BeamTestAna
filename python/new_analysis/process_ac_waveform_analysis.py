@@ -17,6 +17,9 @@ import awkward as ak
 import pandas as pd
 import matplotlib.pyplot as plt
 
+import coincidence as coincidence
+
+
 
 def print_usage(argv):
     print('Usage:')
@@ -38,17 +41,7 @@ def process_waveforms(argv):
     ntuple_filename = argv[2]
     config_filename = argv[-2]
     output_filename = argv[-1]
-    window_lower_bound = -15 #ns - the default value
-    window_upper_bound = 35
 
-    if len(argv) > 5:
-        print("Using lower and upper bounds for the integration window.")
-        print("Careful, lower bound need to be negative number")
-        window_lower_bound = float(argv[3])
-        window_upper_bound = float(argv[4])
-
-
-    print("Using integration window: (%.2f,%.2f)"%(window_lower_bound, window_upper_bound))
 
     print(f"Using config file {config_filename}")
     with open(config_filename) as file:
@@ -57,41 +50,72 @@ def process_waveforms(argv):
     output_file = ur.recreate(output_filename)
     print(f"{len(root_filenames)} input root files to process.")
     # for f in root_filenames:
-    process_file(root_filenames, ntuple_filename, config, output_file, window_lower_bound, window_upper_bound)
+    process_file(root_filenames, ntuple_filename, config, output_file)
     output_file.close()
 
 #
-def process_file(root_filename, ntuple_filename, config, output_file, window_lower_bound, window_upper_bound):
-    print(f"Processing root file {root_filename}")
+def process_file(root_filename, ntuple_filename, config, output_file):
+    print(f"Processing root file {root_filename}\n")
 #     "open the root file"
     run_file = ur.open(root_filename)
-
-
     ref_file = ur.open(ntuple_filename)
+    global checkCoincidence
+    checkCoincidence = config["checkCoincidence"]
+    mainCoincidencePMTa = config["mainCoincidencePMTa"]
+    mainCoincidencePMTb = config["mainCoincidencePMTb"]
+    looseCoincidencePMT = config["looseCoincidencePMT"]
 
-    #reding the timings for calibration, technically we shouldn't need following Arturo's
-    #modifications but good sanity check
+    #TODO: make check coincidence and the PMTs used part of the config file (and merge the config files)
+    print("You have chosen to set the CheckCoincidence to", checkCoincidence)
+    if (checkCoincidence):
+        print("The PMTs used for the main coincidence are %i and %i and the PMT used for loose coincidence is %i \n"%(mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT))
 
-    signalTimeBranch = "SignalTime" #eventually we should move to SignalTimeCorrected
-    #for a narrower integration window but because the integration is made with respect to the actual
-    #waveforms it doesn't work well for now, we would have to apply the timing corrections there
-    #I don't think that it is a big deal because the window is set quite large so it does capture all the signal, even if it uses the old timing.
+    signalTimeBranch = "SignalTimeCorrected" #eventually we should move to SignalTimeCorrected
 
-    df_TOF10 = ref_file['TOF10'].arrays(library="pd")
-    hit_times = pd.DataFrame(df_TOF10['%s'%signalTimeBranch].values.tolist())
-    df_TOF10 =  pd.concat([df_TOF10, hit_times], axis=1)
+    if not(checkCoincidence):
+        #reding the timings for calibration, technically we shouldn't need following Arturo's
+        #modifications but good sanity check
 
-    df_TOF11 = ref_file['TOF11'].arrays(library="pd")
-    hit_times = pd.DataFrame(df_TOF11['%s'%signalTimeBranch].values.tolist())
-    df_TOF11 =  pd.concat([df_TOF11, hit_times], axis=1)
 
-    df_TOF12 = ref_file['TOF12'].arrays(library="pd")
-    hit_times = pd.DataFrame(df_TOF12['%s'%signalTimeBranch].values.tolist())
-    df_TOF12 =  pd.concat([df_TOF12, hit_times], axis=1)
+        #for a narrower integration window but because the integration is made with respect to the actual
+        #waveforms it doesn't work well for now, we would have to apply the timing corrections there
+        #I don't think that it is a big deal because the window is set quite large so it does capture all the signal, even if it uses the old timing.
 
-    df_TOF13 = ref_file['TOF13'].arrays(library="pd")
-    hit_times = pd.DataFrame(df_TOF13['%s'%signalTimeBranch].values.tolist())
-    df_TOF13 =  pd.concat([df_TOF13, hit_times], axis=1)
+        df_TOF1_hitTimes = ref_file['TOF10'].arrays(library="pd")
+        hit_times = pd.DataFrame(df_TOF1_hitTimes['%s'%signalTimeBranch].values.tolist())
+        df_TOF1_hitTimes =  pd.concat([df_TOF1_hitTimes, hit_times], axis=1)
+
+        df_TOF11 = ref_file['TOF11'].arrays(library="pd")
+        hit_times = pd.DataFrame(df_TOF11['%s'%signalTimeBranch].values.tolist())
+        df_TOF11 =  pd.concat([df_TOF11, hit_times], axis=1)
+
+        df_TOF12 = ref_file['TOF12'].arrays(library="pd")
+        hit_times = pd.DataFrame(df_TOF12['%s'%signalTimeBranch].values.tolist())
+        df_TOF12 =  pd.concat([df_TOF12, hit_times], axis=1)
+
+        df_TOF13 = ref_file['TOF13'].arrays(library="pd")
+        hit_times = pd.DataFrame(df_TOF13['%s'%signalTimeBranch].values.tolist())
+        df_TOF13 =  pd.concat([df_TOF13, hit_times], axis=1)
+
+        print(df_TOF1_hitTimes)
+
+    else: #look at the coincidence
+        #now instead check the coincidence
+        #the order will depend on the ones you choose, be careful
+        #By default we take the coincidence between two PMTs in TOF1 and loosely match it with another PMT in TOF0,
+        #TODO: make this coincidence accross all PMTs (increase efficiency)
+        SignalTimeMatchedTOF1, SignalTimeMatchedTOF0 = coincidence.checkCoincidence(ntuple_filename, mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT)
+        #set the reference timing for the hits as the time matched dataframe
+        df_TOF1_hitTimes = SignalTimeMatchedTOF1.copy()
+        max_column_labels = df_TOF1_hitTimes.idxmax(axis=1, skipna=True)
+        #some events will not see any data
+        max_column_labels = np.where(np.isnan(max_column_labels), 0, max_column_labels)
+
+        # Create a new DataFrame with max column labels to have the number of matched hits
+        df_TOF1_hitTimes["nPeaks"] = max_column_labels.astype('int32')+1
+
+        # print("In coincidence mode here are the timing of the hits:", df_TOF1_hitTimes)
+
 
 
     digitizers = ["midas_data_D300", "midas_data_D301", "midas_data_D302", "midas_data_D303"]
@@ -132,12 +156,15 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                 #calculate the time offset to the reference
                 df = ref_file[config['ChannelNames'][i]].arrays(library="pd")
                 hit_times = pd.DataFrame(df['%s'%signalTimeBranch].values.tolist())
-                df =  pd.concat([df, hit_times], axis=1)
                 #absolute hit time offset
-                WindowTimeOffset = (df[0]-(df_TOF10[0]+df_TOF11[0]+df_TOF12[0]+df_TOF13[0])/4).mean()
+                df =  pd.concat([df, hit_times], axis=1)
+                if not(checkCoincidence):
+                    #the wire length calibration that need to be made is the mean of the difference between the PMTs hit time and the TOF1 mean hit time (taking the earliest hit)
+                    WindowTimeOffset = (df[0]-(df_TOF1_hitTimes[0]+df_TOF11[0]+df_TOF12[0]+df_TOF13[0])/4).mean()
 
-                #still removing the mean delay between the detector and the reference detector
-                print("\nThe required timing calibration is: ", WindowTimeOffset, '\n')
+                else:
+                    #If there is coincidence, no need to offset, aligment has been done by Arturo's timing corrections
+                    WindowTimeOffset = 0 #(df[0] - SignalTimeMatchedTOF1[0]).mean()
 
                 config_args = {
                     "threshold": config["Thresholds"][i],
@@ -148,11 +175,31 @@ def process_file(root_filename, ntuple_filename, config, output_file, window_low
                     "time_offset": config["TimeOffset"][i],
                     "window_time_offset": WindowTimeOffset,
                     "PMTgain": config["PMTgain"][i],
+                    "window_lower_bound": config["window_lower_bound"][i],
+                    "window_upper_bound": config["window_upper_bound"][i],
                 }
                 waveforms = batch[c]
                 optional_branches = {b: batch[b] for b in optional_branch_names}
 
-                process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF10.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], window_lower_bound, window_upper_bound, df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1])
+                if not(checkCoincidence):
+                    process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1])
+
+                if checkCoincidence:
+                    #reshape the timing entires so we can save them with the data
+                    SignalTimeMatchedTOF0_reduced = np.array(SignalTimeMatchedTOF0.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1].values.squeeze().tolist())
+                    #TODO get more than 1 hit !!
+                    SignalTimeMatchedTOF0_reduced  = ak.Array([[val for val in values if (not np.isnan(val))] for values in SignalTimeMatchedTOF0_reduced])
+                    # SignalTimeMatchedTOF0 = ak.Array([[values] for values in SignalTimeMatchedTOF0])
+
+                    SignalTimeMatchedTOF1_reduced  = np.array(SignalTimeMatchedTOF1.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1].values.squeeze().tolist())
+                    SignalTimeMatchedTOF1_reduced
+
+                    SignalTimeMatchedTOF1_reduced  = ak.Array([[val for val in values if (not np.isnan(val))] for values in SignalTimeMatchedTOF1_reduced])
+                    # SignalTimeMatchedTOF1 = ak.Array([[values] for values in SignalTimeMatchedTOF1])
+
+
+                    process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], df.loc[int(report.tree_entry_start):int(report.tree_entry_stop)-1], SignalTimeMatchedTOF1_reduced, SignalTimeMatchedTOF0_reduced)
+
 
 
     print(f"Saving event info for run {run_number}")
@@ -177,13 +224,13 @@ def read_nTuple(df, branch_name, isSqueezed = False):
     return branch
 
 
-def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF10, window_lower_bound, window_upper_bound, df):
+def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF1_hitTimes, df, SignalTimeMatchedTOF1 =None, SignalTimeMatchedTOF0 = None):
 
-    waveform_analysis = WaveformAnalysis(waveforms, window_lower_bound, window_upper_bound, **config_args)
+    waveform_analysis = WaveformAnalysis(waveforms, **config_args)
 
     #instead of overwriting the variables, copy them from the root file
     #TODO: impose coincidence and only perform the integration on peaks that have been matched
-    waveform_analysis.run_window_analysis(df_TOF10)
+    waveform_analysis.run_window_analysis(df_TOF1_hitTimes, df)
     #window integration which has to be done here as it uses the timing
     window_integrated_charges = waveform_analysis.window_int_charge
     window_integrated_pe = waveform_analysis.window_int_pe
@@ -197,16 +244,28 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
                     "SignalTimeCorrected": read_nTuple(df, "SignalTimeCorrected", isSqueezed = False)})
 
     #needs to be handled separately because it has another format
-    window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
-                           "WindowIntPE": window_integrated_pe})
+    if not(checkCoincidence):
+        window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
+                            "WindowIntPE": window_integrated_pe})
+
+
+    else:
+        # print(len(window_integrated_charges[:]), len(SignalTimeMatchedTOF1[:]))
+        window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
+                            "WindowIntPE": window_integrated_pe,
+                            "SignalTimeMatchedTOF1": SignalTimeMatchedTOF1,
+                            "SignalTimeMatchedTOF0": SignalTimeMatchedTOF0,
+                            # "nPeaksMatched": df_TOF1_hitTimes["nPeaks"],
+                            })
+
 
     branches = {"Pedestal": read_nTuple(df, "Pedestal", isSqueezed = True),
                 "PedestalSigma": read_nTuple(df, "PedestalSigma", isSqueezed = True),
                 "MaxVoltage": read_nTuple(df, "MaxVoltage", isSqueezed = True),
                 "WholeWaveformInt": read_nTuple(df, "WholeWaveformInt", isSqueezed = True),
+                "DigiTimingOffset": read_nTuple(df, "DigiTimingOffset", isSqueezed = True),
                 "Peaks": peaks,
                 "WindowPeaks": window_peaks,
-
                 **optional_branches}
 
     print(f" ... writing {channel} to {output_file.file_path}")
