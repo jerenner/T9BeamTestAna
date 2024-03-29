@@ -250,6 +250,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
 
 
     else:
+        # print(len(window_integrated_charges[:]), len(SignalTimeMatchedTOF1[:]))
         window_peaks = ak.zip({"WindowIntCharge": window_integrated_charges,
                             "WindowIntPE": window_integrated_pe,
                             "SignalTimeMatchedTOF1": SignalTimeMatchedTOF1,
