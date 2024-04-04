@@ -3,6 +3,16 @@
 	{
         "NumberOfChannels"   : 32,
         "VoltageScale"       : 0.00012207,
+
+	"comment"	: "Decide if we want to have the coincidence between the TOF PMTs or not, otherwise the timing of hits in TOF10 are used (it is advised to keep it as true) and then selects which PMTs are used in the coincidence, the numbers are as follows: TOF00 - 0, TOF01 - 2, TOF02 - 2, TOF03 - 3, TOF10 - 4, TOF11 - 5, TOF12 - 6, TOF13 - 7. The two PMTs that are used for the main coincidence (5sigma away from the mean) should be in the same Trigger scintillator module and the one used for loose coincidence should be in the other trigger scintillator. I recommend doing the maincoincidence in the downstream trigger scintillator.",
+        "checkCoincidence" : true,
+
+        "mainCoincidencePMTa" : 4,
+
+        "mainCoincidencePMTb" : 6,
+
+        "looseCoincidencePMT" : 1,
+
 	"comment" 	: "Previous voltage scale: 0.000610351",
 		"ChannelNames" : ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R",
 						  "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13",
@@ -42,24 +52,26 @@
         "comment"            : "Pedestal is estimated inside the pedestal bin window.",
 	"comment"	     : "The peak is centered at 50ns, instead of using the begining of the pusle to define the pedestal (which is very short) we will use the end of the waveform instead. The only case in which this doesn't work is for the hole counter for which the pulse ringing is too wide, there we will look at the begining of the pulse instead. Also note that the window durations are different for digitised zero (420 for digi0, 540 for the others)",
 
+
+	"comment": "Be caerful, changed the integration window for the lead glass for the window integration, acraplet",
             "PedestalWindowLow"  : [200, 200, 200, 200, 200, 200, 200, 200,
 				    300, 300, 300, 300, 300, 300, 300, 300,
-				    300, 300, 0, 0, 0, 0, 0, 0,
+				    300, 300, 300, 0, 0, 0, 0, 0,
 				    0, 0, 0, 0, 0, 0, 0, 0],
             "PedestalWindowHigh" : [420, 420, 420, 420, 420, 420, 420, 420,
 				    540, 540, 540, 540, 540, 540, 540, 540,
-				    540, 540, 80, 300, 300, 300, 300, 300,
+				    540, 540, 540, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300],
 
         "comment" : "Analysis is done on the data in the analysis bin window.",
             "AnalysisWindowLow"  : [ 0, 0, 0, 0, 0, 0, 0, 0,
 				    0, 0, 0, 0, 0, 0, 0, 0,
-				    0, 0, 80, 300, 300, 300, 300, 300,
+				    0, 0, 0, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300],
           
 	     "AnalysisWindowHigh" : [200, 200, 200, 200, 200, 200, 200, 200,
 				    200, 200, 200, 200, 200, 200, 200, 200,
-				    200, 200, 540, 540, 540, 540, 540, 540,
+				    200, 200, 200, 540, 540, 540, 540, 540,
 				    540, 540, 540, 540, 540, 540, 540, 540],
 
 		"comment" : "Timing calibration offsets for TOF1",
@@ -85,6 +97,18 @@
 					0, 0, 0, 0, 0, 0, 0, 0],
 
 		"comment" : "Previous calibration items,  0, 4.74776054315298, -0.1234580870906623, 4.171101270711057, -1.136279397422881, 0, -0.5336003405241031, -0.29412106806623584,",
+
+		"comment" : "lower boundary for the window integration, now that the timing is aligned we can have a  smaller integration window to get rid of the scintilaltion light in ACTs, different channels have a different integration window length",
+
+		"window_lower_bound" : [-1, -1, -1, -1, -1, -1, -1, -1,
+								-1, -1, -1, -1, -1, -1, -1, -1,
+								-1, -1, -1, 0, 0, 0, 0, 0,
+								0, 0, 0, 0, 0, 0, 0, 0,],
+
+		"window_upper_bound" : [1, 1, 1, 1, 1, 1, 1, 1,
+								1, 1, 1, 1, 1, 1, 1, 1,
+								1, 1, 1, 0, 0, 0, 0, 0,
+								0, 0, 0, 0, 0, 0, 0, 0,],
 
 	}
 }
