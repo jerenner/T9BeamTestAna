@@ -4,18 +4,37 @@ Analysis package for the T9 beam test
 2023
 ## Cleaned up version:
 
+
+Coincidence and config PR: 
+
+Instead of taking the hit time in TOF10 as the reference for the window integration we are now using the average time accross 2PMTs in TOF1 for which there is coincidence in TOF1 and loose coincidence with a third PMT, this one in TOF0. We are saving the 'cleaned up' timings in SignalTimeMatchedTOF1 and SignalTimeMatchedTOF0, these will be useful for calculating a clean TOF.  The config files now include the bounds for the window integration for each detector (TODO: values not final yet) and decide whether the window integration should be made with respect to hit times in TOF10 only or with respect to the coincidence hit times over 2+1 PMTs, which PMTs are used in coincidence is set in the config file.
+
+The pipeline also saves an extra branch called DigiTimingOffset which stores the timing offset for each event (this is 0 for digitiser 1) which is used when performing the window integration. The timing correction histograms produced by Arturo's ROOT macros are now saved in a SEPARATE ROOT file than the peakAnalysed root file used for analyses (formatting incompatibilities).
+
+MERGE: all coincidence and window integration procedure are now ** available** for the TAGGED PHOTON set-up too with sensible results. 
+
+A fine tuning PR will follow which will:
+
+- decide on best integration window for all detectors
+- correct for the particle time of flight in the window positioning
+- remove the loose coincidence for hodoscope runs: we only expect positrons, allowing 20ns coincidence lowers the signal purity
+- impelement an OR in the coincidence accross multiple PMT pairs to increase further the efficiency
+
+The "base mechanics" are not expected to change anymore 
+
+
+
 Timing PR: following the addition of the SignalTimeCorrected branch (Arturo's timing corrections) the pre-processing can now be run automatically with the following line:
 ```bash complete_pre-processing.sh 000393``` 
-replacing the run withe correct run number. It follows a similar structure to what is presented below with the extra steps correcting the timing namely:
+replacing the run with the correct run number. The code automatically selects the config file that is appropriate depending on if you are looking at low momentum or tagged photon runs. It follows a similar structure to what is presented below with the extra steps correcting the timing namely:
+
+
 ```root -l -b -q 'macros/triggerTimeDrift.C("peakAnalysed_'$run'.root")'; root -l -b -q 'macros/timeCorrection.C("peakAnalysed_'$run'.root", "triggerTimeDrift.txt", "peakAnalysed_timeCorr_'$run'.root")'```
 Tested with ROOT 6.26/10. This step is not crutial in the analysis, if you choose to comment the two commands above out then the SignalTimeCorrected branch is a simple copy of the SignalTime branch. 
-
-TODO: The window integration is still performed with respect to the SignalTime values because it is based on sample points instead of absolute time, the window is wide enough that there is no risk of missing signal but having the option of integration with respect to SignalTimeCorrected could help cut down on scintillation.
 
 TODO: The pedestal value is taken as the most probable out of the non-analysis part of the waveform which is different for each event and can be influenced by the presence of a particle in the following bunch, especially in the ACT0 and lead glass. Eventually we might want to move to a fixed, run-dependant pedestal value. 
 
 Minor bug fixes and improvements. 
-
 
 Since the end of the beam time the analyis of the root files moved to python. Firstly the peak detect algorithm is applied to the root file using:
 
