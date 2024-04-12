@@ -97,14 +97,14 @@
 
 		"comment" : "lower boundary for the window integration, now that the timing is aligned we can have a  smaller integration window to get rid of the scintilaltion light in ACTs, different channels have a different integration window length",
 
-		"window_lower_bound" : [-16, -16, -16, -16, -16, -16, -16, -16,
-								-16, -16, -16, -16, -16, -16, -16, -16,
-								-16, -16, -16, 0, 0, 0, 0, 0,
+		"window_lower_bound" : [-30, -30, -30, -30, -30, -30, -30, -30,
+								-30, -30, -30, -30, -30, -30, -30, -30,
+								-30, -30, -30, 0, 0, 0, 0, 0,
 								0, 0, 0, 0, 0, 0, 0, 0,],
 
-		"window_upper_bound" : [35, 35, 35, 35, 35, 35, 35, 35,
-								35, 35, 35, 35, 35, 35, 35, 35,
-								35, 35, 35, 0, 0, 0, 0, 0,
+		"window_upper_bound" : [3, 3, 3, 3, 3, 3, 3, 3,
+								3, 3, 3, 3, 3, 3, 3, 3,
+								3, 3, 3, 0, 0, 0, 0, 0,
 								0, 0, 0, 0, 0, 0, 0, 0,],
 
 	}

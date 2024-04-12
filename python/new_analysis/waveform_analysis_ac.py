@@ -235,7 +235,11 @@ class WaveformAnalysis:
             #Look at the timing as signal time: need to shift the waveform and make sure we stay within the waveform boundary
             #DigiTimingOffset (DTO) is SignalTimeCorrected (STC, Arturo's corrections) - SignalTime(ST), waveforms are given in ST and df_TOF1_hitTimes given in STC
             #expectedMin/Max are given in ST so they can be applied to the waveform
+
+            print(self.window_lower_bound, self.window_upper_bound)
             expectedMin = (self.df_TOF1_hitTimes[i]+self.window_lower_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+
+
             #replace the nans and stay within the boundary
             rangeLow = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(0>expectedMin, 0, expectedMin))
 
@@ -243,11 +247,8 @@ class WaveformAnalysis:
 
             expectedMax = (self.df_TOF1_hitTimes[i]+self.window_upper_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
             #replace the nans and stay within the boundary
-            rangeHigh = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(expectedMax>waveformEnd, 0, waveformEnd))
+            rangeHigh = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(expectedMax>waveformEnd, waveformEnd, expectedMax))
 
-
-
-            # print("Range High:", rangeHigh, waveformEnd, max(rangeHigh))
 
             list_high.append(rangeHigh)
             list_low.append(rangeLow)
@@ -255,9 +256,15 @@ class WaveformAnalysis:
             rangeLow = np.array(rangeLow).reshape(len(rangeLow), 1)
             rangeHigh = np.array(rangeHigh).reshape(len(rangeHigh), 1)
 
+            print("Range Low- range high:", rangeHigh-rangeLow, rangeHigh, rangeLow)
+
             #creating a set of integration windows covering (Need to make this for every hit in TOF10
             #otherwise overlapping peaks will cause an issue.
+
+            print((allAnalysisBins > rangeLow), (allAnalysisBins < rangeHigh))
             over_integration_threshold = over_integration_threshold | ((allAnalysisBins > rangeLow) & (allAnalysisBins < rangeHigh))
+
+            print(over_integration_threshold)
 
 
             #purely copy-pasted, we do the same thing with a different integration window
@@ -281,6 +288,8 @@ class WaveformAnalysis:
 
             self.window_int_charge = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
             self.window_int_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
+
+            print("Integrated charge:", self.window_int_charge)
         # print("At the end of the loop, the int charge is", self.window_int_charge)
 
 

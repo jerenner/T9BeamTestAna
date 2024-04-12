@@ -121,7 +121,7 @@ def plotSelection(df_all, ACTlinearA, ACTlinearB, piMuBorderACT, ACTlower, there
 
     else: # just plot the selection lines
         ax.plot([xmin, xmax], [piMuBorderACT, piMuBorderACT], "g--")
-        ax.plot([xmin, xmax], [ACTlower, ACTlower], "r-")
+        # ax.plot([xmin, xmax], [ACTlower, ACTlower], "r-")
         ax.plot([xmin, (horizontal_el - ACTlinearB)/ACTlinearA], [xmin * ACTlinearA + ACTlinearB, ((horizontal_el - ACTlinearB)/ACTlinearA) * ACTlinearA + ACTlinearB], "k--")
         ax.plot([(horizontal_el - ACTlinearB)/ACTlinearA, xmax], [horizontal_el, horizontal_el], "k--")
 
@@ -337,7 +337,7 @@ def singlePE(argv):
 
     global nProtons, nPions, nMuons, nElectrons, nParticles, nDeuterium, signalTimeBranch
 
-    signalTimeBranch = "SignalTimeCorrected" #can change for the old timings (SignalTime)
+    signalTimeBranch = "SignalTime" #can change for the old timings (SignalTime)
 
     #get some preliminary guesses for the parameters of the selection
     headers = ["Run", "momentum", "refIndex", "nSpill",  "probaBunch", "nParticles", "nElectrons", "nMuons", "nPions", "nProtons", "nDeuterium", "fractionPass1ParticleVeto", "fractionPassNanVeto", "ACTlinearA", "ACTlinearB", "piMuBorderACT", "ACTlower", "thereIsProtons", "protonsTOFCut", "horizontal_el", "LGupper", "bery"]
@@ -386,7 +386,7 @@ def singlePE(argv):
     file = ur.open(root_filenames)
 
     #Require only one particle in all of the runs
-    nPeaksInToF = nPeakInToF(file, False)
+    nPeaksInToF = nPeakInToF(file, 1)
 
     #Might be useful to calculate the fractions of events that pass this 1 particle cut
     fractionPass1ParticleVeto = np.sum(nPeaksInToF)/len(nPeaksInToF)
@@ -486,12 +486,15 @@ def singlePE(argv):
     horizontal_el = 35#35#40 #70
     LGupper = 3#2.5#2.5 #4
 
-    if len(df_ref != 0):
-        #we have reference values, caluculated previously, use those instead
-        ACTlinearA, ACTlinearB, piMuBorderACT = float(df_ref["ACTlinearA"]), float(df_ref["ACTlinearB"]), float(df_ref["piMuBorderACT"])
-        ACTlower, protonsTOFCut,  LGupper = float(df_ref["ACTlower"]), float(df_ref["protonsTOFCut"]), float(df_ref["LGupper"])
-        horizontal_el = float(df_ref["horizontal_el"])
-        protonsTOFMax = protonsTOFCut + 8
+    print(df_ref)
+    if len(df_ref) != 0:
+        df_ref = df_ref.reset_index()
+        #we have reference values, calculated previously, use those instead
+        #in case there are more than 1: only use one
+        ACTlinearA, ACTlinearB, piMuBorderACT = float(df_ref["ACTlinearA"][0]), float(df_ref["ACTlinearB"][0]), float(df_ref["piMuBorderACT"][0])
+        ACTlower, protonsTOFCut,  LGupper = float(df_ref["ACTlower"][0]), float(df_ref["protonsTOFCut"][0]), float(df_ref["LGupper"][0])
+        horizontal_el = float(df_ref["horizontal_el"][0])
+        protonsTOFMax = protonsTOFCut + 14
 
     #Identify the particles, the limits are global variables, careful
     proton_selection, electron_selection, muon_selection, pion_selection = makeSelection(df_all, df_all_intPE, df_all_times, tof)
@@ -633,10 +636,13 @@ def singlePE(argv):
 
     selectionText = 'Selection used p: thereIsProton = %i, TOF > %.2fns\ne: ACT23 > %.2f ACT1 + %.2f or ACT23 > %.2fpe\nmu: (not e or p) & ACT23 > %.2fpe & LG < %.2fpe \npi: (not e, p or mu) & ACT23 > %.2f pe & LG < %.2fpe' % (thereIsProtons, protonsTOFCut, ACTlinearA, ACTlinearB, horizontal_el, piMuBorderACT, LGupper, ACTlower, LGupper)
 
-    ax.annotate(selectionText, xy=(0.75, 0.7), xytext=(-20, -15), fontsize=14,
-    xycoords='axes fraction', textcoords='offset points',
-    bbox=dict(facecolor='white', alpha=0.8),
-    horizontalalignment='center', verticalalignment='center')
+    colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2',
+ '#7f7f7f', '#bcbd22', '#17becf']
+
+    # ax.annotate(selectionText, xy=(0.75, 0.7), xytext=(-20, -15), fontsize=14,
+    # xycoords='axes fraction', textcoords='offset points',
+    # bbox=dict(facecolor='white', alpha=0.8),
+    # horizontalalignment='center', verticalalignment='center')
 
 
     TOF_min = 10.5
@@ -670,7 +676,7 @@ def singlePE(argv):
 
 
             if list_particle_type[particleType] == "Electrons":
-                ax.errorbar(bin_centers, counts, yerr=errors, fmt='o', color = 'darkgray', label = '%s: TOF = %.2f +/- %.2f (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType], meanTOF, stdTOF,list_particle_numbers[particleType]/nParticles * 100))
+                ax.errorbar(bin_centers, counts, yerr=errors, fmt='o', color = colors[particleType-1], label = '%s: TOF = %.2f +/− %.2f ns'%(list_particle_type[particleType], meanTOF, stdTOF))
 
                 meanTOF_e = meanTOF
                 # print(meanTOF_e, getTof(ms['Electrons'], momentum), getTof(ms['Muons'], momentum) -  meanTOF_e + getTof(ms['Electrons'], momentum), getTof(ms['Pions'], momentum) -  meanTOF_e + getTof(ms['Electrons'], momentum))
@@ -685,10 +691,8 @@ def singlePE(argv):
                 # Calculate the Gaussian values using the fitted parameters
                 y_curve = gaussian(plotting_x, amplitude, mean, std_dev)
                 #should plot the cuve, I probably was to put a limit, to ignore the other ones?
-                ax.plot(plotting_x, y_curve, '--', color = 'lightgray')
-
-
-
+                # ax.plot(plotting_x, y_curve, '--', color = 'lightgray')
+                ax.plot(plotting_x, y_curve, '--', color = colors[particleType-1])
 
 
             else:
@@ -703,7 +707,7 @@ def singlePE(argv):
                 param_errors = np.sqrt(np.diag(covariance))
 
                 y_curve = gaussian(plotting_x, amplitude, mean, std_dev)
-                ax.plot(plotting_x, y_curve, '--', color = 'lightgray')
+                ax.plot(plotting_x, y_curve, '--', color = colors[particleType-1])
 
                 print(list_particle_type[particleType], ": predicted with fit momentum is ", TofToMomentum(mean - meanTOF_e + getTof(ms['Electrons'], momentum), list_particle_type[particleType]))
 
@@ -717,7 +721,7 @@ def singlePE(argv):
 
                 p_error = (abs(p_error) + abs(p_pred - TofToMomentum(mean - meanTOF_e + param_errors[1] + getTof(ms['Electrons'], momentum), list_particle_type[particleType])))/2
 
-                ax.errorbar(bin_centers, counts, yerr=errors, fmt='o', label = '%s: TOF = %.2f +/- %.2f (%.3f percent of events w/ 1 particle) p_pred = %.2f +/- %.2f MeV/c'%(list_particle_type[particleType], meanTOF, stdTOF,list_particle_numbers[particleType]/nParticles * 100, p_pred, p_error))
+                ax.errorbar(bin_centers, counts, yerr=errors, fmt='o', color = colors[particleType-1], label = '%s: TOF = %.2f +/− %.2f ns, calculated momentum = %.2f +/− %.2f MeV/c'%(list_particle_type[particleType], meanTOF, stdTOF, p_pred, p_error))
 
                 if list_particle_type[particleType] == "Pions":
                     p_pred_pi = p_pred
@@ -731,13 +735,17 @@ def singlePE(argv):
                     p_pred_p = p_pred
                     p_error_p = p_error
 
-    legend = ax.legend(fontsize = 14)
-    ax.set_title("WCTE BeamTest23 Run %i - momentum %s MeV/c,  n = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+    # legend = ax.legend(fontsize = 14)
+    legend = ax.legend(markerscale=1.5,fontsize = 18)
+    ax.set_title("WCTE BeamTest Preliminary - Momentum %sMeV/c,  n = %.3f"%(momentum, refIndex), fontsize = 16, weight = 'bold')
+    # ax.set_title("WCTE BeamTest23 Run %i - momentum %s MeV/c,  n = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
     ax.grid()
-    ax.set_xlabel("TOF (ns)", fontsize=14)
-    ax.set_ylabel("Number of particles/%.2fns"%widthBin, fontsize=14)
+    ax.set_xlabel("Time of flight (ns)", fontsize=19)
+    ax.set_ylabel("Number of particles/%.2fns"%widthBin, fontsize=19)
     ax.set_yscale('log')
-    plt.legend()
+    ax.tick_params(axis ='y', labelsize = 15)
+    ax.tick_params(axis ='x', labelsize = 15)
+    # plt.legend()
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_TOF.pdf"%(run, momentum))
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_TOF.png"%(run, momentum))
     plt.show()
@@ -765,7 +773,7 @@ def singlePE(argv):
             else:
                 ax.scatter(np.array(list_TOF[particleType][0]), np.array(list_LG[particleType][0]), marker = "x", color = 'lightgray', label = '%s w/ 1 particle: %i (%.3f percent of all events)'%(list_particle_type[particleType],list_particle_numbers[particleType],fractionPass1ParticleVeto * fractionPassNanVeto * 100), alpha = 0.3)
 
-        elif list_particle_type[particleType] == "Electrons":
+        if list_particle_type[particleType] == "Electrons":
             ax.scatter(np.array(list_TOF[particleType]), np.array(list_LG[particleType]), marker = "x", color = 'darkgray', label = '%s: %i (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100), alpha = 0.3)
 
         else:
@@ -786,32 +794,43 @@ def singlePE(argv):
     ################################################################################
     ##check the selection in ACTs, second figure
     ################################################################################
-    fig, ax = plt.subplots(figsize = (16,9))
-    ax.annotate(selectionText, xy=(0.75, 0.7), xytext=(-20, -15), fontsize=14,
-    xycoords='axes fraction', textcoords='offset points',
-    bbox=dict(facecolor='white', alpha=0.8),
-    horizontalalignment='center', verticalalignment='center')
+    fig, ax = plt.subplots(figsize = (9,12))
+    # ax.annotate(selectionText, xy=(0.75, 0.7), xytext=(-20, -15), fontsize=14,
+    # xycoords='axes fraction', textcoords='offset points',
+    # bbox=dict(facecolor='white', alpha=0.8),
+    # horizontalalignment='center', verticalalignment='center')
+
+
+
 
 
     plotSelection(df_all, ACTlinearA, ACTlinearB, piMuBorderACT, ACTlower, thereIsProtons, protonsTOFCut, horizontal_el, max_ACT23 = 300, max_ACT1 = 60, plot_events = False, ax = ax)
-    for particleType in range(len(list_data_frames)):
+    for particleType in range(1, len(list_data_frames)):
         #careful we overlay the selection on the other particles
-        if particleType == 0:
-            ax.scatter(np.array(list_ACT1[particleType][0]), np.array(list_ACT23[particleType][0]), marker = "x", color = 'lightgray', label = '%s w/ 1 particle: %i (%.3f percent of all events)'%(list_particle_type[particleType],list_particle_numbers[particleType],fractionPass1ParticleVeto * fractionPassNanVeto * 100))
+        # if particleType == 0:
+        #     ax.scatter(np.array(list_ACT1[particleType][0]), np.array(list_ACT23[particleType][0]), marker = "x", color = 'lightgray', label = '%s w/ 1 particle: %i (%.3f percent of all events)'%(list_particle_type[particleType],list_particle_numbers[particleType],fractionPass1ParticleVeto * fractionPassNanVeto * 100))
 
-        elif list_particle_type[particleType] == "Electrons":
-            ax.scatter(np.array(list_ACT1[particleType]), np.array(list_ACT23[particleType]), marker = "x", color = 'darkgray', label = '%s: %i (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
+        if list_particle_type[particleType] == "Electrons":
+            ax.scatter(np.array(list_ACT1[particleType]), np.array(list_ACT23[particleType]), marker = "x", color = colors[particleType-1], label = '%s: %i (%.3f percent of events)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
 
         else:
             if (list_particle_type[particleType] == "Protons" and (not thereIsProtons)):
                     break
-            ax.scatter(np.array(list_ACT1[particleType]), np.array(list_ACT23[particleType]), marker = "x", label = '%s: %i (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
+            ax.scatter(np.array(list_ACT1[particleType]), np.array(list_ACT23[particleType]), marker = "x", color = colors[particleType-1], label = '%s: %i (%.3f percent of events)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
 
-    legend = ax.legend(fontsize = 14)
-    ax.set_title("WCTE BeamTest23 Run %i - momentum %sMeV/c,  n = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+    legend = ax.legend(markerscale=2.5,fontsize = 19)
+    # ax.set_title("WCTE BeamTest23 Run %i - momentum %sMeV/c,  n = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+    ax.set_title("Momentum %sMeV/c,  n = %.3f"%(momentum, refIndex), fontsize = 18, weight = 'bold')
     ax.grid()
-    ax.set_xlabel("ACT1 (PE)", fontsize=14)
-    ax.set_ylabel("ACT23 (PE)", fontsize=14)
+    # ax.set_xlabel("ACT1 (PE)", fontsize=14)
+    # ax.set_ylabel("ACT23 (PE)", fontsize=14)
+    legend = ax.legend(fontsize = 18, loc = 'upper right')
+    ax.set_xlim(-0.5, 15)
+    ax.set_ylim(-0.5, 110)
+    ax.set_xlabel("Charge in ACT0 (PE)", fontsize=18)
+    ax.set_ylabel("Charge in ACT23 (PE)", fontsize=18)
+    ax.tick_params(axis ='y', labelsize = 18)
+    ax.tick_params(axis ='x', labelsize = 18)
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_selectionACTs.pdf"%(run, momentum))
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_selectionACTs.png"%(run, momentum))
     plt.show()
@@ -822,33 +841,36 @@ def singlePE(argv):
     ##check the selection in ACTs, second figure
     ################################################################################
     fig, ax = plt.subplots(figsize = (16,9))
-    ax.annotate(selectionText, xy=(0.75, 0.7), xytext=(-20, -15), fontsize=14,
-    xycoords='axes fraction', textcoords='offset points',
-    bbox=dict(facecolor='white', alpha=0.8),
-    horizontalalignment='center', verticalalignment='center')
+    # ax.annotate(selectionText, xy=(0.75, 0.7), xytext=(-20, -15), fontsize=14,
+    # xycoords='axes fraction', textcoords='offset points',
+    # bbox=dict(facecolor='white', alpha=0.8),
+    # horizontalalignment='center', verticalalignment='center')
+
 
 
     plotSelection(df_all, ACTlinearA, ACTlinearB, piMuBorderACT, ACTlower, thereIsProtons, protonsTOFCut, horizontal_el, max_ACT23 = 300, max_ACT1 = 500, plot_events = False, ax = ax)
     for particleType in range(len(list_data_frames)):
         #careful we overlay the selection on the other particles
-        if particleType == 0:
-            ax.scatter(np.array(list_ACT0[particleType][0]), np.array(list_ACT23[particleType][0]), marker = "x", color = 'lightgray', label = '%s w/ 1 particle: %i (%.3f percent of all events)'%(list_particle_type[particleType],list_particle_numbers[particleType],fractionPass1ParticleVeto * fractionPassNanVeto * 100))
+        # if particleType == 0:
+        #     ax.scatter(np.array(list_ACT0[particleType][0]), np.array(list_ACT23[particleType][0]), marker = "x", color = 'lightgray', label = '%s w/ 1 particle: %i (%.3f percent of all events)'%(list_particle_type[particleType],list_particle_numbers[particleType],fractionPass1ParticleVeto * fractionPassNanVeto * 100))
 
-        elif list_particle_type[particleType] == "Electrons":
-            ax.scatter(np.array(list_ACT0[particleType]), np.array(list_ACT23[particleType]), marker = "x", color = 'darkgray', label = '%s: %i (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
+        if list_particle_type[particleType] == "Electrons":
+            ax.scatter(np.array(list_ACT0[particleType]), np.array(list_ACT23[particleType]), marker = "x", color = colors[particleType-1], label = '%s: %i (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
 
         else:
             if (list_particle_type[particleType] == "Protons" and (not thereIsProtons)):
                     break
-            ax.scatter(np.array(list_ACT0[particleType]), np.array(list_ACT23[particleType]), marker = "x", label = '%s: %i (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
+            ax.scatter(np.array(list_ACT0[particleType]), np.array(list_ACT23[particleType]), marker = "x",  color = colors[particleType-1], label = '%s: %i (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType],list_particle_numbers[particleType],list_particle_numbers[particleType]/nParticles * 100))
 
-    legend = ax.legend(fontsize = 14)
-    ax.set_title("WCTE BeamTest23 Run %i - momentum %sMeV/c,  n = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+
+    ax.set_title("WCTE BeamTest Preliminary - Momentum %sMeV/c,  n = %.3f"%(momentum, refIndex), fontsize = 16, weight = 'bold')
     ax.grid()
-    ax.set_xlabel("ACT0 (PE)", fontsize=14)
-    ax.set_ylabel("ACT23 (PE)", fontsize=14)
-    # plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_selectionACTs.pdf"%(run, momentum))
-    # plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_selectionACTs.png"%(run, momentum))
+    ax.set_xlabel("Charge in ACT0 (PE)", fontsize=16)
+    ax.set_ylabel("Charge in ACT23 (PE)", fontsize=16)
+    ax.tick_params(axis ='y', labelsize = 15)
+    ax.tick_params(axis ='x', labelsize = 15)
+    # plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_selectionACTs_poster.pdf"%(run, momentum))
+    # plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_selectionACTs_poster.png"%(run, momentum))
     plt.show()
     plt.close()
 
@@ -891,15 +913,19 @@ def singlePE(argv):
 
     #Start with pion/muon separation
     fig, ax = plt.subplots(figsize = (16,9))
-    ax.annotate(selectionText, xy=(0.75, 0.7), xytext=(-20, -15), fontsize=14,
+    ax.annotate(selectionText, xy=(0.25, 0.7), xytext=(-20, -15), fontsize=14,
     xycoords='axes fraction', textcoords='offset points',
     bbox=dict(facecolor='white', alpha=0.8),
-    horizontalalignment='center', verticalalignment='center')
+    horizontalalignment='left', verticalalignment='center')
 
     ACT23_min = 0
     ACT23_max = horizontal_el + 30
     bin_width = 2 #nb of PE in ACT23
     nBins = int((ACT23_max-ACT23_min)/bin_width)
+
+
+
+    colors = ["red", "darkgray", '#1f77b4', '#ff7f0e', '#2ca02c', "green"]
 
     for particleType in range(len(list_data_frames)):
         #careful we overlay the selection on the other particles
@@ -917,7 +943,7 @@ def singlePE(argv):
             meanACT23 = np.array(list_ACT23[particleType]).mean()
             stdACT23 = np.array(list_ACT23[particleType]).std()
 
-            ax.errorbar(bin_centers, counts, yerr=errors, fmt='o', label = '%s: ACT23 = %.2f +/- %.2f (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType], meanACT23, stdACT23,list_particle_numbers[particleType]/nParticles * 100))
+            ax.errorbar(bin_centers, counts, yerr=errors, color = colors[particleType], fmt='o', label = '%s: ACT23 = %.2f +/− %.2f (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType], meanACT23, stdACT23,list_particle_numbers[particleType]/nParticles * 100))
 
             initial_guess = [len(list_ACT23[particleType]), meanACT23, stdACT23]
             params, covariance = curve_fit(gaussian, bin_centers, counts, p0=initial_guess)
@@ -932,11 +958,11 @@ def singlePE(argv):
                amplitude_pi, mean_pi, std_dev_pi =  amplitude, mean, std_dev
 
 
-    ax.set_xlabel("ACT23 (PE)", fontsize=14)
+    ax.set_xlabel("ACT23 (PE)", fontsize=18)
     ax.set_ylabel("Number of particles collected/%.2f PE"%bin_width, fontsize=14)
     plt.grid()
-    plt.legend(fontsize=14)
-    ax.set_title("WCTE BeamTest23 Run %i - momentum %s MeV/c,  n = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+    plt.legend(fontsize=18)
+    ax.set_title("WCTE BeamTest23 Run %i\nmomentum %s MeV/c,n = %.3f, %s"%(run, momentum, refIndex, targetType[isBeryllium]), fontsize = 18, weight = 'bold')
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_purityChecks.pdf"%(run, momentum))
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_purityChecks.png"%(run, momentum))
     plt.show()
@@ -959,7 +985,7 @@ def singlePE(argv):
     target3 = 0.99999
     target4 = 0.999999
     target5 = 0.9999999
-    a, b, c, d, e = 0, 0, 0, 0, 0
+    a, b, c, d, e =  2, 2, 2, 2, 2 #0, 0, 0, 0, 0
 
     n_muon_tot = quad(gaussian, window_low_tot, window_high_tot, args = (amplitude_mu, mean_mu, std_dev_mu))[0]  *(nBins)/ (ACT23_max-ACT23_min)
     n_pion_tot = quad(gaussian, window_low_tot, window_high_tot, args = (amplitude_pi, mean_pi, std_dev_pi))[0]  *(nBins)/ (ACT23_max-ACT23_min)
@@ -1019,16 +1045,16 @@ def singlePE(argv):
 
     fig, ax1 = plt.subplots(figsize = (16,9))
     # ax1.set_title("Muon Purity and Efficiency - Run %s"%run)
-    ax1.set_xlabel('ACT23 cut (PE)', fontsize = 14)
-    ax1.set_ylabel('Purity', color = 'green', fontsize = 14)
+    ax1.set_xlabel('Position of the cut (PE)', fontsize = 16)
+    ax1.set_ylabel('Muon purity', color = 'green', fontsize = 16)
     ax1.plot(window_low, muon_purity, color = 'green')
     # ax1.plot([best_cut_muons, best_cut_muons], [0,1], 'k--', label = '99.99percent muon purity \n corresponds to %.4f muon efficiency \n ACT23 cut %.2fpe'%(best_efficiency_muons, best_cut_muons))
     ax1.grid()
-    ax1.tick_params(axis ='y', labelcolor = 'green')
-    ax1.set_title("WCTE BeamTest23 Run %i - momentum %s MeV/c \nn = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+    ax1.tick_params(axis ='y', labelcolor = "green", labelsize = 15)
+    ax1.set_title("WCTE BeamTest23 Run %i mu/pi separation\nmomentum %s MeV/c n = %.3f, %s"%(run, momentum, refIndex, targetType[isBeryllium]), fontsize = 16, weight = 'bold')
 
     ax2 = ax1.twinx()
-    ax2.set_ylabel('Efficiency', color = 'red')
+    ax2.set_ylabel('Muon efficiency', color = 'red', fontsize = 16)
     if a == 1:
         ax2.plot([cut_T1, cut_T1], [0, 1], '--', color = 'lightgray', label = '%.1e contamination in pion sample by muons: efficiency %.3f percent\n nMuonsInSample: %.3e nPionsInSample: %.3e'%(1-target, eff_T1 * 100, nMuonsInSample_T1, nPionsInSample_T1))
 
@@ -1045,8 +1071,9 @@ def singlePE(argv):
         ax2.plot([cut_T5, cut_T5], [0, 1], '-', color = 'black', label = '%.1e contamination in pion sample by muons: efficiency %.3f percent\n nMuonsInSample: %.3e nPionsInSample: %.3e'%(1-target5, eff_T5 * 100, nMuonsInSample_T5, nPionsInSample_T5))
 
     ax2.plot(window_low, muon_efficiency, color = 'red')
-    ax2.tick_params(axis ='y', labelcolor = 'red')
-    ax2.legend(fontsize = 14)
+    ax2.plot(window_low, np.array(muon_efficiency) * np.array(muon_purity), color = 'lightgray')
+    ax2.tick_params(axis ='y', labelcolor = 'red', labelsize = 15)
+    # ax2.legend(fontsize = 14)
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_PionPurityCurves.pdf"%(run, momentum))
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_PionPurityCurves.png"%(run, momentum))
     plt.show()
@@ -1097,7 +1124,7 @@ def singlePE(argv):
             errors = np.sqrt(counts)# / len(np.array(list_ACT23[particleType])))
             mean_elH = np.array(list_elH[particleType]).mean()
             std_elH = np.array(list_elH[particleType]).std()
-            ax.errorbar(bin_centers, counts, yerr=errors, fmt='o', label = '%s: Distance to e veto line = %.2f +/- %.2f (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType], mean_elH, std_elH,list_particle_numbers[particleType]/nParticles * 100))
+            ax.errorbar(bin_centers, counts, yerr=errors, color = colors[particleType], fmt='o', label = '%s: Distance to e veto line = %.2f +/− %.2f (%.3f percent of events w/ 1 particle)'%(list_particle_type[particleType], mean_elH, std_elH,list_particle_numbers[particleType]/nParticles * 100))
             initial_guess = [len(list_elH[particleType]), mean_elH, std_elH]
             params, covariance = curve_fit(gaussian, bin_centers, counts, p0=initial_guess)
             amplitude, mean, std_dev = params
@@ -1117,7 +1144,7 @@ def singlePE(argv):
     ax.set_ylabel("Number of particles collected/%.2f PE"%bin_width, fontsize=14)
     plt.grid()
     plt.legend(fontsize=14)
-    ax.set_title("WCTE BeamTest23 Run %i - momentum %s MeV/c,  n = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+    ax.set_title("WCTE BeamTest23 Run %i\nmomentum %s MeV/c,  n = %.3f, %s"%(run, momentum, refIndex, targetType[isBeryllium]), fontsize = 16, weight = 'bold')
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_electronCheck.pdf"%(run, momentum))
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_electronCheck.png"%(run, momentum))
     plt.show()
@@ -1193,16 +1220,19 @@ def singlePE(argv):
 
     fig, ax1 = plt.subplots(figsize = (16,9))
     # ax1.set_title("Muon Purity and Efficiency - Run %s"%run)
-    ax1.set_xlabel('ACT23 cut (PE)', fontsize = 14)
-    ax1.set_ylabel('Purity', color = 'green', fontsize = 14)
+    ax1.set_xlabel('ACT23 cut (PE)', fontsize = 16)
+    ax1.set_ylabel('Purity', color = 'green', fontsize = 16)
     ax1.plot(window_low, muon_purity, color = 'green')
+
     # ax1.plot([best_cut_muons, best_cut_muons], [0,1], 'k--', label = '99.99percent muon purity \n corresponds to %.4f muon efficiency \n ACT23 cut %.2fpe'%(best_efficiency_muons, best_cut_muons))
     ax1.grid()
     ax1.tick_params(axis ='y', labelcolor = 'green')
-    ax1.set_title("WCTE BeamTest23 Run %i - momentum %s MeV/c \nn = %.3f, %s, pBunch = %.3e"%(run, momentum, refIndex, targetType[isBeryllium], probaBunch), fontsize = 16, weight = 'bold')
+    ax1.set_title("WCTE BeamTest23 Run %i mu/e separation \n momentum %s MeV/c n = %.3f, %s"%(run, momentum, refIndex, targetType[isBeryllium]), fontsize = 16, weight = 'bold')
+
+    ax2 = ax1.twinx()
 
     if a == 1:
-        ax2 = ax1.twinx()
+
         ax2.set_ylabel('Efficiency', color = 'red')
         ax2.plot([cut_T1, cut_T1], [0, 1], '--', color = 'lightgray', label = '%.1e contamination in muon sample by electrons: efficiency %.3f percent\n nMuonsInSample: %.3e nElectronsInSample: %.3e'%(1-target, eff_T1 * 100, nMuonsInSample_T1, nElectronsInSample_T1))
 
@@ -1220,7 +1250,8 @@ def singlePE(argv):
 
     ax2.plot(window_low, muon_efficiency, color = 'red')
     ax2.tick_params(axis ='y', labelcolor = 'red')
-    ax2.legend(fontsize = 14)
+    ax2.plot(window_low, np.array(muon_efficiency) * np.array(muon_purity), color = 'lightgray', label = 'Efficiency * purity')
+    ax2.legend(fontsize = 16)
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_purityECurves.pdf"%(run, momentum))
     plt.savefig("final_results/WCTEBeamTest23_Run%i_p%i_purityECurves.png"%(run, momentum))
     plt.show()
