@@ -9,27 +9,30 @@ import scipy.optimize as spo
 
 def isInCoincidence(df_substracted, expectedMean = 0, expectedStd = 10, nSigma = 3):
     mask = (df_substracted > expectedMean - nSigma * expectedStd) & (df_substracted < expectedMean + nSigma * expectedStd)
-    return mask#
+    return mask
 
-def isInLooseCoincidence(df_substracted, expectedMean = 0, expectedStd = 10, protonMaxTOF = 20, deltaTOFelectronMuons = 7, nSigma = 5):
-    '''once the matching has been done within one TOF we can roughly match them to the second TOF detector'''
+def isInLooseCoincidence(df_substracted, expectedMean = 0, expectedStd = 10, protonMaxTOF = 40, deltaTOFelectronMuons = 40, nSigma = 5):
+    '''once the matching has been done within one TOF we can roughly match them to the second TOF detector, need to accept protons'''
     if (expectedMean>0) :
-        '''the order of the TOFs is TOF1 - TOF2'''
-        mask = (df_substracted > expectedMean - nSigma * expectedStd - deltaTOFelectronMuons) & (df_substracted < expectedMean + protonMaxTOF + nSigma * expectedStd)
+        '''the order of the TOFs is TOF1 - TOF0'''
+        mask = (df_substracted > expectedMean - nSigma * expectedStd - protonMaxTOF) & (df_substracted < expectedMean + nSigma * expectedStd)
     else:
         '''The order is reversed '''
-        mask = (df_substracted > expectedMean - nSigma * expectedStd - protonMaxTOF ) & (df_substracted < expectedMean + nSigma * expectedStd + deltaTOFelectronMuons)
+        mask = (df_substracted > expectedMean - nSigma * expectedStd - protonMaxTOF) & (df_substracted < expectedMean + nSigma * expectedStd)
 
     return mask
 
-def getCoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test):
+def getCoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test, runNumber, first_hodoscope_run = 579):
     matched_event_times, good_candidate_times, mean_matched_time = getMatchedEventsTiming(hit_timing, TOFa_base, TOFa_test, False)
 
 
     #correct the relevant branch
     hit_timing[TOFa_base] = mean_matched_time
-    # check loose coincidence for protons, deuterium
-    matched_event_times_TOFb, matched_event_times_TOFa, mean_matched_time = getMatchedEventsTiming(hit_timing, TOFb_test, TOFa_base, True)
+    # check loose coincidence for protons, deuterium in LM setup
+    if runNumber<first_hodoscope_run:
+        matched_event_times_TOFb, matched_event_times_TOFa, mean_matched_time = getMatchedEventsTiming(hit_timing, TOFb_test, TOFa_base, True)
+    else:#keep a loose coincidence for now (keep protons!!!)
+        matched_event_times_TOFb, matched_event_times_TOFa, mean_matched_time = getMatchedEventsTiming(hit_timing, TOFb_test, TOFa_base, True)
 
     #in case we only want one coincidence
     # matched_event_times_TOFb, matched_event_times_TOFa = matched_event_times, good_candidate_times
@@ -157,7 +160,7 @@ def getMatchedEventsTiming(hit_timing, basePMT, testPMT, matchingTOF0andTOF1 = F
     # print(len(matched_event_times[1]), len(matched_event_times[0].dropna()), len(matched_event_times[2].dropna()), len(matched_event_times[3].dropna()))
     return matched_event_times, good_candidate_times, mean_matched_time
 
-def checkCoincidence(argv, TOFa_base = 0, TOFa_test = 1, TOFb_test = 6, checkWarning = True, plot = False):
+def performCoincidence(argv, TOFa_base = 0, TOFa_test = 1, TOFb_test = 6, runNumber = 0 , checkWarning = True, plot = False, first_hodoscope_run= 579):
     root_filenames = argv #[1]
     #read in the file
     # print("Hello from coincidence")
@@ -178,7 +181,9 @@ def checkCoincidence(argv, TOFa_base = 0, TOFa_test = 1, TOFb_test = 6, checkWar
         df = df.reset_index()
         #only store the TOF detectors
         if key[:-4] == '%s'%targetTOF:
-            signalTimeCorrected = pd.DataFrame(df['%s'%signalTimeTarget].values.tolist())
+            digitiser0 = file[file.keys()[0]].arrays(library="pd")
+            signalTimeCorrected =  pd.DataFrame(df['%s'%signalTimeTarget].values.tolist())
+
             hit_timing.append(signalTimeCorrected) #.iloc[200:300]#829:849
 
     key = file.keys()[-1]
@@ -190,12 +195,12 @@ def checkCoincidence(argv, TOFa_base = 0, TOFa_test = 1, TOFb_test = 6, checkWar
     #take PMTs far away from each other to be as stable as possible
 
 
-    if (((TOFa_base <= 3) == (TOFa_test<=3)) and ((TOFb_test<3) != (TOFa_base<3))):
+    if ((TOFa_base > 3) and (TOFa_test>3) and (TOFb_test<3)):
         print("You have paired up the PMTs correctely")
     elif (checkWarning):
-        raise Exception("The PMTs aren't paired up properly, %i and %i should be on the same TOF, i.e. below or above 3 and %i should be on the other side i.e. on the other TOF which is is not"%(TOFa_base,TOFa_test, TOFb_test))
+        raise Exception("The PMTs aren't paired up properly, %i and %i should be on TOF1, i.e. above 3 and %i should be on the other side of 3 i.e. on the other TOF which is is not"%(TOFa_base,TOFa_test, TOFb_test))
 
-    matched_event_times_TOFa, matched_event_times_TOFb = getCoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test)
+    matched_event_times_TOFa, matched_event_times_TOFb = getCoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test, runNumber, first_hodoscope_run)
 
 
 
@@ -206,7 +211,7 @@ def checkCoincidence(argv, TOFa_base = 0, TOFa_test = 1, TOFb_test = 6, checkWar
 def Gaussian(x, A, mu, sigma):
     return A * np.exp(-(x-mu)**2/(2*sigma**2))
 
-#
+
 def plotting(hit_timing):
     df_TOF = hit_timing
     targetTOF = "TOF1"
@@ -250,6 +255,7 @@ def plotting(hit_timing):
 
 
 if __name__ == "__main__":
+    """If we call the code directly, for testing"""
     TOFa_base = 4
     TOFa_test = 5
     TOFb_test = 1
