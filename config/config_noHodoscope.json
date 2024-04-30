@@ -110,7 +110,7 @@
 
 		"window_upper_bound" : [45, 45, 45, 45, 45, 45, 45, 45,
 								15, 15, 15, 15, 15, 15, 15, 15,
-								45, 45, 55, 0, 0, 0, 0, 0,
+								45, 45, 75, 0, 0, 0, 0, 0,
 								0, 0, 0, 0, 0, 0, 0, 0],
 
 		"comment": "To correctly caluclate the expected arrival time of particles we need to take into account their traveling time from the reference detector to to detector we are looking at (in units of meter)",

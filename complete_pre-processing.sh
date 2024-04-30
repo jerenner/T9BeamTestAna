@@ -6,7 +6,7 @@ for run in $@
 do
     if [ $run -le 579 ]
     then
-    config="config/config_noHodoscope_-5_to_15ns.json"
+    config="config/config_noHodoscope.json"
     else
     config="config/config_hodoscope.json"
     fi

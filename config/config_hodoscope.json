@@ -98,7 +98,7 @@
 
 			"window_upper_bound" : [45, 45, 45, 45, 45, 45, 45, 45,
 									15, 15, 15, 15, 15, 15, 15, 15,
-									55, 45, 45, 45, 45, 45, 45, 45,
+									75, 45, 45, 45, 45, 45, 45, 45,
 									45, 45, 45, 45, 45, 45, 45, 45],
 
 		"comment" : "position of of the detectors in z along the beam dierction w.r.t. TS1 to calculate the particle travel time for window integration",
