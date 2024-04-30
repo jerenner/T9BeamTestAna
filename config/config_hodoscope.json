@@ -26,7 +26,7 @@
             "ActiveChannels"     : [true, true, true, true, true, true, true, false,
 				    true, true, true, true, true, true, true, true,
 				    true, true, true, true, true, true, true, true,
-				    true, true, true, true, true, true, true, true,],
+				    true, true, true, true, true, true, true, true],
 	    
         "comment"            : "Measure charge (integral of signal-pedestal in the analysis window)",
             "ChargeMeasurements" : [true, true, true, true, true, true, true, true,
@@ -91,15 +91,25 @@
 
 		"comment" : "lower boundary for the window integration, now that the timing is aligned we can have a  smaller integration window to get rid of the scintilaltion light in ACTs, different channels have a different integration window length",
 
-			"window_lower_bound" : [-5, -5, -5, -5, -5, -5, -5, -5,
+			"window_lower_bound" : [-16, -16, -16, -16, -16, -16, -16, -16,
 									-5, -5, -5, -5, -5, -5, -5, -5,
-									-5, -5, -5, -5, -5, -5, -5, -5,
-									-5, -5, -5, -5, -5, -5, -5, -5,],
+									-16, -26, -26, -26, -26, -26, -26, -26,
+									-26, -26, -26, -26, -26, -26, -26, -26],
 
-			"window_upper_bound" : [15, 15, 15, 15, 15, 15, 15, 15,
+			"window_upper_bound" : [45, 45, 45, 45, 45, 45, 45, 45,
 									15, 15, 15, 15, 15, 15, 15, 15,
-									15, 15, 15, 15, 15, 15, 15, 15,
-									15, 15, 15, 15, 15, 15, 15, 15,],
+									55, 45, 45, 45, 45, 45, 45, 45,
+									45, 45, 45, 45, 45, 45, 45, 45],
+
+		"comment" : "position of of the detectors in z along the beam dierction w.r.t. TS1 to calculate the particle travel time for window integration",
+									
+
+		"PMTLocRelativeToTOF1" : [-0.228, -0.228, -0.078, -0.078, 3.787, 3.787, 0.232, 0,
+		-3.708, -3.708, -3.708, -3.708, 0, 0, 0, 0,
+		3.877, 2.759, 2.759, 2.759, 2.759, 2.759, 2.759, 2.759,
+		2.759, 2.759, 2.759, 2.759, 2.759, 2.759, 2.759, 2.759],
+
+		"distanceTOF1toTOF0" : 3.708
 
 	}
 }

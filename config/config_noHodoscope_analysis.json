@@ -3,14 +3,25 @@
 
     {
         "comment" : "This is the config file that is used for the low momentum set-up analysis, it holds information about the runs",
+        "comment" : ["ACT0L","ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R",
+        "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13",
+        "Hole0", "Hole1", "PbGlass"],
+        "comment" : ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT3L", "ACT3R", "TriggerScint", null,
+        "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13",
+        "PbGlass", "HD8", "HD9", "HD10", "HD11", "HD12", "HD13", "HD14",
+        "HD0", "HD1", "HD2", "HD3", "HD4", "HD5", "HD6", "HD7"],
+        "channelNames" : ["ACT0L", "ACT0R", "PbGlass"],
+        "comment": "/home/ac4317/Laptops/Year1/WCTE/BeamTestJuly2023/DataAnalysis/data/analysis-code/T9BeamTestAna/peakAnalysed_timeCorr_windIntMatched-5to15_000502.root",
+        
+        "comment": "/home/ac4317/Laptops/Year1/WCTE/BeamTestJuly2023/DataAnalysis/data/analysis-code/T9BeamTestAna/peakAnalysed_timeCorr_windIntMatched-16to45_000432.root",
 
-        "ChannelNames" : ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R",
-                        "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13",
-                        "Hole0", "Hole1", "PbGlass"],
-        "dataFile": "peakAnalysed_timeCorr_windIntCorrMatched_000432.root",
-        "runNumber" : 432,
+        "comment" :"/home/ac4317/Laptops/Year1/WCTE/BeamTestJuly2023/DataAnalysis/data/analysis-code/T9BeamTestAna/peakAnalysed_timeCorr_windIntMatched-5to15000735.root",
+
+        "dataFile" : "/home/ac4317/Laptops/Year1/WCTE/BeamTestJuly2023/DataAnalysis/data/analysis-code/T9BeamTestAna/test_-16_to_45ns_000735.root",
+
+        "runNumber" : 735,
         "comment" : "run momentum  in MeV/c, positive is positively charged beam and negative is negatively charged",
-        "runMomentum" : 460,
+        "runMomentum" : 800,
         "runRefractiveIndex": 1.047,
         "comment" : "text file that has the selection cuts, read as a function of momentum, reference set of cuts, which will be read as the default",
         "referenceSelectionCutFile" : "referenceNumberParticles.txt",
@@ -26,17 +37,9 @@
         "triggerScintillatorSelectionValue" : 40,
 
 
-
-
-
-        #needs to be added onto the class file
+        "comment": "needs to be added onto the class file",
         "comment": "if we want to output a rootfile with the particleType as an iformation, slows down the process a lot",
         "saveRootFile": false,
-
-
-
-
-
 
     }
 

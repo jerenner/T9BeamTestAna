@@ -61,11 +61,17 @@
 				    540, 540, 80, 300, 300, 300, 300, 300,
 				    300, 300, 300, 300, 300, 300, 300, 300],
 
-		"comment" : "1pe position in the signal in V from a DR data run (502)",
-			"PMTgain" : [0.30446, 0.6183148, 0.2150617, 0.316799, 0.2275831, 0.171613, 0.2256, 0.295012,
+		"comment" : "1pe position in the signal in V from a DR data run (502) - previous values, prior to Jiri's correction",
+			"comment" : [0.30446, 0.6183148, 0.2150617, 0.316799, 0.2275831, 0.171613, 0.2256, 0.295012,
 						  0.04457263158, 0.049545, 0.04662082192, 0.03502604651, 0.03854842105, 0.06932761905, 0.06069396226, 0.06920426087,
 						 0.03495, 0.04052, 1, 1, 1, 1, 1, 1,
 						 1, 1, 1, 1, 1, 1, 1, 1],
+
+		"comment" : "1pe position in the signal in V from a DR data run (502), updated by Jiri. Doc: https://docs.google.com/presentation/d/1aCE9BzC6dtgfDU05gHSt1MubaXQ1T-8gZ7K7MrQn2hg/edit?usp=sharing",
+			"PMTgain" : [0.3449947066184987, 0.6928315386973128, 0.21894343315858797, 0.30728713831798987, 0.23347310213569253, 0.1746068588471205, 0.22814108321423682, 0.2968876175093516,
+			0.05840403822142006, 0.06336915057935058, 0.10330741612905013, 0.0665263903692531, 0.03734780536275262, 0.07822458854082591, 0.07082107273729302, 0.09546272223281003,
+			0.03495, 0.04052, 1, 1, 1, 1, 1, 1,
+			1, 1, 1, 1, 1, 1, 1, 1],
 
         "comment" : "Analysis is done on the data in the analysis bin window.",
             "AnalysisWindowLow"  : [ 0, 0, 0, 0, 0, 0, 0, 0,
@@ -97,15 +103,24 @@
 
 		"comment" : "lower boundary for the window integration, now that the timing is aligned we can have a  smaller integration window to get rid of the scintilaltion light in ACTs, different channels have a different integration window length",
 
-		"window_lower_bound" : [-30, -30, -30, -30, -30, -30, -30, -30,
-								-30, -30, -30, -30, -30, -30, -30, -30,
-								-30, -30, -30, 0, 0, 0, 0, 0,
-								0, 0, 0, 0, 0, 0, 0, 0,],
+		"window_lower_bound" : [-16, -16, -16, -16, -16, -16, -16, -16,
+								-5, -5, -5, -5, -5, -5, -5, -5,
+								-16, -16, -16, 0, 0, 0, 0, 0,
+								0, 0, 0, 0, 0, 0, 0, 0],
 
-		"window_upper_bound" : [3, 3, 3, 3, 3, 3, 3, 3,
-								3, 3, 3, 3, 3, 3, 3, 3,
-								3, 3, 3, 0, 0, 0, 0, 0,
-								0, 0, 0, 0, 0, 0, 0, 0,],
+		"window_upper_bound" : [45, 45, 45, 45, 45, 45, 45, 45,
+								15, 15, 15, 15, 15, 15, 15, 15,
+								45, 45, 55, 0, 0, 0, 0, 0,
+								0, 0, 0, 0, 0, 0, 0, 0],
+
+		"comment": "To correctly caluclate the expected arrival time of particles we need to take into account their traveling time from the reference detector to to detector we are looking at (in units of meter)",
+
+		"PMTLocRelativeToTOF1" : [0.13, 0.13, 0.28, 0.28, 0.43, 0.43, 0.68, 0.68,
+		-3.49, -3.49, -3.49, -3.49, 0, 0, 0, 0,
+		0.05, 0.68, 1.08, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0],
+
+		"distanceTOF1toTOF0" : 3.49
 
 	}
 }

@@ -120,6 +120,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
     #total ADC count, this is a hard coded factor as we do not expect it to change but please be aware
     #refer tho these slides: https://wcte.hyperk.ca/wg/beam/meetings/2023/20231211/meeting/beam-structure-and-two-particle-events/beam_structure_v5.pdf
     integrated_analysis_waveform = ak.Array(waveform_analysis.whole_waveform_int.squeeze())
+    integrated_analysis_waveform_pe = ak.Array(waveform_analysis.whole_waveform_int_pe.squeeze())
     max_voltage = ak.Array(waveform_analysis.max_voltage.squeeze())
 
     peaks = ak.zip({"PeakVoltage": peak_voltages,
@@ -137,6 +138,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
                 "DigiTimingOffset": max_voltage,
                 "MaxVoltage": max_voltage,
                 "WholeWaveformInt": integrated_analysis_waveform,
+                "WholeWaveformIntPE": integrated_analysis_waveform_pe,
                 **optional_branches}
 
     print(f" ... writing {channel} to {output_file.file_path}")
