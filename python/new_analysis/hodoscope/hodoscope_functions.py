@@ -435,7 +435,8 @@ def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum =
             df_select = df_select.drop_duplicates(subset=['event'], keep='first')
             
         # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
-        if((key[0:2] == 'HD' or key == 'PbGlass') and (quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE')):
+        if(quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE'):
+        #if((key[0:2] == 'HD' or key == 'PbGlass') and (quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE')):
             df_select = df_select[df_select[quantity] > 2e-2]
 
         # Plot histogram for the current signal on its corresponding axis
@@ -452,6 +453,71 @@ def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum =
     plt.tight_layout()
     #plt.show()
     plt.savefig(f"{out_dir}/{quantity}.pdf", bbox_inches='tight')
+    plt.close()
+
+def plot_charge_and_windowed_charge(df_dict, df_dict_win, evt_list=None, base_dir=".", rnum = 0, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
+    """
+    Generate plots of histograms for IntCharge and WindowIntCharge.
+    """
+    
+    out_dir = f"{base_dir}/{rnum}"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
+    print("Plotting IntCharge and WindowIntCharge for all signals in run",rnum)
+
+    # Create a grid of 8 rows x 4 columns
+    fig, axes = plt.subplots(8, 4, figsize=(16, 24))
+    flat_axes = axes.ravel()
+    
+    fig.suptitle(f'Run {rnum}', fontsize=24, y=1.02)
+
+    # Iterate based on the custom order
+    for key, ax in zip(custom_order, flat_axes):
+        df = df_dict[key]
+        df_win = df_dict_win[key]
+
+        # Cut on the selected events if an event list is provided.
+        if(not(evt_list is None)):
+            print(f"[{key}] before selection {len(df)}")
+            df_select = df[df['event'].isin(evt_list)]
+            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select)}")
+
+            print(f"[{key}] before selection {len(df_win)}")
+            df_select_win = df_win[df_win['event'].isin(evt_list)]
+            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select_win)}")
+        else:
+            df_select = df
+            df_select_win = df_win
+        
+        # Select only non-zero peaks if specified.
+        if(select_nonzero_peaks):
+            df_select = df_select[df_select['nPeaks'] > 0]
+            df_select_win = df_select_win[df_select_win['nWindowPeaks'] > 0]
+        # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
+        else:
+            df_select = df_select.drop_duplicates(subset=['event'], keep='first')
+            df_select_win = df_select_win.drop_duplicates(subset=['event'], keep='first')
+            
+        # Place a cut to eliminate noise.
+        df_select = df_select[df_select['IntCharge'] > 2e-2]
+        df_select_win = df_select_win[df_select_win['WindowIntCharge'] > 2e-2]
+
+        # Plot histogram for the current signal on its corresponding axis
+        n, bins, patches = ax.hist(df_select['IntCharge'], bins=nbins, edgecolor='black', alpha=0.7, label=f"{key} IntCharge")
+        n, bins, patches = ax.hist(df_select_win['WindowIntCharge'], bins=nbins, edgecolor='black', alpha=0.7, label=f"{key} WindowIntCharge")
+        #ax.set_title(key)
+        ax.set_xlabel('Charge')
+        ax.set_ylabel('Counts/bin')
+        ax.legend()  # Add legend
+        
+        if(logscale):
+            ax.set_yscale('log')
+
+    # Adjust the layout so the plots do not overlap
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig(f"{out_dir}/IntCharge_and_WindowIntCharge.pdf", bbox_inches='tight')
     plt.close()
 
 def read_dataframes_from_csv(directory):
