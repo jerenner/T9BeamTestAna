@@ -80,7 +80,9 @@ class WaveformAnalysis:
         self.pedestals = np.mean(self.waveforms[:, self.pedestal_bins], axis=1, keepdims=True)
         self.pedestal_sigmas = np.std(self.waveforms[:, self.pedestal_bins], axis=1, keepdims=True)
         if self.use_global_pedestal:  # use the pedestal distribution's mode to ignore outliers from unusual waveforms
-            self.my_pedestals = find_mode(self.pedestals, n_bins=100, range_width=100*self.voltage_scale)
+            all_pedestal_values = self.waveforms[:, self.pedestal_bins].flatten()
+            self.my_pedestals = find_mode(all_pedestal_values, n_bins=100, range_width=100*self.voltage_scale)
+            #self.my_pedestals = find_mode(self.pedestals, n_bins=100, range_width=100*self.voltage_scale)
             self.my_pedestal_sigmas = find_mode(self.pedestal_sigmas, n_bins=100, range_width=100*self.voltage_scale)
         else:
             self.my_pedestals = self.pedestals
