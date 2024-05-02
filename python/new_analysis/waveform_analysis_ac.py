@@ -20,7 +20,7 @@ class WaveformAnalysis:
     use_global_pedestal = True  # assume pedestal is stable and use one value for all waveforms for the channel
 
     def __init__(self, waveforms, threshold=0.01, analysis_window=(0, 200), pedestal_window=(200, 420),
-                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0, window_time_offset=0, PMTgain = 1, window_lower_bound = -15, window_upper_bound = 35):
+                 reverse_polarity=True, ns_per_sample=2, voltage_scale=0.000610351, time_offset=0, window_time_offset=0, PMTgain = 1, window_lower_bound = -15, window_upper_bound = 35, PMTdistanceToTOF1 = None, distanceTOF1toTOF0 = None, checkCoincidence = False):
         self.raw_waveforms = np.array(waveforms)
         self.threshold = threshold
         self.reverse_polarity = reverse_polarity
@@ -28,6 +28,9 @@ class WaveformAnalysis:
         self.voltage_scale = voltage_scale
         self.analysis_window = analysis_window
         self.pedestal_window = pedestal_window
+        self.PMTdistanceToTOF1 = PMTdistanceToTOF1
+        self.distanceTOF1toTOF0 = distanceTOF1toTOF0
+        self.checkCoincidence = checkCoincidence
         self.analysis_bins = range(analysis_window[0]//ns_per_sample, analysis_window[1]//ns_per_sample)
         self.pedestal_bins = range(pedestal_window[0]//ns_per_sample, pedestal_window[1]//ns_per_sample)
         self.time_offset = time_offset
@@ -53,13 +56,23 @@ class WaveformAnalysis:
         self.pulse_signal_times = None
         self.pulse_charges = None
         self.pulse_pe = None
+        self.windowWidth = None
         #new - window integration
         self.window_int_charge = None
         self.window_int_pe = None
+        #new save bounds of the integration window and ccentral value
+        self.windowIntCentralTime = None
+        self.windowIntCentralTimeCorrected = None
+        self.windowIntUpperTime = None
+        self.windowIntLowerTime = None
         #new - complete waveform integration for two particle ID
         self.whole_waveform_int = None
+        self.whole_waveform_int_pe = None
         self.max_voltage = None
         self.PMTgain = PMTgain
+        self.waveformEnd = None
+
+        
 
     def find_pedestals(self):
         """Finds the pedestal of each waveform by taking the mean in the pedestal window. Also finds the standard deviation"""
@@ -213,41 +226,70 @@ class WaveformAnalysis:
         analysis_waveform = self.smoothed_waveforms
         #npew the analysis is over all bins
         # print(self.analysis_bins)
-        waveformEnd = len(self.smoothed_waveforms[0])
-        allAnalysisBins = np.tile(np.arange(0, waveformEnd),(self.waveforms.shape[0],1))
+        self.waveformEnd = len(self.smoothed_waveforms[0])
+        allAnalysisBins = np.tile(np.arange(0, self.waveformEnd),(self.waveforms.shape[0],1))
 
         list_high = []
         list_low = []
         #select all of the windows of integration
 
-        # print(sum(self.df_TOF1_hitTimes["nPeaks"]))
-        pulse_charges = np.zeros((self.waveforms.shape[0], max(self.df_TOF1_hitTimes["nPeaks"])))
-        pulse_pe = np.zeros((self.waveforms.shape[0], max(self.df_TOF1_hitTimes["nPeaks"])))
+        #maximum number of hits that were found
+        nPeaksMax = max(self.df_TOF1_hitTimes["nPeaks"])
 
-        # print("The max number of nPeak is", max(self.df_TOF1_hitTimes["nPeaks"]))
+        pulse_charges = np.zeros((self.waveforms.shape[0],nPeaksMax))
+        pulse_pe = np.zeros((self.waveforms.shape[0],nPeaksMax))
+        windowWidth_array = np.zeros((self.waveforms.shape[0],nPeaksMax))
 
-        # print(self.df_TOF1_hitTimes, 'The dataframe')
+        #saving the timing characterisics of the waveform
+        windowIntCentralTime = np.zeros((self.waveforms.shape[0],nPeaksMax))
+        windowIntCentralTimeCorrected = np.zeros((self.waveforms.shape[0],nPeaksMax))
+        windowIntLowerBound = np.zeros((self.waveforms.shape[0],nPeaksMax))
+        windowIntUpperBound = np.zeros((self.waveforms.shape[0],nPeaksMax))
 
-        for i in range(max(self.df_TOF1_hitTimes["nPeaks"])):
+
+
+        #here, take into account the particle time of flight to predict where to 
+        #centre the integration window, but only when we have calculated the coincidence
+        # print("Particle time of flight: ",  self.particleTimeOfFlight[:10], " PMT distance to TOF1: ", self.PMTdistanceToTOF1, "previous offset: ",  self.window_time_offset)
+        
+        
+
+
+
+
+        for i in range(nPeaksMax):
             over_integration_threshold = False
             #need to get rid of the NaN issues and look at bin id instead of ns
 
             #Look at the timing as signal time: need to shift the waveform and make sure we stay within the waveform boundary
             #DigiTimingOffset (DTO) is SignalTimeCorrected (STC, Arturo's corrections) - SignalTime(ST), waveforms are given in ST and df_TOF1_hitTimes given in STC
             #expectedMin/Max are given in ST so they can be applied to the waveform
-            expectedMin = (self.df_TOF1_hitTimes[i]+self.window_lower_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
-            #replace the nans and stay within the boundary
-            rangeLow = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(0>expectedMin, 0, expectedMin))
 
-            # print("Range Low:", rangeLow,  min(rangeLow))
+            #we keep the absolute offset so we have an easy handle on that 
+            # if self.checkCoincidence:
+            #     self.window_time_offset = self.particleTimeOfFlight[i] * self.PMTdistanceToTOF1/self.distanceTOF1toTOF0 + self.window_time_offset 
+
+            #     print("Sample of time of flight induced timing offset in position of window integration: ", np.array(self.window_time_offset[:5]))
+
+            expectedMin = (self.df_TOF1_hitTimes[i]+self.window_lower_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+
 
             expectedMax = (self.df_TOF1_hitTimes[i]+self.window_upper_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+
             #replace the nans and stay within the boundary
-            rangeHigh = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(expectedMax>waveformEnd, 0, waveformEnd))
+            rangeLow = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(0>expectedMin, np.where(0<expectedMax, 0, -9999), expectedMin))
 
+            #replace the nans and stay within the boundary
+            rangeHigh = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(expectedMax>self.waveformEnd, np.where(expectedMin<self.waveformEnd, self.waveformEnd, -9999), expectedMax))
+            # if debug:
+            #     print("Check range Low", rangeLow, rangeLow[1888], rangeLow[1890], rangeLow[1891] )
+            #     print("Check range High", rangeHigh, rangeHigh[1888], rangeHigh[1890], rangeHigh[1891] )
 
+            windowWidth = rangeHigh-rangeLow 
 
-            # print("Range High:", rangeHigh, waveformEnd, max(rangeHigh))
+            #need to keep this format before the reshaping to save the bound
+            lowerBound = rangeLow
+            upperBound = rangeHigh
 
             list_high.append(rangeHigh)
             list_low.append(rangeLow)
@@ -255,9 +297,16 @@ class WaveformAnalysis:
             rangeLow = np.array(rangeLow).reshape(len(rangeLow), 1)
             rangeHigh = np.array(rangeHigh).reshape(len(rangeHigh), 1)
 
+
+            # print("Range Low- range high:", rangeHigh-rangeLow, rangeHigh, rangeLow, "offset:", self.df_PMT["DigiTimingOffset"])
+
             #creating a set of integration windows covering (Need to make this for every hit in TOF10
             #otherwise overlapping peaks will cause an issue.
+
+            # print((allAnalysisBins > rangeLow), (allAnalysisBins < rangeHigh))
             over_integration_threshold = over_integration_threshold | ((allAnalysisBins > rangeLow) & (allAnalysisBins < rangeHigh))
+
+            # print(over_integration_threshold)
 
 
             #purely copy-pasted, we do the same thing with a different integration window
@@ -270,17 +319,40 @@ class WaveformAnalysis:
 
             for k in range(0, analysis_waveform.shape[1]):  # scan over waveform samples, quicker than iterating over waveforms
                 passed_integration_threshold = passed_integration_threshold | (integration_threshold_diff[:, k] == 1)  # check if passed integration threshold
-#                 n_peaks += pass_pulse_threshold[:, k] & passed_integration_threshold  # there's a new peak when it passes pulse threshold and has passed integration threshold
+# #                 n_peaks += pass_pulse_threshold[:, k] & passed_integration_threshold  # there's a new peak when it passes pulse threshold and has passed integration threshold
                 passed_integration_threshold &= ~pass_pulse_threshold[:, k]  # after passing pulse threshold, don't consider it passed integration threshold until it passes again
                 my_pulse_charges[integration_threshold_diff[:, k] == 1] = 0
                 my_pulse_charges[over_integration_threshold[:, k]] += analysis_waveform[over_integration_threshold[:,k],k]
                 end_of_pulse = np.where(((integration_threshold_diff[:, k] == -1) | (k == analysis_waveform.shape[1]-1)) & (~passed_integration_threshold))[0]
+
                 pulse_charges[end_of_pulse, i] = my_pulse_charges[end_of_pulse]*self.ns_per_sample/self.impedance
                 pulse_pe[end_of_pulse, i] = my_pulse_charges[end_of_pulse]/self.PMTgain
+                windowWidth_array[:, i] = windowWidth*self.ns_per_sample
+
+                #saving the edge of each of the windows
+                windowIntLowerBound[:, i] = lowerBound*self.ns_per_sample
+
+                windowIntUpperBound[:, i] = upperBound*self.ns_per_sample
+
+                windowIntCentralTime[:, i] = self.df_TOF1_hitTimes[i]+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"])
+
+                windowIntCentralTimeCorrected[:,i] = self.df_TOF1_hitTimes[i]+self.window_time_offset
+
                 # print(pulse_charges, end_of_pulse)
 
             self.window_int_charge = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
             self.window_int_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
+            #need to remove everything that was smaller than 1 data point
+            self.windowWidth = ak.drop_none(np.ma.MaskedArray(windowWidth_array, pulse_pe==0))
+
+            self.windowIntCentralTimeCorrected = ak.drop_none(np.ma.MaskedArray(windowIntCentralTimeCorrected, pulse_pe==0))
+            self.windowIntCentralTime = ak.drop_none(np.ma.MaskedArray(windowIntCentralTime, pulse_pe==0))
+            self.windowIntLowerBound = ak.drop_none(np.ma.MaskedArray(windowIntLowerBound, pulse_pe==0))
+            self.windowIntUpperBound = ak.drop_none(np.ma.MaskedArray(windowIntUpperBound, pulse_pe==0))
+
+
+
+            # print("Integrated charge:", self.window_int_charge)
         # print("At the end of the loop, the int charge is", self.window_int_charge)
 
 
@@ -320,6 +392,7 @@ class WaveformAnalysis:
         analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
         self.whole_waveform_int = np.sum(analysis_waveform, axis=1, keepdims=True)
         self.whole_waveform_int *= 1 / (self.voltage_scale * 1000)
+        self.whole_waveform_int_pe = np.sum(analysis_waveform, axis=1, keepdims=True) / self.PMTgain
         return self.whole_waveform_int
 
 
