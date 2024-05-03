@@ -294,7 +294,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
 
         shifted_Hit_Time_upper = shifted_Hit_Time + upper_bound + relativeTOF_offset_forTOFcalc
         shifted_Hit_Time_lower = shifted_Hit_Time + lower_bound + relativeTOF_offset_forTOFcalc
-        
+            
         EndWaveform = waveform_analysis.waveformEnd
         ns_per_sample = waveform_analysis.ns_per_sample
         #we need at least part of the window to be included in the waveform
