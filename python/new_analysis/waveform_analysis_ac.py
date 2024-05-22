@@ -60,7 +60,7 @@ class WaveformAnalysis:
         #new - window integration
         self.window_int_charge = None
         self.window_int_pe = None
-        #new save bounds of the integration window and ccentral value
+        #new save bounds of the integration window and central value
         self.windowIntCentralTime = None
         self.windowIntCentralTimeCorrected = None
         self.windowIntUpperTime = None
@@ -217,8 +217,8 @@ class WaveformAnalysis:
         # print(self.pulse_charges)
 
 
-    def integrate_charge_in_window(self):
-        """using a window of known position and width to integrate"""
+    def integrate_charge_in_window(self, window_lower_bound = None, window_upper_bound = None, waveformEnd = None):
+        """using a window of known position and width to integrate, make the window bounds an input so we can have two branches with different bounds for TS dE/dx and ACT scintillation mitigation"""
         # self.smoothed_waveforms = signal.savgol_filter(self.waveforms, 5, 2, mode='nearest')
         #Accept the entire waveform, because of digitiser slipping  we can have spillage over into the pedestal region, but the only important thing is the reference timing
         #technically, peaks are only found in the analysis region so only a tiny number of peaks might
@@ -226,8 +226,16 @@ class WaveformAnalysis:
         analysis_waveform = self.smoothed_waveforms
         #npew the analysis is over all bins
         # print(self.analysis_bins)
+        if window_lower_bound == None:
+            window_lower_bound = self.window_lower_bound
+        
+        if window_upper_bound == None:
+            window_upper_bound = self.window_upper_bound
+            
         self.waveformEnd = len(self.smoothed_waveforms[0])
-        allAnalysisBins = np.tile(np.arange(0, self.waveformEnd),(self.waveforms.shape[0],1))
+        if waveformEnd == None:
+            waveformEnd = self.waveformEnd
+        allAnalysisBins = np.tile(np.arange(0, waveformEnd),(self.waveforms.shape[0],1))
 
         list_high = []
         list_low = []
@@ -246,17 +254,10 @@ class WaveformAnalysis:
         windowIntLowerBound = np.zeros((self.waveforms.shape[0],nPeaksMax))
         windowIntUpperBound = np.zeros((self.waveforms.shape[0],nPeaksMax))
 
-
-
         #here, take into account the particle time of flight to predict where to 
         #centre the integration window, but only when we have calculated the coincidence
         # print("Particle time of flight: ",  self.particleTimeOfFlight[:10], " PMT distance to TOF1: ", self.PMTdistanceToTOF1, "previous offset: ",  self.window_time_offset)
         
-        
-
-
-
-
         for i in range(nPeaksMax):
             over_integration_threshold = False
             #need to get rid of the NaN issues and look at bin id instead of ns
@@ -271,10 +272,10 @@ class WaveformAnalysis:
 
             #     print("Sample of time of flight induced timing offset in position of window integration: ", np.array(self.window_time_offset[:5]))
 
-            expectedMin = (self.df_TOF1_hitTimes[i]+self.window_lower_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+            expectedMin = (self.df_TOF1_hitTimes[i]+window_lower_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
 
 
-            expectedMax = (self.df_TOF1_hitTimes[i]+self.window_upper_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
+            expectedMax = (self.df_TOF1_hitTimes[i]+window_upper_bound+self.window_time_offset - np.array(self.df_PMT["DigiTimingOffset"]))/self.ns_per_sample
 
             #replace the nans and stay within the boundary
             rangeLow = np.where(np.isnan(self.df_TOF1_hitTimes[i]), -9999, np.where(0>expectedMin, np.where(0<expectedMax, 0, -9999), expectedMin))
@@ -340,16 +341,17 @@ class WaveformAnalysis:
 
                 # print(pulse_charges, end_of_pulse)
 
-            self.window_int_charge = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
-            self.window_int_pe = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
+            window_int_charge_output = ak.drop_none(np.ma.MaskedArray(pulse_charges, pulse_charges==0))
+            window_int_pe_output = ak.drop_none(np.ma.MaskedArray(pulse_pe, pulse_pe==0))
             #need to remove everything that was smaller than 1 data point
-            self.windowWidth = ak.drop_none(np.ma.MaskedArray(windowWidth_array, pulse_pe==0))
+            windowWidth_output = ak.drop_none(np.ma.MaskedArray(windowWidth_array, pulse_pe==0))
 
-            self.windowIntCentralTimeCorrected = ak.drop_none(np.ma.MaskedArray(windowIntCentralTimeCorrected, pulse_pe==0))
-            self.windowIntCentralTime = ak.drop_none(np.ma.MaskedArray(windowIntCentralTime, pulse_pe==0))
-            self.windowIntLowerBound = ak.drop_none(np.ma.MaskedArray(windowIntLowerBound, pulse_pe==0))
-            self.windowIntUpperBound = ak.drop_none(np.ma.MaskedArray(windowIntUpperBound, pulse_pe==0))
+            windowIntCentralTimeCorrected_output = ak.drop_none(np.ma.MaskedArray(windowIntCentralTimeCorrected, pulse_pe==0))
+            windowIntCentralTime_output = ak.drop_none(np.ma.MaskedArray(windowIntCentralTime, pulse_pe==0))
+            windowIntLowerBound_output = ak.drop_none(np.ma.MaskedArray(windowIntLowerBound, pulse_pe==0))
+            windowIntUpperBound_output = ak.drop_none(np.ma.MaskedArray(windowIntUpperBound, pulse_pe==0))
 
+        return window_int_charge_output, window_int_pe_output, windowIntCentralTime_output, windowIntCentralTimeCorrected_output, windowIntLowerBound_output, windowIntUpperBound_output,windowWidth_output
 
 
             # print("Integrated charge:", self.window_int_charge)
@@ -388,7 +390,7 @@ class WaveformAnalysis:
     def integrate_whole_waveform(self):
         """Calculates the total charge in the analysis window, to be used for two particle event
         identification, as per Dean Karlen's study:  https://wcte.hyperk.ca/wg/beam/meetings/2023/20231211/meeting/beam-structure-and-two-particle-events/beam_structure_v5.pdf
-        There is a correction of 1000, this is not a charge, no impedance correction and get back to ADC counts instead of volts"""
+        There is a correction of 1000, this is not a charge, no impedance correction and get back to ADC counts instead of volts - CORRECTION, this should not be over the whole waveform (risk of including second bunch!! - do not use for analysis)"""
         analysis_waveform = self.smoothed_waveforms[:, self.analysis_bins]
         self.whole_waveform_int = np.sum(analysis_waveform, axis=1, keepdims=True)
         self.whole_waveform_int *= 1 / (self.voltage_scale * 1000)
@@ -409,9 +411,13 @@ class WaveformAnalysis:
         # self.integrate_charge_in_window()
         self.integrate_whole_waveform()
 
-    def run_window_analysis(self, df_TOF1_hitTimes, df_PMT):
+    def run_window_analysis(self, df_TOF1_hitTimes, df_PMT, lower_boundWindow2 = None, upper_boundWindow2 = None):
         #df is the ntuple holding the hit timings
         self.df_TOF1_hitTimes = df_TOF1_hitTimes
         self.df_PMT = df_PMT
         self.find_peaks()
-        self.integrate_charge_in_window()
+        self.window_int_charge, self.window_int_pe, self.windowIntCentralTime, self.windowIntCentralTimeCorrected, self.windowIntLowerBound, self.windowIntUpperBound, self.windowWidth = self.integrate_charge_in_window()
+
+        if lower_boundWindow2 != None and upper_boundWindow2 != None:
+            self.window2_int_charge, self.window2_int_pe, self.window2IntCentralTime, self.window2IntCentralTimeCorrected, self.window2IntLowerBound, self.window2IntUpperBound, self.window2Width = self.integrate_charge_in_window(lower_boundWindow2, upper_boundWindow2)
+
