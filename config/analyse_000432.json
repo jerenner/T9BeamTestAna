@@ -8,7 +8,7 @@
 
         "comment" : ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R", "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13", "Hole0", "Hole1", "PbGlass"],
 
-        "dataFile" : "/home/ac4317/Laptops/Year1/WCTE/BeamTestJuly2023/DataAnalysis/data/analysis-code/T9BeamTestAna/WindowIntMatched_final2_000432.root",
+        "dataFile" : "/home/ac4317/Laptops/Year1/WCTE/BeamTestJuly2023/DataAnalysis/data/analysis-code/T9BeamTestAna/WindowIntMatched_final_000432.root",
 
         "runNumber" : 432,
         "isLowMomentum" : true,
@@ -52,7 +52,7 @@
         "ACTlinearB": 100,
         "comment": "horizontal electron-muon separation",
         "horizontal_el": 75,
-        "comment": "cut on lead glas distribution to flag the weird electrons",
+        "comment": "cut on lead glas distribution to flag the weird electrons, in number of PE (not)",
         "weirdElectronLGcut": 4.70,
 
         "comment": "File onto which we are going to output the information",

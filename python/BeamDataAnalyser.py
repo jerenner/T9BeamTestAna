@@ -92,4 +92,3 @@ BeamDataAna.outputResults()
 #If interestested, one can study the weird electrons
 muonLikeWeirdElectron = BeamDataAna.muonLikeWeirdElectronArray
 pionLikeWeirdElectron = BeamDataAna.pionLikeWeirdElectronArray
-
