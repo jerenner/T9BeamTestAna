@@ -242,7 +242,11 @@ def process_file(root_filename, ntuple_filename, config, output_file):
                     SignalTimeMatchedTOF0_reduced = ak.Array([[val for val in SignalTimeMatchedTOF0_reduced[index] if (not np.isnan(val))] for index in range(len(SignalTimeMatchedTOF0_reduced))])
 
 
-                    process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes_reduced, df_reduced,  config["window_lower_bound"][i], config["window_upper_bound"][i], df_TOF0_hitTimes_reduced, SignalTimeMatchedTOF1_reduced, SignalTimeMatchedTOF0_reduced)
+                    if "window2_lower_bound" in config:
+                        process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes_reduced, df_reduced,  config["window_lower_bound"][i], config["window_upper_bound"][i], df_TOF0_hitTimes_reduced, SignalTimeMatchedTOF1_reduced, SignalTimeMatchedTOF0_reduced, config["window2_lower_bound"][i], config["window2_upper_bound"][i])
+                        
+                    else:
+                        process_batch(waveforms, optional_branches, config["ChannelNames"][i], output_file, config_args, df_TOF1_hitTimes_reduced, df_reduced,  config["window_lower_bound"][i], config["window_upper_bound"][i], df_TOF0_hitTimes_reduced, SignalTimeMatchedTOF1_reduced, SignalTimeMatchedTOF0_reduced)
 
     print(f"Saving event info for run {run_number}")
     output_file["EventInfo"] = {
@@ -266,7 +270,7 @@ def read_nTuple(df, branch_name, isSqueezed = False):
     return branch
 
 
-def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF1_hitTimes, df, lower_bound, upper_bound, df_TOF0_hitTimes=None, SignalTimeMatchedTOF1 = None, SignalTimeMatchedTOF0 = None):
+def process_batch(waveforms, optional_branches, channel, output_file, config_args, df_TOF1_hitTimes, df, lower_bound, upper_bound, df_TOF0_hitTimes=None, SignalTimeMatchedTOF1 = None, SignalTimeMatchedTOF0 = None, window2_lower_bound = None, window2_upper_bound = None):
 
     waveform_analysis = WaveformAnalysis(waveforms, **config_args)
 
@@ -285,7 +289,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
         for i in range(max(df_TOF1_hitTimes["nPeaks"])):
             df_TOF1_hitTimes[i] = relativeTOF_offset[i] + df_TOF1_hitTimes[i]
 
-        waveform_analysis.run_window_analysis(df_TOF1_hitTimes, df)
+        waveform_analysis.run_window_analysis(df_TOF1_hitTimes, df, window2_lower_bound, window2_upper_bound)
         ##calculate the time of the matched hits in the waveform
         #only save for the TOF the hits that 
         shifted_Hit_Time = SignalTimeMatchedTOF1 - df["DigiTimingOffset"] + config_args["window_time_offset"]
@@ -305,7 +309,7 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
         SignalTimeMatchedTOF1 = SignalTimeMatchedTOF1[isAtLeastPartlyWithinRange]
         SignalTimeMatchedTOF0 = SignalTimeMatchedTOF0[isAtLeastPartlyWithinRange]
     else:
-        waveform_analysis.run_window_analysis(df_TOF1_hitTimes, df)
+        waveform_analysis.run_window_analysis(df_TOF1_hitTimes, df, window2_lower_bound, window2_upper_bound)
     
     
     #window integration which has to be done here as it uses the timing
@@ -317,6 +321,17 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
     window_upper_bound = waveform_analysis.windowIntUpperBound
     window_central_time = waveform_analysis.windowIntCentralTime
     window_central_time_corrected = waveform_analysis.windowIntCentralTimeCorrected
+
+    thereIsSecondWindow = False
+    if window2_lower_bound != None and window2_upper_bound != None:
+        window2_integrated_charges = waveform_analysis.window2_int_charge
+        window2_integrated_pe = waveform_analysis.window2_int_pe
+        window2_lower_bound = waveform_analysis.window2IntLowerBound
+        window2_upper_bound = waveform_analysis.window2IntUpperBound
+        window2_central_time_corrected = waveform_analysis.window2IntCentralTimeCorrected
+        window2_central_time = waveform_analysis.window2IntCentralTime
+        thereIsSecondWindow = True
+
 
 
     peaks = ak.zip({"PeakVoltage": read_nTuple(df, "PeakVoltage", isSqueezed = False),
@@ -369,6 +384,19 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
             print("Comparing the length of SignalTimeMatchedTOF1 and window_integrated_charges")
             compare_lengths(SignalTimeMatchedTOF1, window_integrated_charges)
 
+        if thereIsSecondWindow:
+            window2_peaks = ak.zip({
+                            "Window2IntCharge": window2_integrated_charges,
+                            "Window2IntPE": window2_integrated_pe,
+                            # "df_TOF1_hitTimes":df_TOF1_hitTimes,
+                            #"nPeaksMatched": df_TOF1_hitTimes["nPeaks"],
+                            "Window2LowerTime": window2_lower_bound,
+                            "Window2UpperTime":
+                            window2_upper_bound,
+                            })
+
+
+        
         window_peaks = ak.zip({
                             "WindowIntCharge": window_integrated_charges,
                             "WindowIntPE": window_integrated_pe,
@@ -387,15 +415,28 @@ def process_batch(waveforms, optional_branches, channel, output_file, config_arg
                             })
 
 
-        branches = {"Pedestal": read_nTuple(df, "Pedestal", isSqueezed = True),
-                    "PedestalSigma": read_nTuple(df, "PedestalSigma", isSqueezed = True),
-                    "MaxVoltage": read_nTuple(df, "MaxVoltage", isSqueezed = True),
-                    "WholeWaveformInt": read_nTuple(df, "WholeWaveformInt", isSqueezed = True),
-                    "WholeWaveformIntPE": read_nTuple(df, "WholeWaveformIntPE", isSqueezed = True),
-                    "DigiTimingOffset": read_nTuple(df, "DigiTimingOffset", isSqueezed = True),
-                    "Peaks": peaks,
-                    "WindowPeaks": window_peaks,
-                    **optional_branches}
+        if thereIsSecondWindow:
+            branches = {"Pedestal": read_nTuple(df, "Pedestal", isSqueezed = True),
+                "PedestalSigma": read_nTuple(df, "PedestalSigma", isSqueezed = True),
+                "MaxVoltage": read_nTuple(df, "MaxVoltage", isSqueezed = True),
+                "WholeWaveformInt": read_nTuple(df, "WholeWaveformInt", isSqueezed = True),
+                "WholeWaveformIntPE": read_nTuple(df, "WholeWaveformIntPE", isSqueezed = True),
+                "DigiTimingOffset": read_nTuple(df, "DigiTimingOffset", isSqueezed = True),
+                "Peaks": peaks,
+                "WindowPeaks": window_peaks,
+                "Window2Peaks": window2_peaks,
+                **optional_branches}
+
+        else:
+            branches = {"Pedestal": read_nTuple(df, "Pedestal", isSqueezed = True),
+                "PedestalSigma": read_nTuple(df, "PedestalSigma", isSqueezed = True),
+                "MaxVoltage": read_nTuple(df, "MaxVoltage", isSqueezed = True),
+                "WholeWaveformInt": read_nTuple(df, "WholeWaveformInt", isSqueezed = True),
+                "WholeWaveformIntPE": read_nTuple(df, "WholeWaveformIntPE", isSqueezed = True),
+                "DigiTimingOffset": read_nTuple(df, "DigiTimingOffset", isSqueezed = True),
+                "Peaks": peaks,
+                "WindowPeaks": window_peaks,
+                **optional_branches}
 
     print(f" ... writing {channel} to {output_file.file_path}")
 

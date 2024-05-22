@@ -89,7 +89,7 @@
 
 		"comment" : "Previous calibration items,  0, 4.74776054315298, -0.1234580870906623, 4.171101270711057, -1.136279397422881, 0, -0.5336003405241031, -0.29412106806623584,",
 
-		"comment" : "lower boundary for the window integration, now that the timing is aligned we can have a  smaller integration window to get rid of the scintilaltion light in ACTs, different channels have a different integration window length",
+		"comment" : "lower and upper boundary for the window integration, now that the timing is aligned we can have a  smaller integration window to get rid of the scintilaltion light in ACTs, different channels have a different integration window length",
 
 			"window_lower_bound" : [-16, -16, -16, -16, -16, -16, -16, -16,
 									-5, -5, -5, -5, -5, -5, -5, -5,
@@ -100,6 +100,18 @@
 									15, 15, 15, 15, 15, 15, 15, 15,
 									75, 45, 45, 45, 45, 45, 45, 45,
 									45, 45, 45, 45, 45, 45, 45, 45],
+
+		"comment" : "lower and upper boundary for the second window integration, these should be about 200ns for the TS and 240ns for the lead glass so we can remove events with two particles without hitting the second bunch wich occurs 330ns after the first one, see TN for more information. The window can be reduced for ACTs to investigate the timing of the scintillation light and how it can be mitigated. ",
+
+		"window2_lower_bound" : [-5, -5, -5, -5, -5, -5, -5, -5,
+								-50, -50, -50, -50, -50, -50, -50, -50,
+								-50, -26, -26, -26, -26, -26, -26, -26,
+								-26, -26, -26, -26, -26, -26, -26, -26],
+
+		"window2_upper_bound" : [15, 15, 15, 15, 15, 15, 15, 15,
+								150, 150, 150, 150, 150, 150, 150, 150,
+								190, 45, 45, 45, 45, 45, 45, 45,
+								45, 45, 45, 45, 45, 45, 45, 45],
 
 		"comment" : "position of of the detectors in z along the beam dierction w.r.t. TS1 to calculate the particle travel time for window integration",
 									
