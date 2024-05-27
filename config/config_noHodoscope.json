@@ -113,11 +113,23 @@
 								45, 45, 75, 0, 0, 0, 0, 0,
 								0, 0, 0, 0, 0, 0, 0, 0],
 
+		"comment" : "lower boundary for the second window integration, these should be about 200ns for the TS and 240ns for the lead glass so we can remove events with two particles without hitting the second bunch wich occurs 330ns after the first one, see TN for more information. The window can be reduced for ACTs to investigate the timing of the scintillation light and how it can be mitigated. ",
+
+		"window2_lower_bound" : [-5, -5, -5, -5, -5, -5, -5, -5,
+								-50, -50, -50, -50, -50, -50, -50, -50,
+								-16, -16, -50, 0, 0, 0, 0, 0,
+								0, 0, 0, 0, 0, 0, 0, 0],
+
+		"window2_upper_bound" : [15, 15, 15, 15, 15, 15, 15, 15,
+								150, 150, 150, 150, 150, 150, 150, 150,
+								45, 45, 190, 0, 0, 0, 0, 0,
+								0, 0, 0, 0, 0, 0, 0, 0],
+
 		"comment": "To correctly caluclate the expected arrival time of particles we need to take into account their traveling time from the reference detector to to detector we are looking at (in units of meter)",
 
 		"PMTLocRelativeToTOF1" : [0.13, 0.13, 0.28, 0.28, 0.43, 0.43, 0.68, 0.68,
 		-3.49, -3.49, -3.49, -3.49, 0, 0, 0, 0,
-		0.05, 0.68, 1.08, 0, 0, 0, 0, 0,
+		0.05, 0.73, 1.08, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0],
 
 		"distanceTOF1toTOF0" : 3.49
