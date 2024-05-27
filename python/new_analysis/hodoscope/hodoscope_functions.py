@@ -185,27 +185,52 @@ def ntuple_to_pd_multipeak(filename,windowInt=False):
         IntCharge           = events[key]['IntCharge'].array()
         MaxVoltage          = events[key]['MaxVoltage'].array()
         WholeWaveformInt    = events[key]['WholeWaveformInt'].array()
+        WholeWaveformIntPE  = events[key]['WholeWaveformIntPE'].array()
         timeStamp           = events[key]['timeStamp'].array()
         triggerTime         = events[key]['triggerTime'].array()
         if(windowInt):
-            spillNumber     = events[key]['spillNumber'].array()
-            nWindowPeaks    = events[key]['nWindowPeaks'].array()
-            WindowIntCharge = events[key]['WindowIntCharge'].array()
-            WindowIntPE     = events[key]['WindowIntPE'].array()
+            spillNumber                = events[key]['spillNumber'].array()
+            nWindowPeaks               = events[key]['nWindowPeaks'].array()
+            SignalTimeMatchedTOF0      = events[key]['SignalTimeMatchedTOF0'].array()
+            SignalTimeMatchedTOF1      = events[key]['SignalTimeMatchedTOF1'].array()
+            WindowIntCharge            = events[key]['WindowIntCharge'].array()
+            WindowIntPE                = events[key]['WindowIntPE'].array()
+            WindowWidth                = events[key]['WindowWidth'].array()
+            WindowLowerTime            = events[key]['WindowLowerTime'].array()
+            WindowUpperTime            = events[key]['WindowUpperTime'].array()
+            WindowCentralTime          = events[key]['WindowCentralTime'].array()
+            WindowCentralTimeCorrected = events[key]['WindowCentralTimeCorrected'].array()
         else:
-            spillNumber     = -1*np.ones(len(nPeaks))
-            nWindowPeaks    = -1*np.ones(len(nPeaks))
-            WindowIntCharge = -1*np.ones(len(nPeaks))
-            WindowIntPE     = -1*np.ones(len(nPeaks))
+            spillNumber                = -1*np.ones(len(nPeaks))
+            nWindowPeaks               = -1*np.ones(len(nPeaks))
+            SignalTimeMatchedTOF0      = -1*np.ones(len(nPeaks))
+            SignalTimeMatchedTOF1      = -1*np.ones(len(nPeaks))
+            WindowIntCharge            = -1*np.ones(len(nPeaks))
+            WindowIntPE                = -1*np.ones(len(nPeaks))
+            WindowWidth                = -1*np.ones(len(nPeaks))
+            WindowLowerTime            = -1*np.ones(len(nPeaks))
+            WindowUpperTime            = -1*np.ones(len(nPeaks))
+            WindowCentralTime          = -1*np.ones(len(nPeaks))
+            WindowCentralTimeCorrected = -1*np.ones(len(nPeaks))
         
         # Iterate through the array elements and save information for each peak.
         l_evt, l_ipk, l_nPeaks, l_timeStamp, l_triggerTime = [], [], [], [], []
         l_Pedestal, l_PedestalSigma = [], []
         l_PeakVoltage, l_MaxVoltage = [], []
-        l_IntCharge, l_IntPE, l_WholeWaveformInt = [], [], []
+        l_IntCharge, l_IntPE, l_WholeWaveformInt, l_WholeWaveformIntPE = [], [], [], []
         l_PeakTime, l_SignalTime, l_SignalTimeCorrected = [], [], []
+        l_SignalTimeMatchedTOF0, l_SignalTimeMatchedTOF1 = [], []
         l_nWindowPeaks, l_WindowIntCharge, l_WindowIntPE, l_spillNumber = [], [], [], []
-        for evt, (npk, tstamp, ttime, pedestal, spedestal, pkv, pkt, sigt, chg, sigtcorr, chgpe, maxv, wwint, npkwin, chgwin, chgpewin, nspill) in enumerate(zip(nPeaks,timeStamp,triggerTime,Pedestal,PedestalSigma,PeakVoltage,PeakTime,SignalTime,IntCharge,SignalTimeCorrected,IntPE,MaxVoltage,WholeWaveformInt,nWindowPeaks,WindowIntCharge,WindowIntPE,spillNumber)):
+        l_WindowWidth, l_WindowLowerTime, l_WindowUpperTime, l_WindowCentralTime, l_WindowCentralTimeCorrected = [], [], [] ,[] ,[]
+        for evt, (npk, tstamp, ttime, pedestal, spedestal, 
+                  pkv, pkt, sigt,  chg, sigtcorr, 
+                  stmtof0, stmtof1, chgpe, maxv, wwint, 
+                  wwintpe, npkwin, chgwin, chgpewin, wwidth, 
+                  wlowtime, wuptime, wctime, wctimecorr, nspill) in enumerate(zip(nPeaks,timeStamp,triggerTime,Pedestal,PedestalSigma,
+                                                                                  PeakVoltage,PeakTime,SignalTime,IntCharge,SignalTimeCorrected,
+                                                                                  SignalTimeMatchedTOF0,SignalTimeMatchedTOF1,IntPE,MaxVoltage,WholeWaveformInt,
+                                                                                  WholeWaveformIntPE,nWindowPeaks,WindowIntCharge,WindowIntPE,WindowWidth,
+                                                                                  WindowLowerTime,WindowUpperTime,WindowCentralTime,WindowCentralTimeCorrected,spillNumber)):
 
             # Update the lists for each peak.
             if(npk == 0):
@@ -220,13 +245,21 @@ def ntuple_to_pd_multipeak(filename,windowInt=False):
                 l_IntCharge.append(-1)
                 l_IntPE.append(-1)
                 l_WholeWaveformInt.append(wwint)
+                l_WholeWaveformIntPE.append(wwintpe)
                 l_MaxVoltage.append(-1)
                 l_PeakTime.append(-1)
                 l_SignalTime.append(-1)
                 l_SignalTimeCorrected.append(-1)
+                l_SignalTimeMatchedTOF0.append(-1)
+                l_SignalTimeMatchedTOF1.append(-1)
                 l_nWindowPeaks.append(npkwin)
                 l_WindowIntCharge.append(-1)
                 l_WindowIntPE.append(-1)
+                l_WindowWidth.append(-1)
+                l_WindowLowerTime.append(-1)
+                l_WindowUpperTime.append(-1)
+                l_WindowCentralTime.append(-1)
+                l_WindowCentralTimeCorrected.append(-1)
                 l_spillNumber.append(nspill)
             else:
                 # Add the window-integrated peaks if using window integration.
@@ -245,12 +278,20 @@ def ntuple_to_pd_multipeak(filename,windowInt=False):
                         l_IntCharge.append(-1)
                         l_IntPE.append(-1)
                         l_WholeWaveformInt.append(wwint)
+                        l_WholeWaveformIntPE.append(wwintpe)
                         l_MaxVoltage.append(maxv)
                         l_SignalTimeCorrected.append(-1)
-                        l_spillNumber.append(nspill)
+                        l_SignalTimeMatchedTOF0.append(stmtof0[ipk])
+                        l_SignalTimeMatchedTOF1.append(stmtof1[ipk])
                         l_nWindowPeaks.append(npkwin)
                         l_WindowIntCharge.append(chgwin[ipk])
                         l_WindowIntPE.append(chgpewin[ipk])
+                        l_WindowWidth.append(wwidth[ipk])
+                        l_WindowLowerTime.append(wlowtime[ipk])
+                        l_WindowUpperTime.append(wuptime[ipk])
+                        l_WindowCentralTime.append(wctime[ipk])
+                        l_WindowCentralTimeCorrected.append(wctimecorr[ipk])
+                        l_spillNumber.append(nspill)
                 # Otherwise add the normal peaks.
                 else:
                     for ipk in range(npk):
@@ -267,12 +308,20 @@ def ntuple_to_pd_multipeak(filename,windowInt=False):
                         l_IntCharge.append(chg[ipk])
                         l_IntPE.append(chgpe[ipk])
                         l_WholeWaveformInt.append(wwint)
+                        l_WholeWaveformIntPE.append(wwintpe)
                         l_MaxVoltage.append(maxv)
                         l_SignalTimeCorrected.append(sigtcorr[ipk])
-                        l_spillNumber.append(-1)
+                        l_SignalTimeMatchedTOF0.append(-1)
+                        l_SignalTimeMatchedTOF1.append(-1)
                         l_nWindowPeaks.append(-1)
                         l_WindowIntCharge.append(-1)
                         l_WindowIntPE.append(-1)
+                        l_WindowWidth.append(-1)
+                        l_WindowLowerTime.append(-1)
+                        l_WindowUpperTime.append(-1)
+                        l_WindowCentralTime.append(-1)
+                        l_WindowCentralTimeCorrected.append(-1)
+                        l_spillNumber.append(-1)
 
         
         # Create a new dataframe.
@@ -288,12 +337,20 @@ def ntuple_to_pd_multipeak(filename,windowInt=False):
                            'SignalTime': l_SignalTime,
                            'IntCharge': l_IntCharge,
                            'SignalTimeCorrected': l_SignalTimeCorrected,
+                           'SignalTimeMatchedTOF0': l_SignalTimeMatchedTOF0,
+                           'SignalTimeMatchedTOF1': l_SignalTimeMatchedTOF1,
                            'IntPE': l_IntPE,
                            'MaxVoltage': l_MaxVoltage,
                            'WholeWaveformInt': l_WholeWaveformInt,
+                           'WholeWaveformIntPE': l_WholeWaveformIntPE,
                            'nWindowPeaks': l_nWindowPeaks,
                            'WindowIntCharge': l_WindowIntCharge,
                            'WindowIntPE': l_WindowIntPE,
+                           'WindowWidth': l_WindowWidth,
+                           'WindowLowerTime': l_WindowLowerTime,
+                           'WindowUpperTime': l_WindowUpperTime,
+                           'WindowCentralTime': l_WindowCentralTime,
+                           'WindowCentralTimeCorrected': l_WindowCentralTimeCorrected,
                            'spillNumber': l_spillNumber
                           })
 
@@ -996,6 +1053,224 @@ def timing_analysis_corrected(df_dict, tof10_timing_range, chg_cuts, timing_cuts
         hd_T1['SignalTimeCorrected_rel'] = hd_T1['SignalTimeCorrected'] - hd_T1['SignalTimeCorrected_T1']
         hd_filtered = filter_range(hd_key,hd_T1,'SignalTimeCorrected_rel',timing_cuts[hd_key],debug=debug)
         hd_filtered = filter_range(hd_key,hd_filtered,'IntCharge',chg_cuts[hd_key],debug=debug)
+        # hd_filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
+        #                         (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
+        if(debug): print(f"HD{i}: {len(hd_filtered)} of {len(df_dict[hd_key])} events after filter")
+        
+        # Assign a binary value indicating a hit
+        if not hd_filtered.empty:
+            hd_filtered.loc[:,hit_col_name] = 1
+        else:
+            hd_filtered.loc[:,hit_col_name] = 0
+
+        hd_dfs[hd_key] = hd_filtered
+
+    # Merge all HD dataframes
+    combined_hd_df = hd_dfs['HD0'][['event', 'hit_HD0']]
+    for i in range(1, 15):
+        hd_key = f'HD{i}'
+        hit_col_name = f'hit_{hd_key}'
+        
+        combined_hd_df = combined_hd_df.merge(
+            hd_dfs[hd_key][['event', hit_col_name]],
+            on='event',
+            how='outer'
+        ).fillna(0)
+
+    # Calculate total hits per event
+    combined_hd_df['total_hits'] = combined_hd_df.filter(like='hit_').sum(axis=1)
+
+    # Filter events with a hit count of 1
+    hd_valid_events = combined_hd_df[combined_hd_df['total_hits'] == 1]
+    if(debug): print(f"Number of hd_valid_events = {len(hd_valid_events)}")
+
+    u, c = np.unique(combined_hd_df['event'].values, return_counts=True)
+    if(debug): print("Duplicates in combined HD dataframe:",np.sum(c[c > 1]))
+    # --------------------------------------------------------------------------------------------
+
+    # Merge all relevant dataframes
+    pb_filtered.columns = ['LG_' + col if col != 'event' else col for col in pb_filtered.columns]
+    final_df = pb_filtered.merge(hd_valid_events, on='event', how='inner')
+    ntagged_evts = len(final_df[final_df.total_hits == 1])
+    if(debug): print(f"Final df number of events = {len(final_df)}; {ntagged_evts} tagged events")
+    if(not low_radiation): final_df = final_df.merge(act0_valid[['event', 'hit_ACT0']], on='event', how='left')
+    final_df = final_df.merge(act1_valid[['event', 'hit_ACT1']], on='event', how='left')
+    final_df = final_df.merge(act3_valid[['event', 'nohit_ACT3']], on='event', how='left')
+    final_df = final_df.merge(tof0_valid[['event', 'hit_TOF0']], on='event', how='left')
+    if(not low_radiation): final_df = final_df.merge(tof1_valid[['event', 'hit_TOF1']], on='event', how='left')
+    final_df = final_df.merge(t2_valid[['event', 'hit_T2']], on='event', how='left')
+    if(debug): print(f"{len(final_df[final_df.total_hits == 1])} tagged events")
+
+    # Fill NaN values in the hit columns with 0
+    if(low_radiation): final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']] = final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']].fillna(0)
+    else: final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']] = final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']].fillna(0)
+
+    return final_df, ntot_evts, ntot_spills, ntagged_evts
+
+def timing_analysis_corrected_winInt(df_dict, chg_cuts, timing_cuts, low_radiation = False,
+                    debug = False):
+    
+    # Extract the total number of events
+    ntot_evts = -1
+    ntot_spills = -1
+    for det in df_dict:
+
+        # Confirm that each detector dataframe has recorded all events.
+        if(det != 'EventInfo'):
+            df_det = df_dict[det]
+            evts = df_det['event'].values
+            if(debug): print(f"[Detector {det}] events go from {evts[0]} to {evts[-1]} for total of {len(np.unique(evts))}")
+        # Get the actual total from the 'EventInfo' dataframe.
+        else:
+            df_evts = df_dict[det]
+            evts = df_evts['EventNumber'].values
+            spills = df_evts['SpillNumber'].values
+            ntot_evts = len(evts)
+            ntot_spills = len(np.unique(spills))
+    if(debug): print(f"* Found a total of {ntot_evts} events and {ntot_spills} spills.")
+    
+    # Lead glass
+    # --------------------------------------------------------------------------------------------
+    # Note: we require 1 lead glass peak in the final analysis
+    pb_1peak = filter_range("PbGlass",df_dict['PbGlass'],'nWindowPeaks',(1,1),debug=debug)
+    pb_1peak.loc[:,'WindowCentralTimeCorrected_rel'] = pb_1peak['WindowCentralTimeCorrected'] - pb_1peak['SignalTimeMatchedTOF1']
+    pb_filtered = filter_range("PbGlass",pb_1peak,'WindowCentralTimeCorrected_rel',timing_cuts["PbGlass"],debug=debug)
+    npeaks_pre  = len(df_dict['PbGlass'])
+    npeaks_post = len(pb_filtered)
+    #if(debug): print(f"-- Peaks {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
+
+    # TOF elements
+    # --------------------------------------------------------------------------------------------
+    # TOF0
+    tof00 = df_dict['TOF00']
+    tof00['WindowCentralTimeCorrected_rel'] = tof00['WindowCentralTimeCorrected'] - tof00['SignalTimeMatchedTOF1']
+    tof01 = df_dict['TOF01']
+    tof01['WindowCentralTimeCorrected_rel'] = tof01['WindowCentralTimeCorrected'] - tof01['SignalTimeMatchedTOF1']
+    tof02 = df_dict['TOF02']
+    tof02['WindowCentralTimeCorrected_rel'] = tof02['WindowCentralTimeCorrected'] - tof02['SignalTimeMatchedTOF1']
+    tof03 = df_dict['TOF03']
+    tof03['WindowCentralTimeCorrected_rel'] = tof03['WindowCentralTimeCorrected'] - tof03['SignalTimeMatchedTOF1']
+
+    tof00_filtered = filter_range("TOF00",tof00,'WindowCentralTimeCorrected_rel',timing_cuts['TOF00'],debug=debug)
+    tof01_filtered = filter_range("TOF01",tof01,'WindowCentralTimeCorrected_rel',timing_cuts['TOF01'],debug=debug)
+    tof02_filtered = filter_range("TOF02",tof02,'WindowCentralTimeCorrected_rel',timing_cuts['TOF02'],debug=debug)
+    tof03_filtered = filter_range("TOF03",tof03,'WindowCentralTimeCorrected_rel',timing_cuts['TOF03'],debug=debug)
+
+    # Perform a single charge cut on the averaged charge across all 4 TOF0 elements.
+    combined_00_01 = tof00_filtered.merge(tof01_filtered, on='event', suffixes=('_00', '_01'))
+    combined_00_01_02 = combined_00_01.merge(tof02_filtered, on='event')
+    combined_00_01_02 = combined_00_01_02.rename(columns={'WindowIntCharge': 'WindowIntCharge_02'})
+    tof0_combined = combined_00_01_02.merge(tof03_filtered, on='event')
+    tof0_combined = tof0_combined.rename(columns={'WindowIntCharge': 'WindowIntCharge_03'})
+    tof0_combined['avg_charge'] = (tof0_combined['WindowIntCharge_00'] 
+                                    + tof0_combined['WindowIntCharge_01']
+                                    + tof0_combined['WindowIntCharge_02']
+                                    + tof0_combined['WindowIntCharge_03']) / 4.
+
+    tof0_valid = filter_range("TOF0_combined",tof0_combined,'avg_charge',chg_cuts['TOF00'],debug=debug)
+    tof0_valid.loc[:,'hit_TOF0'] = 1
+    if(debug): print()
+
+    # TOF1
+    tof10 = df_dict['TOF10']
+    tof10['WindowCentralTimeCorrected_rel'] = tof10['WindowCentralTimeCorrected'] - tof10['SignalTimeMatchedTOF1']
+    tof11 = df_dict['TOF11']
+    tof11['WindowCentralTimeCorrected_rel'] = tof11['WindowCentralTimeCorrected'] - tof11['SignalTimeMatchedTOF1']
+    tof12 = df_dict['TOF12']
+    tof12['WindowCentralTimeCorrected_rel'] = tof12['WindowCentralTimeCorrected'] - tof12['SignalTimeMatchedTOF1']
+    tof13 = df_dict['TOF13']
+    tof13['WindowCentralTimeCorrected_rel'] = tof13['WindowCentralTimeCorrected'] - tof13['SignalTimeMatchedTOF1']
+
+    tof10_filtered = filter_range("TOF10",tof10,'WindowCentralTimeCorrected_rel',timing_cuts['TOF10'],debug=debug)
+    tof11_filtered = filter_range("TOF11",tof11,'WindowCentralTimeCorrected_rel',timing_cuts['TOF11'],debug=debug)
+    tof12_filtered = filter_range("TOF12",tof12,'WindowCentralTimeCorrected_rel',timing_cuts['TOF12'],debug=debug)
+    tof13_filtered = filter_range("TOF13",tof13,'WindowCentralTimeCorrected_rel',timing_cuts['TOF13'],debug=debug)
+
+    combined_10_11 = tof10_filtered.merge(tof11_filtered, on='event', suffixes=('_10', '_11'))
+    combined_10_11_12 = combined_10_11.merge(tof12_filtered, on='event')
+    combined_10_11_12 = combined_10_11_12.rename(columns={'WindowIntCharge': 'WindowIntCharge_12'})
+    tof1_combined = combined_10_11_12.merge(tof13_filtered, on='event')
+    tof1_combined = tof1_combined.rename(columns={'WindowIntCharge': 'WindowIntCharge_13'})
+    tof1_combined['avg_charge'] = (tof1_combined['WindowIntCharge_10'] 
+                                    + tof1_combined['WindowIntCharge_11']
+                                    + tof1_combined['WindowIntCharge_12']
+                                    + tof1_combined['WindowIntCharge_13']) / 4.
+
+    tof1_valid = filter_range("TOF1_combined",tof1_combined,'avg_charge',chg_cuts['TOF10'],debug=debug)
+    if(not low_radiation): tof1_valid.loc[:,'hit_TOF1'] = 1
+    if(debug): print()
+
+    # Filter T2
+    # --------------------------------------------------------------------------------------------
+    t2 = df_dict['TriggerScint']
+    t2['WindowCentralTimeCorrected_rel'] = t2['WindowCentralTimeCorrected'] - t2['SignalTimeMatchedTOF1']
+    t2_filtered = filter_range("T2",t2,'WindowCentralTimeCorrected_rel',timing_cuts['TriggerScint'],debug=debug)
+    t2_valid = filter_range("T2",t2_filtered,'WindowIntCharge',chg_cuts['TriggerScint'],debug=debug)
+    t2_valid.loc[:,'hit_T2'] = 1
+    if(debug): print()
+    # --------------------------------------------------------------------------------------------
+
+    # ACT elements
+    # --------------------------------------------------------------------------------------------
+    # ACT0
+    act0l = df_dict['ACT0L']
+    act0l['WindowCentralTimeCorrected_rel'] = act0l['WindowCentralTimeCorrected'] - act0l['SignalTimeMatchedTOF1']
+    act0r = df_dict['ACT0R']
+    act0r['WindowCentralTimeCorrected_rel'] = act0r['WindowCentralTimeCorrected'] - act0r['SignalTimeMatchedTOF1']
+
+    act0l_filtered = filter_range("ACT0L",act0l,'WindowCentralTimeCorrected_rel',timing_cuts['ACT0L'],debug=debug)
+    act0r_filtered = filter_range("ACT0R",act0r,'WindowCentralTimeCorrected_rel',timing_cuts['ACT0R'],debug=debug)
+
+    # Make a single cut on the average charge corresponding to the cut range for ACT0L.
+    act0_combined = act0l_filtered.merge(act0r_filtered, on='event', suffixes=('_L', '_R'))
+    act0_combined['avg_charge'] = (act0_combined['WindowIntCharge_L'] + act0_combined['WindowIntCharge_R']) / 2.
+    act0_valid = filter_range("ACT0_combined",act0_combined,'avg_charge',chg_cuts['ACT0L'],debug=debug)
+    if(not low_radiation): act0_valid.loc[:,'hit_ACT0'] = 1
+
+    # ACT1
+    act1l = df_dict['ACT1L']
+    act1l['WindowCentralTimeCorrected_rel'] = act1l['WindowCentralTimeCorrected'] - act1l['SignalTimeMatchedTOF1']
+    act1r = df_dict['ACT1R']
+    act1r['WindowCentralTimeCorrected_rel'] = act1r['WindowCentralTimeCorrected'] - act1r['SignalTimeMatchedTOF1']
+
+    act1l_filtered = filter_range("ACT1L",act1l,'WindowCentralTimeCorrected_rel',timing_cuts['ACT1L'],debug=debug)
+    act1r_filtered = filter_range("ACT1R",act1r,'WindowCentralTimeCorrected_rel',timing_cuts['ACT1R'],debug=debug)
+
+    # Make a single cut on the average charge corresponding to the cut range for ACT1L
+    act1_combined = act1l_filtered.merge(act1r_filtered, on='event', suffixes=('_L', '_R'))
+    act1_combined['avg_charge'] = (act1_combined['WindowIntCharge_L'] + act1_combined['WindowIntCharge_R']) / 2.
+    act1_valid = filter_range("ACT1_combined",act1_combined,'avg_charge',chg_cuts['ACT1L'],debug=debug)
+    act1_valid.loc[:,'hit_ACT1'] = 1
+
+    # ACT3
+    # act3l_T1 = df_dict['ACT3L'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
+    # act3l_T1['SignalTimeCorrected_rel'] = act3l_T1['SignalTimeCorrected'] - act3l_T1['SignalTimeCorrected_T1']
+    # act3r_T1 = df_dict['ACT3R'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
+    # act3r_T1['SignalTimeCorrected_rel'] = act3r_T1['SignalTimeCorrected'] - act3r_T1['SignalTimeCorrected_T1']
+
+    act3l_filtered = df_dict['ACT3L'][df_dict['ACT3L']['nWindowPeaks'] == 0]
+    act3r_filtered = df_dict['ACT3R'][df_dict['ACT3R']['nWindowPeaks'] == 0]
+
+    act3_combined = act3l_filtered.merge(act3r_filtered, on='event', suffixes=('_L', '_R'))
+    act3_valid = act3_combined.copy()
+    act3_valid.loc[:,'nohit_ACT3'] = 1
+    if(debug): print("ACT3 total number of valid events:",len(act3_valid))
+    # --------------------------------------------------------------------------------------------
+
+    # Hodoscope elements
+    # --------------------------------------------------------------------------------------------
+    hd_dfs = {}
+
+    # Create the filtered dataframes (containing peaks over the threshold at the correct time).
+    for i in range(15):  # 0 to 14 inclusive
+        hd_key = f'HD{i}'
+        hit_col_name = f'hit_{hd_key}'
+        
+        # Filtering
+        hd = df_dict[hd_key]
+        hd['WindowCentralTimeCorrected_rel'] = hd['WindowCentralTimeCorrected'] - hd['SignalTimeMatchedTOF1']
+        hd_filtered = filter_range(hd_key,hd,'WindowCentralTimeCorrected_rel',timing_cuts[hd_key],debug=debug)
+        hd_filtered = filter_range(hd_key,hd_filtered,'WindowIntCharge',chg_cuts[hd_key],debug=debug)
         # hd_filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
         #                         (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
         if(debug): print(f"HD{i}: {len(hd_filtered)} of {len(df_dict[hd_key])} events after filter")
