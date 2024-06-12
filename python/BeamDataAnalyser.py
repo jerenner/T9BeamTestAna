@@ -82,6 +82,7 @@ if BeamDataAna.thereIsSecondWindow:
 for detector in ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R", "PbGlass"]:
     BeamDataAna.plotBranchHistForAllParticles(config["channelNames"].index(detector), "matchedHit0_WindowIntPE", 0.2, True, [0, 50])
 
+
 #Make n= bins equally populated in terms of the Trigger scintillator 10 wholeWaveformIntPE charge and check the resolution of the time of flight there which should follow a 1/sqrt(TScharge) logic, work in progress
 BeamDataAna.measureElTOFresolutionFunctionOfTScharge(10)
 

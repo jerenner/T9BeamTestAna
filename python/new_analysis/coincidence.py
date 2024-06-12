@@ -41,6 +41,33 @@ def getCoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test, runNum
 
 
 
+def get2plus2CoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test, TOFb_base, runNumber, first_hodoscope_run = 579):
+    
+    #TS1 1+1 coincidence
+    matched_event_times, good_candidate_times, mean_matched_time = getMatchedEventsTiming(hit_timing, TOFa_base, TOFa_test, False)
+
+    #TS0 1+1 coincidence
+    matched_event_timesb, good_candidate_timesb, mean_matched_timeb = getMatchedEventsTiming(hit_timing, TOFb_base, TOFb_test, False)
+
+    #correct the relevant TS1 branch
+    hit_timing[TOFa_base] = mean_matched_time
+    #correct the relevant TS0 branch
+    hit_timing[TOFb_test] = mean_matched_timeb
+
+    # check loose coincidence for protons, deuterium in LM setup
+    if runNumber<first_hodoscope_run:
+        matched_event_times_TOFb, matched_event_times_TOFa, mean_matched_time = getMatchedEventsTiming(hit_timing, TOFb_test, TOFa_base, True)
+
+    else:#keep a loose coincidence for now (keep protons!!!) can decide to remove them later
+        matched_event_times_TOFb, matched_event_times_TOFa, mean_matched_time = getMatchedEventsTiming(hit_timing, TOFb_test, TOFa_base, True)
+
+    #in case we only want one coincidence
+    # matched_event_times_TOFb, matched_event_times_TOFa = matched_event_times, good_candidate_times
+    #careful, there is an intended switch in the order
+    return matched_event_times_TOFa, matched_event_times_TOFb
+
+
+
 
 
 def getMatchedEventsTiming(hit_timing, basePMT, testPMT, matchingTOF0andTOF1 = False):
@@ -203,6 +230,54 @@ def performCoincidence(argv, TOFa_base = 0, TOFa_test = 1, TOFb_test = 6, runNum
     matched_event_times_TOFa, matched_event_times_TOFb = getCoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test, runNumber, first_hodoscope_run)
 
 
+
+    # print(len(matched_event_times_TOFa[0]), len(matched_event_times_TOFa[0].dropna()))
+
+    return matched_event_times_TOFa, matched_event_times_TOFb
+
+def perform2plus2Coincidence(argv, TOFa_base = 0, TOFa_test = 1, TOFb_test = 6, TOFb_base = 5, runNumber = 0 , checkWarning = True, plot = False, first_hodoscope_run= 579):
+    """"Perform coincidence across paris of PMTs in each TS before doing it accros them"""
+    root_filenames = argv #[1]
+    #read in the file
+    # print("Hello from coincidence")
+    file = ur.open(root_filenames)
+
+    run = root_filenames[-8:-5]
+
+    signalTimeTarget = 'SignalTimeCorrected'
+    targetTOF = 'TOF'
+
+    hit_timing = []
+    #append the data to the initial dataframe
+    for detector in range(len(file.keys()[:-1])):
+        key = file.keys()[detector]
+        df = file[key].arrays(library="pd")
+
+        list_index = df.index
+        df = df.reset_index()
+        #only store the TOF detectors
+        if key[:-4] == '%s'%targetTOF:
+            digitiser0 = file[file.keys()[0]].arrays(library="pd")
+            signalTimeCorrected =  pd.DataFrame(df['%s'%signalTimeTarget].values.tolist())
+
+            hit_timing.append(signalTimeCorrected) #.iloc[200:300]#829:849
+
+    key = file.keys()[-1]
+    df_enventInfo =  file[key].arrays(library="pd")
+
+    if plot:
+        plotting(hit_timing)
+
+    #take PMTs far away from each other to be as stable as possible
+
+
+    if ((TOFa_base > 3) and (TOFa_test>3) and (TOFb_test<3)):
+        print("You have paired up the PMTs correctely")
+    
+    elif (checkWarning):
+        raise Exception("The PMTs aren't paired up properly, %i and %i should be on TOF1, i.e. above 3 and %i should be on the other side of 3 i.e. on the other TOF which is is not"%(TOFa_base,TOFa_test, TOFb_test))
+
+    matched_event_times_TOFa, matched_event_times_TOFb = get2plus2CoincidenceAcrossTOFs(hit_timing, TOFa_base, TOFa_test, TOFb_test, TOFb_base, runNumber, first_hodoscope_run)
 
     # print(len(matched_event_times_TOFa[0]), len(matched_event_times_TOFa[0].dropna()))
 
