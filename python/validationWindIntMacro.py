@@ -101,15 +101,11 @@ BeamDataAna.makeSumACT1window2()
 
 # print(BeamDataAna.getBranchList(0))
 
-
-
-
 #select events with exactly one coincidence (set in the config file)
 BeamDataAna.nCoincidenceSelection()
 
-BeamDataAna.plotSelectionACT1sumDownstreamACT(100)
-BeamDataAna.plotSelectionWindow2ACT1sumDownstreamACT(60)
-BeamDataAna.plotSelectionTOFLG()
+BeamDataAna.plotAll2DSelections(True)
+
 
 #check the distribution of WholeWaveformIntPE against sumTS to check if cut is sensible
 if "matchedHit0_Window2IntPE" in BeamDataAna.getBranchList(0):
@@ -122,26 +118,37 @@ if "matchedHit0_Window2IntPE" in BeamDataAna.getBranchList(0):
 BeamDataAna.TStotalChargeSelection()
 
 
+##############
+#new module: to measure the optimal separation el/mu
+# BeamDataAna.findOptimalMuElCuts()
 
 #This can be useful to have a look out: timing of hits
 #add a new branch with the delay between the centre of the window and the peak time. 
-# if BeamDataAna.WindowBoundsAreAvailable:
-#     BeamDataAna.addOperationBranchToAllDetectors("delayBetweenCentreWindowAndFirstPeakTime", "peakHit0_SignalTimeCorrected", "-", "matchedHit0_WindowCentralTimeCorrected")
-#     BeamDataAna.addOperationBranchToAllDetectors("delayBetweenCentreWindowAndSecondPeakTime", "peakHit1_SignalTimeCorrected", "-", "matchedHit0_WindowCentralTimeCorrected")
+if BeamDataAna.WindowBoundsAreAvailable:
+    BeamDataAna.addOperationBranchToAllDetectors("delayBetweenCentreWindowAndFirstPeakTime", "peakHit0_SignalTimeCorrected", "-", "matchedHit0_WindowCentralTimeCorrected")
+    BeamDataAna.addOperationBranchToAllDetectors("delayBetweenCentreWindowAndSecondPeakTime", "peakHit1_SignalTimeCorrected", "-", "matchedHit0_WindowCentralTimeCorrected")
 
 #based on the -16ns to 45ns window selection, ID all particles that we have in this run, values in the config file
 BeamDataAna.makeAllParticleSelection()
 
-BeamDataAna.measureElTOFresolutionFunctionOfTScharge([6, 6, 5, 5, 5, 4])
+
+#Fit the lead glass charge distribution in the Lead Glass
+#for muon and electron-like events. 
+BeamDataAna.fitMuonsAndElectronLGPeaks()
 
 
-for i in range(20):
-    plt.close()
+#BeamDataAna.measureElTOFresolutionFunctionOfTScharge([6, 6, 5, 5, 5, 4])
+
+BeamDataAna.plotBranchHistForAllParticles(leadGlassID, "MaxVoltage", 0.01, True, [-0.02, 1.5], True, False)
+
+BeamDataAna.plotBranchHistForAllParticles(leadGlassID, "matchedHit0_WindowIntPE", 0.1, True, [-0.02, 25], False, False)
 
 #using all the available particles measure the beam momentum with bins of 0.1 
 BeamDataAna.measureMomentumUsingTOF(0.1)
 
-BeamDataAna.estimateSystematicErrorTOF()
+print("HERE")
+
+#BeamDataAna.estimateSystematicErrorTOF()
 
 fig, ax = plt.subplots(1, 1, figsize = (16, 9))
 fig2, ax2 = plt.subplots(1, 1, figsize = (16, 9))
@@ -149,7 +156,6 @@ fig2, ax2 = plt.subplots(1, 1, figsize = (16, 9))
 for i in range(8, 16):
     BeamDataAna.plotBranchHistForAllParticles(i, "delayBetweenCentreWindowAndSecondPeakTime", 2, True, [-150, 150], True, True)
     BeamDataAna.plotBranchHistForAllParticles(i, "delayBetweenCentreWindowAndFirstPeakTime", 2, True, [-150, 150], True, True)
-
     # fig3, ax3 = plt.subplots(1, 1, figsize = (16, 9))
 
     # BeamDataAna.plotBranchHistForAllParticles(i, "peakHit0_SignalTimeCorrected", 0.02, True, [-10, 10])
@@ -160,7 +166,8 @@ for i in range(8, 16):
     #plot the wide integration window
     BeamDataAna.plot1DHist(BeamDataAna.pionArray[i]["matchedHit0_Window2IntPE"], 2, "window [-50, 150] int. charge (PE)", "Occurences", "%s"%config["channelNames"][i], "Wide  integration window \n Run %i - Momentum %i MeV/c - n = %.3f"%(BeamDataAna.runNumber, BeamDataAna.runMomentum, BeamDataAna.runRefractiveIndex), ax2, fig2, True, [0, 600], False)
 
-    BeamDataAna.plot2DHistFromBranches(i, "sumTS", i, "matchedHit0_Window2IntPE", "(PE)", "(PE)", "sumTS_vs_%s-WindowIntPE_nCoincidence_noTSselection"%(config["channelNames"][i]), True, [200, 300], [[0, 1500], [0, 3000/8]])
+    #we do not used sumTS anymore, no need to flod the output folder with useless plots
+    # BeamDataAna.plot2DHistFromBranches(i, "sumTS", i, "matchedHit0_Window2IntPE", "(PE)", "(PE)", "sumTS_vs_%s-WindowIntPE_nCoincidence_noTSselection"%(config["channelNames"][i]), True, [200, 300], [[0, 1500], [0, 3000/8]])
 
 ax.grid()
 ax2.grid()
@@ -169,17 +176,6 @@ fig.savefig("../new_pdf_results/TOFwindowIntPE_narrowNew_Run%i.pdf"%(BeamDataAna
 fig.savefig("../new_png_results/TOFwindowIntPE_narrowNew_Run%i.png"%(BeamDataAna.runNumber))
 fig2.savefig("../new_pdf_results/TOFwindow2IntPE_wideNew_Run%i.pdf"%(BeamDataAna.runNumber))
 fig2.savefig("../new_png_results/TOFwindow2IntPE_wideNew_Run%i.png"%(BeamDataAna.runNumber))
-
-
-
-
-# for i in range(0, 8):
-#     BeamDataAna.plotBranchHistForAllParticles(i, "Pedestal", 0.02, True, [1.2, 2], False, True)
-#     BeamDataAna.plotBranchHistForAllParticles(i, "PedestalSigma", 0.02, True, [0, 2], False, True)
-#     BeamDataAna.plotBranchHistForAllParticles(i, "delayBetweenCentreWindowAndFirstPeakTime", 2, True, [-60, 100], False, True)
-#     BeamDataAna.plotBranchHistForAllParticles(i, "delayBetweenCentreWindowAndSecondPeakTime", 2, True, [-60, 200], False, True)
-
-    
 
 
 
@@ -213,10 +209,10 @@ BeamDataAna.plotBranchHistForAllParticles(0, "matchedHit0_TOF", 0.1, True, None,
 
 
 #Make n= bins equally populated in terms of the Trigger scintillator 10 wholeWaveformIntPE charge 
-BeamDataAna.measureElTOFresolutionFunctionOfTScharge(10)
+#BeamDataAna.measureElTOFresolutionFunctionOfTScharge(10)
 
 #Output the results as a csv file
-BeamDataAna.outputResults()
+#BeamDataAna.outputResults()
 
 
 #If interestested, one can study the weird electrons
@@ -228,7 +224,7 @@ pionLikeWeirdElectron = BeamDataAna.pionLikeWeirdElectronArray
 
 BeamDataAna.plot2DHist(muonLikeWeirdElectron[leadGlassID]["sumACT1"], muonLikeWeirdElectron[leadGlassID]["sumDownstreamACTs"], [0.5, 1], "sumACT1", "(PE)", "sumDownstreamACTs", "(PE)", None, None, True, "Muon-likeWeirdElectrons")
 
-BeamDataAna.plot2DHist(pionLikeWeirdElectron[leadGlassID]["sumACT1"], pionLikeWeirdElectron[leadGlassID]["sumDownstreamACTs"], [0.5, 1], "sumACT1", "(PE)", "sumDownstreamACTs", "(PE)", None, None, True, "Pion-LikeWeirdElectrons")
+BeamDataAna.plot2DHist(pionLikeWeirdElectron[leadGlassID]["sumACT1"], pionLikeWeirdElectron[leadGlassID]["sumDownstreamACTs"], [1, 0.5], "sumACT1", "(PE)", "sumDownstreamACTs", "(PE)", None, None, True, "Pion-LikeWeirdElectrons", [-1, 30])
 
 
 #raise end
@@ -280,24 +276,26 @@ plt.savefig("../new_png_results/WeirdElectrons_%s_Run%i.png"%(title, BeamDataAna
 for i in range(10):
     plt.close()
 
-# branchList = ["matchedHit0_WindowIntPE", "WholeWaveformIntPE", "sumACT1", "sumDownstreamACTs", "delayBetweenCentreWindowAndPeakTime"]
+branchList = ["matchedHit0_WindowIntPE","delayBetweenCentreWindowAndFirstPeakTime"]
 
-branchList = ["Pedestal", "PedestalSigma", "delayBetweenCentreWindowAndFirstPeakTime", "delayBetweenCentreWindowAndSecondPeakTime", "sumDownstreamACTs", "sumACT1"]
+#branchList = ["Pedestal", "PedestalSigma", "delayBetweenCentreWindowAndFirstPeakTime", "delayBetweenCentreWindowAndSecondPeakTime", "sumDownstreamACTs", "sumACT1"]
 
-# list_xlimits = [[0,  10], [0, 50], [0, 25], None, None]
-list_xlimits = [[1, 2], [0, 1], [-50, 150],  [-50, 200],  [-30, 30], None ]
 
-# binsList = [0.5, 0.5, 0.3, 1, 2]
-binsList = [0.005, 0.005, 3, 3, 1, 1, 1, 1 ]
+list_xlimits = [[-2,  50], [-50, 50], [0, 25], None, None]
+#list_xlimits = [[1, 2], [0, 1], [-50, 150],  [-50, 200],  [-30, 30], None ]
+
+binsList = [0.5, 0.5, 0.3, 1, 2]
+#binsList = [0.005, 0.005, 3, 3, 1, 1, 1, 1 ]
  
-for detectorName in ["ACT1R", "ACT1L", "ACT2L", "ACT3L", "ACT2R", "ACT3R"]:
+for detectorName in ["ACT0R", "ACT0L"]:
+#, "ACT2L", "ACT3L", "ACT2R", "ACT3R"]:
     for branchID in range(len(branchList)):
         fig, ax = plt.subplots(1, 1, figsize = (16, 9))
         branch = branchList[branchID]
         bin = binsList[branchID] 
         xlimits = list_xlimits[branchID]
         detector = config["channelNames"].index(detectorName)
-        title = "%s_%s_MH0WIcut"%(detectorName, branch)
+        title = "%s_%s"%(detectorName, branch)
 
         BeamDataAna.plot1DHist(muonLikeWeirdElectron[detector][branch], bin, "%s %s"%(detectorName, branch),  "Occurences", "Muon-looking weird electrons", "%s in %s for weird electrons, muons, pions"%(branch, detectorName), ax, fig, False, xlimits, False, True)
 
@@ -311,7 +309,7 @@ for detectorName in ["ACT1R", "ACT1L", "ACT2L", "ACT3L", "ACT2R", "ACT3R"]:
         if xlimits != None:
             ax.set_xlim(xlimits)
 
-        plt.savefig("../new_pdf_results/WeirdElectrons_%s_Run%i.pdf"%(title, BeamDataAna.runNumber))
-        plt.savefig("../new_png_results/WeirdElectrons_%s_Run%i.png"%(title, BeamDataAna.runNumber))
+        plt.savefig("../%s/WeirdElectrons_%s_Run%i.pdf"%(BeamDataAna.saving_folder_path_pdf,title, BeamDataAna.runNumber))
+        plt.savefig("../%s/WeirdElectrons_%s_Run%i.png"%(BeamDataAna.saving_folder_path_png, title, BeamDataAna.runNumber))
 
         plt.close()

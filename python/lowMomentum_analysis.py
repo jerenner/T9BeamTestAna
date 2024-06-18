@@ -65,7 +65,8 @@ class LowMomentumAnalysis:
         self.TStotalChargeSelectionBool = config["TStotalChargeSelectionBool"]
         
         if self.TStotalChargeSelectionBool:
-            self.TStotalChargeSelectionValue = config["TStotalChargeSelectionValue"]
+            #self.TStotalChargeSelectionValue = config["TStotalChargeSelectionValue"] #this is technically not necessary anymore, with 2+2 coincidence
+            #this is for 2 particle events
             self.TSwindow2totalChargeSelectionValue = config["TSwindow2totalChargeSelectionValue"]
         
         else:
@@ -118,8 +119,8 @@ class LowMomentumAnalysis:
         self.isMuon = None
         self.isPion = None
 
-        self.saving_folder_path_pdf = "pdf_2plus2Coincidence_nosumTScut"
-        self.saving_folder_path_png = "png_2plus2Coincidence_nosumTScut"
+        self.saving_folder_path_pdf = "pdf_2plus2Coincidence_fixedMuons"
+        self.saving_folder_path_png = "png_2plus2Coincidence_fixedMuons"
 
         self.thereIsSecondWindow = False
 
@@ -227,7 +228,7 @@ class LowMomentumAnalysis:
     def getProtonTOFSelectionBounds(self, p=None):
         #for plotting, it is useful to be able to get these bounds for any momentum. 
         if p == None:
-            p = self.runMomentum 
+            p = abs(self.runMomentum) #we need those bounds for selections, even if there are no expected protons
         TOFresolution = 0.35 #ns
         fiveSigmaOfPionTOF = self.momentumToTOF(p, 'pion') + 5 * TOFresolution
         protonTOFminus3ns = self.momentumToTOF(p, 'proton') - 3 
@@ -246,7 +247,7 @@ class LowMomentumAnalysis:
     def getDeuteriumTOFSelectionBounds(self, p=None):
         #for plotting, it is useful to be able to get these bounds for any momentum. 
         if p == None:
-            p = self.runMomentum 
+            p = abs(self.runMomentum)
         TOFresolution = 0.35 #ns
         tenSigmaOfProtonTOF = self.momentumToTOF(p, 'proton') + 10 * TOFresolution
         deuteriumTOFminus5ns = self.momentumToTOF(p, 'deuterium') - 5 
@@ -747,7 +748,13 @@ class LowMomentumAnalysis:
         p_error_stat = (p_pred * std/mean)  * (p_pred /(ms[particleName]) * (mean/((self.distanceTOF1toTOF0 * conv)/c))) ** 2 / np.sqrt(n_events_inPeak) 
         #/ np.sqrt(n_events_inPeak) 
 
-        errorTOF_delta = self.estimateSystematicErrorTOF(particleName)
+        if self.isLowMomentum:
+            #only do the complicated error propagation for LM run when we want accurate error on the momentum estimate
+            errorTOF_delta = self.estimateSystematicErrorTOF(particleName)
+        else:
+            #it is enough to look at the std in the TG 
+            errorTOF_delta = std
+        
         errorLength_tau = self.fractionalErrorDistanceTOF1toTOF0  * conv * self.distanceTOF1toTOF0 / c
 
         p_error_tot = self.propagateMomentumError(particleName, errorTOF_delta, errorLength_tau, p_lost_error) / np.sqrt(n_events_inPeak) 
@@ -795,7 +802,7 @@ class LowMomentumAnalysis:
                 if values:
                     data = self.getColumnDataFrameDetector(branch_name, detectorID, particle)
                     
-                    self.plot1DHist(self.getColumnDataFrameDetector(branch_name, detectorID, particle), binwidth, "%s %s"%(self.channelNames[detectorID], branch_name), "Number of occurences", "%s mean: %.1f, std: %.1f"%(particle, data.mean(), data.std()), "%s_%s_allParticles"%(self.channelNames[detectorID], branch_name), ax, fig, logScale, lim, False, normalise)
+                    self.plot1DHist(self.getColumnDataFrameDetector(branch_name, detectorID, particle), binwidth, "%s %s"%(self.channelNames[detectorID], branch_name), "Number of occurences", "%s mean: %.2f, std: %.3f"%(particle, data.mean(), data.std()), "%s_%s_allParticles"%(self.channelNames[detectorID], branch_name), ax, fig, logScale, lim, False, normalise)
                 else:
                     data = self.getColumnDataFrameDetector(branch_name, detectorID, particle)
                     self.plot1DHist(self.getColumnDataFrameDetector(branch_name, detectorID, particle), binwidth, "%s %s"%(self.channelNames[detectorID], branch_name), "Number of occurences", "%s"%(particle), "%s_%s_allParticles"%(self.channelNames[detectorID], branch_name), ax, fig, logScale, lim, False, normalise)
@@ -823,12 +830,16 @@ class LowMomentumAnalysis:
     def measureElTOFresolutionFunctionOfTScharge(self, nBins = None):
         """Plot the standard deviation of the fitted TOF distribution for the electron, pion, muon, protons, deuterium sample after having split it accounding to bins (of equal number of events, int to only give electron number of bins, range of int to give for each particle) in the Trigger Scintillator window2 summed charge (given as waveformIntPE)"""
 
+        if not(self.isLowMomentum):
+            #only do for the LM setup
+            return 0
+
         particles =  ["electron", "proton"] #self.particleNamesList
 
         if nBins == None:
             list_bins = [10, 6, 3, 4, 5]
         else:
-            list_bins = nBins
+            list_bins = [10, 6, 3, 4, 5]
         array_mean, array_std, array_meanX, array_stdX, array_stdErr = [], [], [], [], []
 
         fig, ax1 = plt.subplots(1, 1, figsize = (16, 9))
@@ -943,7 +954,7 @@ class LowMomentumAnalysis:
 
         #Step 1: throw n values of A and B (correlated) from the fitted refenrence correlation matrix (for now we use the one fitted for this run but we will settle on a single one soon)
 
-        n_throws_AB = 3000
+        n_throws_AB = 1000
         # self.measureElTOFresolutionFunctionOfTScharge([6, 6, 5, 5, 5, 4])
 
         mean_A_B = [self.TOF_fit_mean_A, self.TOF_fit_mean_B]
@@ -1103,13 +1114,157 @@ class LowMomentumAnalysis:
         
 
         return TOTALerrorOnTOF 
+    
+    def plotAll2DSelections(self, plotSelections = True):
+        """It is nice to see the 2D plots but they take a while to load, speed up process that way"""
+        if plotSelections == True:
+            self.plotSelectionACT1sumDownstreamACT(100)
+            self.plotSelectionWindow2ACT1sumDownstreamACT(60)
+            self.plotSelectionTOFLG()
+        else:
+            print("Not plotting the selection 2D plots to save time")
 
-
+    def calculateMuPiAndElPurityEfficiency(self, is_selected_mupi= None, is_selected_electron = None, is_genuine_mupi = None, is_genuine_electron = None):
 
         
+        selected_genuine_mupi = is_genuine_mupi & is_selected_mupi
+        selected_genuine_electron = is_genuine_electron & is_selected_electron
+        if sum(is_selected_mupi) < 1:
+            mupi_purity = 0
+            mupi_efficiency = 0
+        else:
+            mupi_purity = sum(selected_genuine_mupi)/sum(is_selected_mupi)
+            mupi_efficiency = sum(selected_genuine_mupi)/sum(is_genuine_mupi)
+            
+        if sum(is_genuine_electron) < 1:
+            electron_efficiency = 0
+            electron_purity = 0
+        else:
+            electron_purity = sum(selected_genuine_electron)/sum(is_selected_electron)
+            electron_efficiency = sum(selected_genuine_electron)/sum(is_genuine_electron)
+        
+        return mupi_purity, mupi_efficiency, electron_purity, electron_efficiency
 
+    def scanOverACTLinearAB(self, start_A_value, start_B_value, coarse_bounds, nTests, metric = "purity2_times_efficiency"):
+        
+        slowEvents= self.makeNewDataFrameFromSelection(self.arrayData, self.arrayData[0]["matchedHit0_TOF"] < self.protonsTOFCut)
+    
+        #define genuine electron and mu/pi events
+        LGid = self.channelNames.index("PbGlass")
+        is_genuine_electron = slowEvents[LGid]["matchedHit0_WindowIntPE"] > self.weirdElectronLGcut
+        is_genuine_mupi = slowEvents[LGid]["matchedHit0_WindowIntPE"] < self.weirdElectronLGcut
+
+        #list storing values:
+        A_values=[]
+        B_values=[]
+        mupi_pur_values=[]
+        mupi_eff_values=[]
+        electron_pur_values=[]
+        electron_eff_values=[]
+
+        #select values of ACTLinearA and ACTLinearB within +/-50% of default values, first do a coarse search, need to make sure that the order is correct
+        if start_A_value * coarse_bounds < start_A_value * (1+coarse_bounds):
+            coarse_values_ACTLinearA = np.linspace(start_A_value * coarse_bounds, start_A_value * (1+coarse_bounds), nTests)
+        else:
+            coarse_values_ACTLinearA = np.linspace(start_A_value * (1+coarse_bounds), start_A_value * coarse_bounds, nTests)
+
+        if start_B_value * coarse_bounds < start_B_value * (1+coarse_bounds):
+            coarse_values_ACTLinearB = np.linspace(start_B_value * coarse_bounds, start_B_value * (1+coarse_bounds), nTests)
+        else:
+            coarse_values_ACTLinearB = np.linspace(start_B_value * (1+coarse_bounds), start_B_value * coarse_bounds, nTests)
+
+
+        print(coarse_values_ACTLinearA, coarse_values_ACTLinearB)
+
+        #self.horizontal_el = 0 \
+
+        #for granularity in ["coarse", "fine"]:
+        for coarse_A in coarse_values_ACTLinearA:
+            for coarse_B in coarse_values_ACTLinearB:
+                is_selected_electron = slowEvents[LGid]["sumDownstreamACTs"] > (slowEvents[LGid]["sumACT1"] * coarse_A + coarse_B) 
+                
+                is_selected_electron = is_selected_electron & slowEvents[LGid]["sumACT1"]< (self.horizontal_el-coarse_B)/(coarse_A) 
+
+                is_selected_electron = is_selected_electron | slowEvents[LGid]["sumACT1"] > (self.horizontal_el-coarse_B)/(coarse_A) 
+
+                
+                is_selected_mupi = slowEvents[LGid]["sumDownstreamACTs"] < (slowEvents[LGid]["sumACT1"] * coarse_A + coarse_B)
+
+                is_selected_mupi = is_selected_mupi & slowEvents[LGid]["sumACT1"]< (self.horizontal_el-coarse_B)/(coarse_A) 
+
+
+                mupi_pur, mupi_eff, electron_pur, electron_eff = self.calculateMuPiAndElPurityEfficiency(is_selected_mupi, is_selected_electron, is_genuine_mupi, is_genuine_electron)
+
+                # print(r"ACTLinearA = %.3f, ACTLinearB = %.3f: "%(coarse_A, coarse_B),
+                #       "\n"r"$\mu\pi$ purity =  %.2f percent"%(mupi_pur *100),
+                #       "\n"r"$\mu\pi$ efficiency =  %.2f percent"%(mupi_eff*100),
+                #       "\n"r"electron purity =  %.2f percent"%(electron_pur*100),
+                #       "\n"r"electron efficiency =  %.2f percent"%(electron_eff*100),
+                #       "\n\n")
+                
+                A_values.append(coarse_A)
+                B_values.append(coarse_B)
+                mupi_pur_values.append(mupi_pur*100)
+                mupi_eff_values.append(mupi_eff*100)
+                electron_pur_values.append(electron_pur*100)
+                electron_eff_values.append(electron_eff*100)
+
+        print("\n---------------------------------------------\n",
+              "Run %i p = %i MeV/c: The maximal (muon or pion) purity achieved \nin the (%i, %i) points scan within \n the %.0f percent of the A, B values (%.2f, %.2f) is for: " %(self.runNumber, self.runMomentum, nTests, nTests, coarse_bounds * 100, start_A_value, start_B_value))
+        bestI = mupi_pur_values.index(max(mupi_pur_values)) 
+        print(r"ACTLinearA = %.3f, ACTLinearB = %.3f: "%(A_values[bestI], B_values[bestI]),
+                      "\n"r"$\mu\pi$ purity =  %.3f percent"%(mupi_pur_values[bestI]),
+                      "\n"r"$\mu\pi$ efficiency =  %.3f percent"%(mupi_eff_values[bestI]),
+                      "\n"r"electron purity =  %.3f percent"%(electron_pur_values[bestI]),
+                      "\n"r"electron efficiency =  %.3f percent"%(electron_eff_values[bestI]),
+                      "\n\n")
+        
+        print("\n---------------------------------------------\n",
+              "Run %i p = %i MeV/c: The maximal (muon or pion) purity * efficiency achieved \nin the (%i, %i) points scan within \n the %.0f percent of the A, B values (%.2f, %.2f) is for: " %(self.runNumber, self.runMomentum, nTests, nTests, coarse_bounds * 100, start_A_value, start_B_value))
+        quality_metric = np.array(mupi_pur_values) * np.array(mupi_eff_values)
+        bestIpe = list(quality_metric).index(max(quality_metric)) 
+        print(r"ACTLinearA = %.3f, ACTLinearB = %.3f: "%(A_values[bestI], B_values[bestI]),
+                      "\n"r"$\mu\pi$ purity =  %.3f percent"%(mupi_pur_values[bestIpe]),
+                      "\n"r"$\mu\pi$ efficiency =  %.3f percent"%(mupi_eff_values[bestIpe]),
+                      "\n"r"electron purity =  %.3f percent"%(electron_pur_values[bestIpe]),
+                      "\n"r"electron efficiency =  %.3f percent"%(electron_eff_values[bestIpe]),
+                      "\n\n")
+        
+        print("\n---------------------------------------------\n",
+              "Run %i p = %i MeV/c: The maximal (muon or pion) purity ^ 2 * efficiency achieved \nin the (%i, %i) points scan within \n the %.0f percent of the A, B values (%.2f, %.2f) is for: " %(self.runNumber, self.runMomentum, nTests, nTests, coarse_bounds * 100, start_A_value, start_B_value))
+        quality_metric = np.array(mupi_pur_values) * np.array(mupi_pur_values) * np.array(mupi_eff_values)
+        bestIp2e = list(quality_metric).index(max(quality_metric))  
+        print(r"ACTLinearA = %.3f, ACTLinearB = %.3f: "%(A_values[bestIp2e], B_values[bestIp2e]),
+                      "\n"r"$\mu\pi$ purity =  %.3f percent"%(mupi_pur_values[bestIp2e]),
+                      "\n"r"$\mu\pi$ efficiency =  %.3f percent"%(mupi_eff_values[bestIp2e]),
+                      "\n"r"electron purity =  %.3f percent"%(electron_pur_values[bestIp2e]),
+                      "\n"r"electron efficiency =  %.3f percent"%(electron_eff_values[bestIp2e]),
+                      "\n\n")
+
+        if metric == "p":
+            #chosen metric: muon/pion purity
+            return bestI, A_values, B_values, mupi_pur_values, mupi_eff_values,electron_pur_values, electron_eff_values
+        if metric == "pe":
+            #chosen metric purity * efficiency for (mu or pi)
+            return bestIpe, A_values, B_values, mupi_pur_values, mupi_eff_values,electron_pur_values, electron_eff_values
+        if metric == "p2e":
+            return bestIp2e, A_values, B_values, mupi_pur_values, mupi_eff_values,electron_pur_values, electron_eff_values
         
         
+
+    def findOptimalMuElCuts(self, quality_metric = "p2e"):
+        """This function is designed to find the optimal cut line in ACT1 and sumDowsntream ACTs between the muons and electrons, based on the lead glass distribution"""
+        
+        #decide the number of points we want to search
+        nTests = 15
+        coarse_bounds = 0.5  #+/-50% 
+        fine_bounds = 0.1 #+/-10% of the best fitted coarse value
+        bestI, A_values, B_values, mupi_pur_values, mupi_eff_values,electron_pur_values, electron_eff_values = self.scanOverACTLinearAB(self.ACTlinearA, self.ACTlinearB, coarse_bounds, nTests, quality_metric)
+
+        bestI_fine, A_values_fine, B_values_fine, mupi_pur_values_fine, mupi_eff_values_fine,electron_pur_values_fine, electron_eff_values_fine = self.scanOverACTLinearAB(A_values[bestI], B_values[bestI], fine_bounds, nTests, quality_metric)
+
+        #below the plotting of the values
+
     
     def addBranchToAllDetectors(self, new_branch_name, value, particle = None):
         print("Adding the branch %s to the data frame for  all detectors"%(new_branch_name))
@@ -1278,6 +1433,8 @@ class LowMomentumAnalysis:
 
     def plotSelectionWindow2ACT1sumDownstreamACT(self, ymax = 100):
         if self.isLowMomentum:
+            if "sumACT1window2" not in self.getBranchList(0):
+                return 0
             xmin, xmax = 0, 20
             ymin, ymax = 0, ymax
             fig, ax = self.plot2DHistFromBranches(0, "sumACT1window2", 0, "sumDownstreamACTsWindow2", "(PE)", "(PE)", "SelectionACTs", True, [500, 300], [[xmin, xmax], [ymin, ymax]], False)
@@ -1385,7 +1542,7 @@ class LowMomentumAnalysis:
                 plt.savefig("../%s/Hist1d_%s_Run%i.pdf"%(self.saving_folder_path_pdf, title, self.runNumber))
                 plt.savefig("../%s/Hist1d_%s_Run%i.png"%(self.saving_folder_path_png, title, self.runNumber))
 
-    def plot2DHist(self, datax, datay, binWidth = [1, 1], xlabel = 'x', xunits = '', ylabel = 'y', yunits = '', ax = None, fig = None, zlogscale = False, additionalLabel = None):
+    def plot2DHist(self, datax, datay, binWidth = [1, 1], xlabel = 'x', xunits = '', ylabel = 'y', yunits = '', ax = None, fig = None, zlogscale = False, additionalLabel = None, xRange = None):
         binsX = int((max(datax)-min(datax))/binWidth[0])
         binsY = int((max(datay)-min(datay))/binWidth[1])
 
@@ -1405,6 +1562,9 @@ class LowMomentumAnalysis:
         # ax.set_ylim(range[1])
         ax.set_xlabel("%s %s"%(xlabel, xunits), fontsize=18)
         ax.set_ylabel("%s %s"%(ylabel, yunits), fontsize=18)
+        if xRange!=None:
+            ax.set_xlim(xRange)
+
         if additionalLabel != None:
             fig.suptitle('WCTE Beamtest - Run %i, p = %i MeV/c n = %s\n%s'%(self.runNumber, self.runMomentum, self.runRefractiveIndex, additionalLabel), fontsize=18, weight ='bold')
             plt.savefig("../%s/Hist2D_%s_%s_%s_Run%i.png"%(self.saving_folder_path_png, additionalLabel, xlabel, ylabel, self.runNumber))
@@ -1500,6 +1660,49 @@ class LowMomentumAnalysis:
         else:
              print(f"In the config file, checking the coincidence is set to {self.nCoincidenceSelectionBool}, we are therefore not processing the change", end="", flush=True)
             #  self.nCoincidenceSelectionPassed = self.arrayData[0]["DigitimingOffset"]!= -9998
+
+    def fitMuonsAndElectronLGPeaks(self):
+        """FIt and plot a Guassian distribution to the energy deposited in the lead glass for electrons and  muons - LM only"""
+        leadGlassID = self.channelNames.index("PbGlass")
+        if self.isLowMomentum:
+            particle_list = ["electron", "muon"]
+            population_list = [self.electronArray[leadGlassID], self.muonArray[leadGlassID]]
+        
+
+            if "matchedHit0_Window2IntPE" in self.getBranchList(leadGlassID):
+                branches = ["MaxVoltage", "matchedHit0_WindowIntPE", "matchedHit0_Window2IntPE"]
+            else:
+                branches = ["MaxVoltage", "matchedHit0_WindowIntPE"]
+
+            
+
+            for p, population in enumerate(population_list):
+                for branch in branches:
+                    plt.figure(figsize = [16, 9])
+                    electron_leadGlass = population[branch]
+                    particle = particle_list[p]
+
+                    counts, bins, _ = plt.hist(electron_leadGlass, bins = 100, alpha = 0.75, label = "%s-like: %i events"%(particle, len(electron_leadGlass)))
+                    params, covariance = fitGaussian(counts, bins)
+                    print("%s peak mean: %.3f std: %.3f"%(particle, params[1], params[2]))
+                    plt.plot(np.linspace(bins[0], bins[-1], 100), gaussian(np.linspace(bins[0], bins[-1], 100), *params), 'k--', label = 'Mean = %.3f V std = %.3f V'%(params[1], params[2]))
+                    plt.grid()
+                    plt.legend(fontsize = 19)
+                    plt.xlabel(branch, fontsize = 18)
+                    plt.ylabel("Number of events", fontsize = 18)
+
+                    plt.title('WCTE Beamtest - Run %i, p = %i MeV/c n = %s'%(self.runNumber, self.runMomentum, self.runRefractiveIndex), fontsize=18, weight ='bold')
+
+                    plt.tick_params(axis='both', which='major', labelsize=15)
+
+                    plt.savefig("../%s/%s_fitted_Run%i.pdf"%(self.saving_folder_path_pdf, "%s_%s"%(particle, branch), self.runNumber))
+
+                    plt.savefig("../%s/%s_fitted_Run%i.png"%(self.saving_folder_path_png, "%s_%s"%(particle, branch), self.runNumber))
+
+
+        for i in range(20):
+            plt.close()
+
 
     def TStotalChargeSelection(self):
         """"Apply a cut on the minimum energy deposited in the Trigger scintillator (sum of all of the windowIntPE in TOFxy PMTs) to get rid of the poor coincidence matches to improve the TOF resolution"""
@@ -1681,7 +1884,29 @@ class LowMomentumAnalysis:
 
         isSlow = self.getSelectionBasedOnCondition(0, "matchedHit0_TOF", "<", self.protonsTOFCut)
 
+        isLeftOfPoint = self.getSelectionBasedOnCondition(0, "sumACT1", "<", (self.horizontal_el-self.ACTlinearB)/(self.ACTlinearA))
+
+        print("sum isLeftOf: ", sum(isLeftOfPoint))
+        print("sum isBelowMuElCut: ", sum(isBelowMuElCut))
+        print("sum isLeftOf & isBelowMuElCut: ", sum(isLeftOfPoint & isBelowMuElCut))
+
+        isRightOfPoint = self.getSelectionBasedOnCondition(0, "sumACT1", ">", (self.horizontal_el-self.ACTlinearB)/(self.ACTlinearA))
+
+        
+
+
+        isBelowMuElCut = isBelowMuElCut #& isLeftOfPoint
+
+        isBelowHorizontalElCut = isBelowHorizontalElCut #& isRightOfPoint
+
+        print("sum isRightOf: ", sum(isRightOfPoint))
+        print("sum isBelowHorizontalElCut: ", sum(isBelowHorizontalElCut))
+        print("sum isBelowHorizontalElCut & isRightOf: ", sum(isBelowHorizontalElCut & isRightOfPoint))
+
         isNotElectron = isBelowMuElCut | isBelowHorizontalElCut
+
+        print("isNotElectron: ", sum(isNotElectron))
+        
 
         isMuonOrElectron = isSlow & isAbovePiMuCutLine
 
@@ -1707,9 +1932,18 @@ class LowMomentumAnalysis:
 
             isAboveHorizontalElCut = self.getSelectionBasedOnCondition(0, "sumDownstreamACTs", ">", self.horizontal_el)
 
+            #need to know if we are on the right or lefthandside of the cut line
+            isLeftOfPoint = self.getSelectionBasedOnCondition(0, "sumACT1", "<", (self.horizontal_el-self.ACTlinearB)/(self.ACTlinearA))
+
+            isRightOfPoint = self.getSelectionBasedOnCondition(0, "sumACT1", ">", (self.horizontal_el-self.ACTlinearB)/(self.ACTlinearA))
+
             isSlow = self.getSelectionBasedOnCondition(0, "matchedHit0_TOF", "<", self.protonsTOFCut)
 
-            self.isElectron = isAboveMuElCut | isAboveHorizontalElCut
+            self.isElectron = isAboveMuElCut & isLeftOfPoint
+            
+            self.isAboveLine = isAboveHorizontalElCut & isRightOfPoint
+
+            self.isElectron = self.isElectron | self.isAboveLine
 
             self.isElectron = self.isElectron & isSlow
 
