@@ -13,6 +13,10 @@
 
         "looseCoincidencePMT" : 1,
 
+	"comment": "new! go from 2+1 to 2+2 coincidence match",
+
+		"looseCoincidencePMTb" : 3,
+
 	"comment" 	: "Previous voltage scale: 0.000610351",
 		"ChannelNames" : ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R",
 						  "TOF00", "TOF01", "TOF02", "TOF03", "TOF10", "TOF11", "TOF12", "TOF13",
@@ -120,7 +124,7 @@
 								-16, -16, -50, 0, 0, 0, 0, 0,
 								0, 0, 0, 0, 0, 0, 0, 0],
 
-		"window2_upper_bound" : [15, 15, 15, 15, 15, 15, 15, 15,
+		"window2_upper_bound" : [25, 25, 25, 25, 25, 25, 25, 25,
 								150, 150, 150, 150, 150, 150, 150, 150,
 								45, 45, 190, 0, 0, 0, 0, 0,
 								0, 0, 0, 0, 0, 0, 0, 0],
