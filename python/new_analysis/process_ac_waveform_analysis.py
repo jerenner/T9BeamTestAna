@@ -88,10 +88,18 @@ def process_file(root_filename, ntuple_filename, config, output_file):
     mainCoincidencePMTb = config["mainCoincidencePMTb"]
     looseCoincidencePMT = config["looseCoincidencePMT"]
 
+    if "looseCoincidencePMTb" in config:
+        looseCoincidencePMTb = config["looseCoincidencePMTb"]
+
     #TODO: make check coincidence and the PMTs used part of the config file (and merge the config files)
     print("You have chosen to set the CheckCoincidence to", checkCoincidence)
     if (checkCoincidence):
-        print("The PMTs used for the first coincidence are %i and %i and the PMT used for second coincidence is %i (loose or tight depends on set-up) \n"%(mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT))
+
+        if "looseCoincidencePMTb" in config:
+            print("using 2+2 coincidence with PMTs %i and %i on TS1 and %i and %i on TS0\n"%(mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT, looseCoincidencePMTb))
+
+        else:
+            print("The PMTs used for the first coincidence are %i and %i and the PMT used for second coincidence is %i (loose or tight depends on set-up) \n"%(mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT))
 
     signalTimeBranch = "SignalTimeCorrected"
     run_number = int(root_filename[-11:-5])
@@ -128,8 +136,17 @@ def process_file(root_filename, ntuple_filename, config, output_file):
         #we have tight-loose coincidence for TOF1-TOF0 in LM setup
         #and tight-tight in TG run, can change default first_hodoscope_run
         #in coincidence.performCoincidence
-        SignalTimeMatchedTOF1, SignalTimeMatchedTOF0 = coincidence.performCoincidence(ntuple_filename, mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT, run_number)
+        if "looseCoincidencePMTb" in config:
+        #2+2 coincidence
+            SignalTimeMatchedTOF1, SignalTimeMatchedTOF0 = coincidence.perform2plus2Coincidence(ntuple_filename, mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT,looseCoincidencePMTb, run_number)
+
+
+        else:
+        #2+1 coincidence 
+            SignalTimeMatchedTOF1, SignalTimeMatchedTOF0 = coincidence.performCoincidence(ntuple_filename, mainCoincidencePMTa, mainCoincidencePMTb, looseCoincidencePMT, run_number)
         #set the reference timing for the hits as the time matched dataframe
+
+
         df_TOF1_hitTimes = SignalTimeMatchedTOF1.copy()
         max_column_labels = df_TOF1_hitTimes.idxmax(axis=1, skipna=True)
         #need to have the same format to calculate the TOF when computing the position of the window

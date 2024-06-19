@@ -46,6 +46,7 @@ BeamDataAna.makeSumTS()
 BeamDataAna.makeSumTSwindow2()
 BeamDataAna.makeSumDownstreamACTs()
 BeamDataAna.makeSumACT1()
+BeamDataAna.makeSumACT1window2()
 
 #select events with exactly one coincidence (set in the config file)
 BeamDataAna.nCoincidenceSelection()
@@ -54,7 +55,8 @@ BeamDataAna.nCoincidenceSelection()
 if "matchedHit0_Window2IntPE" in BeamDataAna.getBranchList(0):
     BeamDataAna.plot2DHistFromBranches((config["channelNames"].index("PbGlass")), "matchedHit0_Window2IntPE", 0, "sumTSwindow2", "(PE)", "(PE)", "sumTSwindow2_Window2IntPe_vsMatchedHit0_Window2IntPE_nCoincidence_noTSselection", True, [200, 300], [[0, 60], [0, 3000]])
 
-#select low energy deposition in the TS but high eneough that it doesn't look like failed coincidence
+#select low energy deposition in the TS that it is not 2-events
+# The high enough charge deposited isn't necessary anymore, we have 2+2 coincidence now 
 BeamDataAna.TStotalChargeSelection()
 
 #This can be useful to have a look out: timing of hits
@@ -65,8 +67,24 @@ if BeamDataAna.WindowBoundsAreAvailable:
 #based on the -16ns to 45ns window selection, ID all particles that we have in this run, values in the config file
 BeamDataAna.makeAllParticleSelection()
 
-#using all the available particles measure the beam momentum with bins of 0.1 
+#Not yet available but soon to be: automated way to identify particles for the low momentum setup:
+# BeamDataAna.findOptimalMuElCuts()
+
+
+#make the 2D plots indicating where the cut lines are 
+if BeamDataAna.isLowMomentum:
+    BeamDataAna.plotAll2DSelections(True)
+
+
+#Make plots and fit the lead glass charge distribution in the Lead Glass for muon and electron-like events, can be useful but not essential
+BeamDataAna.fitMuonsAndElectronLGPeaks()
+
+#using all the available particles measure the beam momentum with bins of 0.1, calculates the systematic error
+#using many throws of the covariance matrix, see TN section III. C. 3, this is slow. 
 BeamDataAna.measureMomentumUsingTOF(0.1)
+
+#Make n= bins equally populated in terms of the Trigger scintillator 10 wholeWaveformIntPE charge and check the resolution of the time of flight there which should follow a 1/sqrt(TScharge) logic, work in progress, this is not needed anymore but if you want to compare the plots with the TN I leave this here
+BeamDataAna.measureElTOFresolutionFunctionOfTScharge(10)
 
 #Useful to know: config["channelNames"].index("PbGlass") gives the index of the lead glass detector.
 
@@ -79,16 +97,22 @@ if BeamDataAna.thereIsSecondWindow:
     BeamDataAna.plotBranchHistForAllParticles(0, "sumTSwindow2", 25, True)
 
 #Look at the windowIntPE for all the particles for some interesting detectors 
-for detector in ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R", "PbGlass"]:
+if BeamDataAna.isLowMomentum:
+    detectors = ["ACT0L", "ACT0R", "ACT1L", "ACT1R", "ACT2L", "ACT2R", "ACT3L", "ACT3R", "PbGlass"]
+else:
+    detectors = ["HD11", "HD12", "HD13", "HD14", "ACT3L", "ACT3R", "PbGlass", "TriggerScint"]
+
+
+for detector in detectors:
     BeamDataAna.plotBranchHistForAllParticles(config["channelNames"].index(detector), "matchedHit0_WindowIntPE", 0.2, True, [0, 50])
 
-#Make n= bins equally populated in terms of the Trigger scintillator 10 wholeWaveformIntPE charge and check the resolution of the time of flight there which should follow a 1/sqrt(TScharge) logic, work in progress
-BeamDataAna.measureElTOFresolutionFunctionOfTScharge(10)
+
 
 #Output the results as a csv file, name of the output file in the config file 
 BeamDataAna.outputResults()
 
 
 #If interestested, one can study the weird electrons
-muonLikeWeirdElectron = BeamDataAna.muonLikeWeirdElectronArray
-pionLikeWeirdElectron = BeamDataAna.pionLikeWeirdElectronArray
+if BeamDataAna.isLowMomentum:
+    muonLikeWeirdElectron = BeamDataAna.muonLikeWeirdElectronArray
+    pionLikeWeirdElectron = BeamDataAna.pionLikeWeirdElectronArray
