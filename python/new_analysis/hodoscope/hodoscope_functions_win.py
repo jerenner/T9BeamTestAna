@@ -89,7 +89,7 @@ elec_hit_momenta_MC_basicfield_023 = {0: 0.12972191050682533,
                     13: 0.28524220588846017,
                     14: 0.3257053785387031}
 
-elec_hit_momenta = elec_hit_momenta_calc
+elec_hit_momenta = elec_hit_momenta_MC_fieldmap
 
 # Define the computed momentum range for each hodoscope element.
 momentum_range = {0: 0.0063047132725456145,
@@ -678,7 +678,7 @@ def get_num_duplicates(arr):
     u, c = np.unique(arr, return_counts=True)
     return np.sum(c[c > 1])
 
-def filter_range(name,df,key,rng,drop=False,debug=False):
+def filter_range(name,df,key,rng,drop=False,chg_key='WindowIntPE',debug=False):
     
     # Perform the filter.
     df_filtered = df[df[key].between(*rng)]
@@ -693,422 +693,17 @@ def filter_range(name,df,key,rng,drop=False,debug=False):
             df_filtered = df_filtered[~df_filtered['event'].duplicated(keep=False)]
         # Otherwise choose the one with the maximum integrated charge.
         else:
-            idx = df_filtered.groupby('event')['IntCharge'].idxmax()
+            idx = df_filtered.groupby('event')[chg_key].idxmax()
             df_filtered = df_filtered.loc[idx]
         
     if(debug): print("--> returning",len(df_filtered),"events")
     return df_filtered
 
-def timing_analysis(df_dict, pb_timing_range, tof0_timing_range, tof0_charge_range, 
-                    tof1_timing_range, tof1_charge_range, t2_timing_range, t2_charge_range,
-                    act0_timing_range, act0_charge_range, act1_timing_range, act1_charge_range,
-                    act3_timing_range, hd_timing_ranges, hd_charge_ranges, low_radiation = False,
-                    debug = False):
-    
-    # Extract the total number of events
-    ntot_evts = -1
-    ntot_spills = -1
-    for det in df_dict:
 
-        # Confirm that each detector dataframe has recorded all events.
-        if(det != 'EventInfo'):
-            df_det = df_dict[det]
-            evts = df_det['event'].values
-            if(debug): print(f"[Detector {det}] events go from {evts[0]} to {evts[-1]} for total of {len(np.unique(evts))}")
-        # Get the actual total from the 'EventInfo' dataframe.
-        else:
-            df_evts = df_dict[det]
-            evts = df_evts['EventNumber'].values
-            spills = df_evts['SpillNumber'].values
-            ntot_evts = len(evts)
-            ntot_spills = len(np.unique(spills))
-    if(debug): print(f"* Found a total of {ntot_evts} events and {ntot_spills} spills.")
-    
-    # Lead glass
-    # --------------------------------------------------------------------------------------------
-    # Note: we require 1 lead glass peak in the final analysis
-    pb_1peak = filter_range("PbGlass",df_dict['PbGlass'],'nPeaks',(1,1),debug=debug)
-    pb_filtered = filter_range("PbGlass",pb_1peak,'PeakTime',pb_timing_range,debug=debug)
-    npeaks_pre  = len(df_dict['PbGlass'])
-    npeaks_post = len(pb_filtered)
-    #if(debug): print(f"-- Peaks {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
+def charge_analysis_corrected_winInt(df_dict, chg_cuts, low_radiation = False, debug = False):
 
-    # TOF elements
-    # --------------------------------------------------------------------------------------------
-    # TOF0
-    tof00_filtered = filter_range("TOF00",df_dict['TOF00'],'PeakTime',tof0_timing_range,debug=debug)
-    tof01_filtered = filter_range("TOF01",df_dict['TOF01'],'PeakTime',tof0_timing_range,debug=debug)
-    tof02_filtered = filter_range("TOF02",df_dict['TOF02'],'PeakTime',tof0_timing_range,debug=debug)
-    tof03_filtered = filter_range("TOF03",df_dict['TOF03'],'PeakTime',tof0_timing_range,debug=debug)
-
-    combined_00_01 = tof00_filtered.merge(tof01_filtered, on='event', suffixes=('_00', '_01'))
-    combined_00_01_02 = combined_00_01.merge(tof02_filtered, on='event')
-    combined_00_01_02 = combined_00_01_02.rename(columns={'IntCharge': 'IntCharge_02'})
-    tof0_combined = combined_00_01_02.merge(tof03_filtered, on='event')
-    tof0_combined = tof0_combined.rename(columns={'IntCharge': 'IntCharge_03'})
-    tof0_combined['combined_charge'] = (tof0_combined['IntCharge_00'] 
-                                    + tof0_combined['IntCharge_01']
-                                    + tof0_combined['IntCharge_02']
-                                    + tof0_combined['IntCharge_03'])
-
-    tof0_valid = filter_range("TOF0_combined",tof0_combined,'combined_charge',tof0_charge_range,debug=debug)
-    tof0_valid.loc[:,'hit_TOF0'] = 1
-    if(debug): print()
-
-    # TOF1
-    tof10_filtered = filter_range("TOF10",df_dict['TOF10'],'PeakTime',tof1_timing_range,debug=debug)
-    tof11_filtered = filter_range("TOF11",df_dict['TOF11'],'PeakTime',tof1_timing_range,debug=debug)
-    tof12_filtered = filter_range("TOF12",df_dict['TOF12'],'PeakTime',tof1_timing_range,debug=debug)
-    tof13_filtered = filter_range("TOF13",df_dict['TOF13'],'PeakTime',tof1_timing_range,debug=debug)
-
-    combined_10_11 = tof10_filtered.merge(tof11_filtered, on='event', suffixes=('_10', '_11'))
-    combined_10_11_12 = combined_10_11.merge(tof12_filtered, on='event')
-    combined_10_11_12 = combined_10_11_12.rename(columns={'IntCharge': 'IntCharge_12'})
-    tof1_combined = combined_10_11_12.merge(tof13_filtered, on='event')
-    tof1_combined = tof1_combined.rename(columns={'IntCharge': 'IntCharge_13'})
-    tof1_combined['combined_charge'] = (tof1_combined['IntCharge_10'] 
-                                    + tof1_combined['IntCharge_11']
-                                    + tof1_combined['IntCharge_12']
-                                    + tof1_combined['IntCharge_13'])
-
-    tof1_valid = filter_range("TOF1_combined",tof1_combined,'combined_charge',tof1_charge_range,debug=debug)
-    if(not low_radiation): tof1_valid.loc[:,'hit_TOF1'] = 1
-    if(debug): print()
-
-    # Filter T2
-    # --------------------------------------------------------------------------------------------
-    t2_filtered = filter_range("T2",df_dict['TriggerScint'],'PeakTime',t2_timing_range,debug=debug)
-    t2_valid = filter_range("T2",t2_filtered,'IntCharge',t2_charge_range,debug=debug)
-    t2_valid.loc[:,'hit_T2'] = 1
-    if(debug): print()
-    # --------------------------------------------------------------------------------------------
-
-    # ACT elements
-    # --------------------------------------------------------------------------------------------
-    # ACT0
-    act0l_filtered = filter_range("ACT0L",df_dict['ACT0L'],'PeakTime',act0_timing_range,debug=debug)
-    act0r_filtered = filter_range("ACT0R",df_dict['ACT0R'],'PeakTime',act0_timing_range,debug=debug)
-
-    act0_combined = act0l_filtered.merge(act0r_filtered, on='event', suffixes=('_L', '_R'))
-    act0_combined['combined_charge'] = act0_combined['IntCharge_L'] + act0_combined['IntCharge_R']
-
-    act0_valid = filter_range("ACT0_combined",act0_combined,'combined_charge',act0_charge_range,debug=debug)
-    if(not low_radiation): act0_valid.loc[:,'hit_ACT0'] = 1
-
-    # ACT1
-    act1l_filtered = filter_range("ACT1L",df_dict['ACT1L'],'PeakTime',act1_timing_range,debug=debug)
-    act1r_filtered = filter_range("ACT1R",df_dict['ACT1R'],'PeakTime',act1_timing_range,debug=debug)
-
-    act1_combined = act1l_filtered.merge(act1r_filtered, on='event', suffixes=('_L', '_R'))
-    act1_combined['combined_charge'] = act1_combined['IntCharge_L'] + act1_combined['IntCharge_R']
-
-    act1_valid = filter_range("ACT1_combined",act1_combined,'combined_charge',act1_charge_range,debug=debug)
-    act1_valid.loc[:,'hit_ACT1'] = 1
-
-    # ACT3
-    act3l_filtered = df_dict['ACT3L'][df_dict['ACT3L']['nPeaks'] == 0]
-    act3r_filtered = df_dict['ACT3R'][df_dict['ACT3R']['nPeaks'] == 0]
-
-    act3_combined = act3l_filtered.merge(act3r_filtered, on='event', suffixes=('_L', '_R'))
-    act3_valid = act3_combined.copy()
-    act3_valid.loc[:,'nohit_ACT3'] = 1
-    if(debug): print("ACT3 total number of valid events:",len(act3_valid))
-    # --------------------------------------------------------------------------------------------
-
-    # Hodoscope elements
-    # --------------------------------------------------------------------------------------------
-    hd_dfs = {}
-
-    # Create the filtered dataframes (containing peaks over the threshold at the correct time).
-    for i in range(15):  # 0 to 14 inclusive
-        hd_key = f'HD{i}'
-        hit_col_name = f'hit_{hd_key}'
-        hd_time_range = hd_timing_ranges[hd_key]
-        hd_charge_range = hd_charge_ranges[hd_key]
-        
-        # Filtering
-        hd_filtered = filter_range(hd_key,df_dict[hd_key],'PeakTime',hd_time_range,debug=debug)
-        hd_filtered = filter_range(hd_key,hd_filtered,'IntCharge',hd_charge_range,debug=debug)
-        # hd_filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
-        #                         (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
-        if(debug): print(f"HD{i}: {len(hd_filtered)} of {len(df_dict[hd_key])} events after filter")
-        
-        # Assign a binary value indicating a hit
-        if not hd_filtered.empty:
-            hd_filtered.loc[:,hit_col_name] = 1
-        else:
-            hd_filtered.loc[:,hit_col_name] = 0
-
-        hd_dfs[hd_key] = hd_filtered
-
-    # Merge all HD dataframes
-    combined_hd_df = hd_dfs['HD0'][['event', 'hit_HD0']]
-    for i in range(1, 15):
-        hd_key = f'HD{i}'
-        hit_col_name = f'hit_{hd_key}'
-        
-        combined_hd_df = combined_hd_df.merge(
-            hd_dfs[hd_key][['event', hit_col_name]],
-            on='event',
-            how='outer'
-        ).fillna(0)
-
-    # Calculate total hits per event
-    combined_hd_df['total_hits'] = combined_hd_df.filter(like='hit_').sum(axis=1)
-
-    # Filter events with a hit count of 1
-    hd_valid_events = combined_hd_df[combined_hd_df['total_hits'] == 1]
-    if(debug): print(f"Number of hd_valid_events = {len(hd_valid_events)}")
-
-    u, c = np.unique(combined_hd_df['event'].values, return_counts=True)
-    if(debug): print("Duplicates in combined HD dataframe:",np.sum(c[c > 1]))
-    # --------------------------------------------------------------------------------------------
-
-    # Merge all relevant dataframes
-    pb_filtered.columns = ['LG_' + col if col != 'event' else col for col in pb_filtered.columns]
-    final_df = pb_filtered.merge(hd_valid_events, on='event', how='inner')
-    ntagged_evts = len(final_df[final_df.total_hits == 1])
-    if(debug): print(f"Final df number of events = {len(final_df)}; {ntagged_evts} tagged events")
-    if(not low_radiation): final_df = final_df.merge(act0_valid[['event', 'hit_ACT0']], on='event', how='left')
-    final_df = final_df.merge(act1_valid[['event', 'hit_ACT1']], on='event', how='left')
-    final_df = final_df.merge(act3_valid[['event', 'nohit_ACT3']], on='event', how='left')
-    final_df = final_df.merge(tof0_valid[['event', 'hit_TOF0']], on='event', how='left')
-    if(not low_radiation): final_df = final_df.merge(tof1_valid[['event', 'hit_TOF1']], on='event', how='left')
-    final_df = final_df.merge(t2_valid[['event', 'hit_T2']], on='event', how='left')
-    if(debug): print(f"{len(final_df[final_df.total_hits == 1])} tagged events")
-
-    # Fill NaN values in the hit columns with 0
-    if(low_radiation): final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']] = final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']].fillna(0)
-    else: final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']] = final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']].fillna(0)
-
-    return final_df, ntot_evts, ntot_spills, ntagged_evts
-
-
-def timing_analysis_corrected(df_dict, tof10_timing_range, chg_cuts, timing_cuts, low_radiation = False,
-                    debug = False):
-    
-    # Extract the total number of events
-    ntot_evts = -1
-    ntot_spills = -1
-    for det in df_dict:
-
-        # Confirm that each detector dataframe has recorded all events.
-        if(det != 'EventInfo'):
-            df_det = df_dict[det]
-            evts = df_det['event'].values
-            if(debug): print(f"[Detector {det}] events go from {evts[0]} to {evts[-1]} for total of {len(np.unique(evts))}")
-        # Get the actual total from the 'EventInfo' dataframe.
-        else:
-            df_evts = df_dict[det]
-            evts = df_evts['EventNumber'].values
-            spills = df_evts['SpillNumber'].values
-            ntot_evts = len(evts)
-            ntot_spills = len(np.unique(spills))
-    if(debug): print(f"* Found a total of {ntot_evts} events and {ntot_spills} spills.")
-
-    # First filter out the TOF10 peaks in the selected time range
-    # --------------------------------------------------------------------------------------------
-    df_T1sel = filter_range("TOF10",df_dict['TOF10'],'SignalTimeCorrected',tof10_timing_range,drop=True,debug=debug)
-    
-    # Lead glass
-    # --------------------------------------------------------------------------------------------
-    # Note: we require 1 lead glass peak in the final analysis
-    pb_1peak = filter_range("PbGlass",df_dict['PbGlass'],'nPeaks',(1,1),debug=debug)
-    pb_1peak_T1 = pb_1peak.merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    pb_1peak_T1['SignalTimeCorrected_rel'] = pb_1peak_T1['SignalTimeCorrected'] - pb_1peak_T1['SignalTimeCorrected_T1']
-    pb_filtered = filter_range("PbGlass",pb_1peak_T1,'SignalTimeCorrected_rel',timing_cuts["PbGlass"],debug=debug)
-    npeaks_pre  = len(df_dict['PbGlass'])
-    npeaks_post = len(pb_filtered)
-    #if(debug): print(f"-- Peaks {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
-
-    # TOF elements
-    # --------------------------------------------------------------------------------------------
-    # TOF0
-    tof00_T1 = df_dict['TOF00'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof00_T1['SignalTimeCorrected_rel'] = tof00_T1['SignalTimeCorrected'] - tof00_T1['SignalTimeCorrected_T1']
-    tof01_T1 = df_dict['TOF01'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof01_T1['SignalTimeCorrected_rel'] = tof01_T1['SignalTimeCorrected'] - tof01_T1['SignalTimeCorrected_T1']
-    tof02_T1 = df_dict['TOF02'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof02_T1['SignalTimeCorrected_rel'] = tof02_T1['SignalTimeCorrected'] - tof02_T1['SignalTimeCorrected_T1']
-    tof03_T1 = df_dict['TOF03'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof03_T1['SignalTimeCorrected_rel'] = tof03_T1['SignalTimeCorrected'] - tof03_T1['SignalTimeCorrected_T1']
-
-    tof00_filtered = filter_range("TOF00",tof00_T1,'SignalTimeCorrected_rel',timing_cuts['TOF00'],debug=debug)
-    tof01_filtered = filter_range("TOF01",tof01_T1,'SignalTimeCorrected_rel',timing_cuts['TOF01'],debug=debug)
-    tof02_filtered = filter_range("TOF02",tof02_T1,'SignalTimeCorrected_rel',timing_cuts['TOF02'],debug=debug)
-    tof03_filtered = filter_range("TOF03",tof03_T1,'SignalTimeCorrected_rel',timing_cuts['TOF03'],debug=debug)
-
-    # Perform a single charge cut on the averaged charge across all 4 TOF0 elements.
-    combined_00_01 = tof00_filtered.merge(tof01_filtered, on='event', suffixes=('_00', '_01'))
-    combined_00_01_02 = combined_00_01.merge(tof02_filtered, on='event')
-    combined_00_01_02 = combined_00_01_02.rename(columns={'IntCharge': 'IntCharge_02'})
-    tof0_combined = combined_00_01_02.merge(tof03_filtered, on='event')
-    tof0_combined = tof0_combined.rename(columns={'IntCharge': 'IntCharge_03'})
-    tof0_combined['avg_charge'] = (tof0_combined['IntCharge_00'] 
-                                    + tof0_combined['IntCharge_01']
-                                    + tof0_combined['IntCharge_02']
-                                    + tof0_combined['IntCharge_03']) / 4.
-
-    tof0_valid = filter_range("TOF0_combined",tof0_combined,'avg_charge',chg_cuts['TOF00'],debug=debug)
-    tof0_valid.loc[:,'hit_TOF0'] = 1
-    if(debug): print()
-
-    # TOF1
-    tof10_T1 = df_dict['TOF10'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof10_T1['SignalTimeCorrected_rel'] = tof10_T1['SignalTimeCorrected'] - tof10_T1['SignalTimeCorrected_T1']
-    tof11_T1 = df_dict['TOF11'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof11_T1['SignalTimeCorrected_rel'] = tof11_T1['SignalTimeCorrected'] - tof11_T1['SignalTimeCorrected_T1']
-    tof12_T1 = df_dict['TOF12'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof12_T1['SignalTimeCorrected_rel'] = tof12_T1['SignalTimeCorrected'] - tof12_T1['SignalTimeCorrected_T1']
-    tof13_T1 = df_dict['TOF13'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    tof13_T1['SignalTimeCorrected_rel'] = tof13_T1['SignalTimeCorrected'] - tof13_T1['SignalTimeCorrected_T1']
-
-    tof10_filtered = filter_range("TOF10",tof10_T1,'SignalTimeCorrected_rel',timing_cuts['TOF10'],debug=debug)
-    tof11_filtered = filter_range("TOF11",tof11_T1,'SignalTimeCorrected_rel',timing_cuts['TOF11'],debug=debug)
-    tof12_filtered = filter_range("TOF12",tof12_T1,'SignalTimeCorrected_rel',timing_cuts['TOF12'],debug=debug)
-    tof13_filtered = filter_range("TOF13",tof13_T1,'SignalTimeCorrected_rel',timing_cuts['TOF13'],debug=debug)
-
-    combined_10_11 = tof10_filtered.merge(tof11_filtered, on='event', suffixes=('_10', '_11'))
-    combined_10_11_12 = combined_10_11.merge(tof12_filtered, on='event')
-    combined_10_11_12 = combined_10_11_12.rename(columns={'IntCharge': 'IntCharge_12'})
-    tof1_combined = combined_10_11_12.merge(tof13_filtered, on='event')
-    tof1_combined = tof1_combined.rename(columns={'IntCharge': 'IntCharge_13'})
-    tof1_combined['avg_charge'] = (tof1_combined['IntCharge_10'] 
-                                    + tof1_combined['IntCharge_11']
-                                    + tof1_combined['IntCharge_12']
-                                    + tof1_combined['IntCharge_13']) / 4.
-
-    tof1_valid = filter_range("TOF1_combined",tof1_combined,'avg_charge',chg_cuts['TOF10'],debug=debug)
-    if(not low_radiation): tof1_valid.loc[:,'hit_TOF1'] = 1
-    if(debug): print()
-
-    # Filter T2
-    # --------------------------------------------------------------------------------------------
-    t2_T1 = df_dict['TriggerScint'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    t2_T1['SignalTimeCorrected_rel'] = t2_T1['SignalTimeCorrected'] - t2_T1['SignalTimeCorrected_T1']
-    t2_filtered = filter_range("T2",t2_T1,'SignalTimeCorrected_rel',timing_cuts['TriggerScint'],debug=debug)
-    t2_valid = filter_range("T2",t2_filtered,'IntCharge',chg_cuts['TriggerScint'],debug=debug)
-    t2_valid.loc[:,'hit_T2'] = 1
-    if(debug): print()
-    # --------------------------------------------------------------------------------------------
-
-    # ACT elements
-    # --------------------------------------------------------------------------------------------
-    # ACT0
-    act0l_T1 = df_dict['ACT0L'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    act0l_T1['SignalTimeCorrected_rel'] = act0l_T1['SignalTimeCorrected'] - act0l_T1['SignalTimeCorrected_T1']
-    act0r_T1 = df_dict['ACT0R'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    act0r_T1['SignalTimeCorrected_rel'] = act0r_T1['SignalTimeCorrected'] - act0r_T1['SignalTimeCorrected_T1']
-
-    act0l_filtered = filter_range("ACT0L",act0l_T1,'SignalTimeCorrected_rel',timing_cuts['ACT0L'],debug=debug)
-    act0r_filtered = filter_range("ACT0R",act0r_T1,'SignalTimeCorrected_rel',timing_cuts['ACT0R'],debug=debug)
-
-    # Make a single cut on the average charge corresponding to the cut range for ACT0L.
-    act0_combined = act0l_filtered.merge(act0r_filtered, on='event', suffixes=('_L', '_R'))
-    act0_combined['avg_charge'] = (act0_combined['IntCharge_L'] + act0_combined['IntCharge_R']) / 2.
-    act0_valid = filter_range("ACT0_combined",act0_combined,'avg_charge',chg_cuts['ACT0L'],debug=debug)
-    if(not low_radiation): act0_valid.loc[:,'hit_ACT0'] = 1
-
-    # ACT1
-    act1l_T1 = df_dict['ACT1L'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    act1l_T1['SignalTimeCorrected_rel'] = act1l_T1['SignalTimeCorrected'] - act1l_T1['SignalTimeCorrected_T1']
-    act1r_T1 = df_dict['ACT1R'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    act1r_T1['SignalTimeCorrected_rel'] = act1r_T1['SignalTimeCorrected'] - act1r_T1['SignalTimeCorrected_T1']
-
-    act1l_filtered = filter_range("ACT1L",act1l_T1,'SignalTimeCorrected_rel',timing_cuts['ACT1L'],debug=debug)
-    act1r_filtered = filter_range("ACT1R",act1r_T1,'SignalTimeCorrected_rel',timing_cuts['ACT1R'],debug=debug)
-
-    # Make a single cut on the average charge corresponding to the cut range for ACT1L
-    act1_combined = act1l_filtered.merge(act1r_filtered, on='event', suffixes=('_L', '_R'))
-    act1_combined['avg_charge'] = (act1_combined['IntCharge_L'] + act1_combined['IntCharge_R']) / 2.
-    act1_valid = filter_range("ACT1_combined",act1_combined,'avg_charge',chg_cuts['ACT1L'],debug=debug)
-    act1_valid.loc[:,'hit_ACT1'] = 1
-
-    # ACT3
-    # act3l_T1 = df_dict['ACT3L'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    # act3l_T1['SignalTimeCorrected_rel'] = act3l_T1['SignalTimeCorrected'] - act3l_T1['SignalTimeCorrected_T1']
-    # act3r_T1 = df_dict['ACT3R'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    # act3r_T1['SignalTimeCorrected_rel'] = act3r_T1['SignalTimeCorrected'] - act3r_T1['SignalTimeCorrected_T1']
-
-    act3l_filtered = df_dict['ACT3L'][df_dict['ACT3L']['nPeaks'] == 0]
-    act3r_filtered = df_dict['ACT3R'][df_dict['ACT3R']['nPeaks'] == 0]
-
-    act3_combined = act3l_filtered.merge(act3r_filtered, on='event', suffixes=('_L', '_R'))
-    act3_valid = act3_combined.copy()
-    act3_valid.loc[:,'nohit_ACT3'] = 1
-    if(debug): print("ACT3 total number of valid events:",len(act3_valid))
-    # --------------------------------------------------------------------------------------------
-
-    # Hodoscope elements
-    # --------------------------------------------------------------------------------------------
-    hd_dfs = {}
-
-    # Create the filtered dataframes (containing peaks over the threshold at the correct time).
-    for i in range(15):  # 0 to 14 inclusive
-        hd_key = f'HD{i}'
-        hit_col_name = f'hit_{hd_key}'
-        
-        # Filtering
-        hd_T1 = df_dict[hd_key].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-        hd_T1['SignalTimeCorrected_rel'] = hd_T1['SignalTimeCorrected'] - hd_T1['SignalTimeCorrected_T1']
-        hd_filtered = filter_range(hd_key,hd_T1,'SignalTimeCorrected_rel',timing_cuts[hd_key],debug=debug)
-        hd_filtered = filter_range(hd_key,hd_filtered,'IntCharge',chg_cuts[hd_key],debug=debug)
-        # hd_filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
-        #                         (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
-        if(debug): print(f"HD{i}: {len(hd_filtered)} of {len(df_dict[hd_key])} events after filter")
-        
-        # Assign a binary value indicating a hit
-        if not hd_filtered.empty:
-            hd_filtered.loc[:,hit_col_name] = 1
-        else:
-            hd_filtered.loc[:,hit_col_name] = 0
-
-        hd_dfs[hd_key] = hd_filtered
-
-    # Merge all HD dataframes
-    combined_hd_df = hd_dfs['HD0'][['event', 'hit_HD0']]
-    for i in range(1, 15):
-        hd_key = f'HD{i}'
-        hit_col_name = f'hit_{hd_key}'
-        
-        combined_hd_df = combined_hd_df.merge(
-            hd_dfs[hd_key][['event', hit_col_name]],
-            on='event',
-            how='outer'
-        ).fillna(0)
-
-    # Calculate total hits per event
-    combined_hd_df['total_hits'] = combined_hd_df.filter(like='hit_').sum(axis=1)
-
-    # Filter events with a hit count of 1
-    hd_valid_events = combined_hd_df[combined_hd_df['total_hits'] == 1]
-    if(debug): print(f"Number of hd_valid_events = {len(hd_valid_events)}")
-
-    u, c = np.unique(combined_hd_df['event'].values, return_counts=True)
-    if(debug): print("Duplicates in combined HD dataframe:",np.sum(c[c > 1]))
-    # --------------------------------------------------------------------------------------------
-
-    # Merge all relevant dataframes
-    pb_filtered.columns = ['LG_' + col if col != 'event' else col for col in pb_filtered.columns]
-    final_df = pb_filtered.merge(hd_valid_events, on='event', how='inner')
-    ntagged_evts = len(final_df[final_df.total_hits == 1])
-    if(debug): print(f"Final df number of events = {len(final_df)}; {ntagged_evts} tagged events")
-    if(not low_radiation): final_df = final_df.merge(act0_valid[['event', 'hit_ACT0']], on='event', how='left')
-    final_df = final_df.merge(act1_valid[['event', 'hit_ACT1']], on='event', how='left')
-    final_df = final_df.merge(act3_valid[['event', 'nohit_ACT3']], on='event', how='left')
-    final_df = final_df.merge(tof0_valid[['event', 'hit_TOF0']], on='event', how='left')
-    if(not low_radiation): final_df = final_df.merge(tof1_valid[['event', 'hit_TOF1']], on='event', how='left')
-    final_df = final_df.merge(t2_valid[['event', 'hit_T2']], on='event', how='left')
-    if(debug): print(f"{len(final_df[final_df.total_hits == 1])} tagged events")
-
-    # Fill NaN values in the hit columns with 0
-    if(low_radiation): final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']] = final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']].fillna(0)
-    else: final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']] = final_df[['hit_ACT0', 'hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_TOF1', 'hit_T2']].fillna(0)
-
-    return final_df, ntot_evts, ntot_spills, ntagged_evts
-
-def timing_analysis_corrected_winInt(df_dict, chg_cuts, timing_cuts, low_radiation = False,
-                    debug = False):
+    # Combine on the following charge quantity.
+    chg_key = "WindowIntPE"
     
     # Extract the total number of events
     ntot_evts = -1
@@ -1133,79 +728,57 @@ def timing_analysis_corrected_winInt(df_dict, chg_cuts, timing_cuts, low_radiati
     # --------------------------------------------------------------------------------------------
     # Note: we require 1 lead glass peak in the final analysis
     pb_1peak = filter_range("PbGlass",df_dict['PbGlass'],'nWindowPeaks',(1,1),debug=debug)
-    pb_1peak.loc[:,'WindowCentralTimeCorrected_rel'] = pb_1peak['WindowCentralTimeCorrected'] - pb_1peak['SignalTimeMatchedTOF1']
-    pb_filtered = filter_range("PbGlass",pb_1peak,'WindowCentralTimeCorrected_rel',timing_cuts["PbGlass"],debug=debug)
     npeaks_pre  = len(df_dict['PbGlass'])
-    npeaks_post = len(pb_filtered)
+    npeaks_post = len(pb_1peak)
     #if(debug): print(f"-- Peaks {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
 
     # TOF elements
     # --------------------------------------------------------------------------------------------
     # TOF0
     tof00 = df_dict['TOF00']
-    tof00['WindowCentralTimeCorrected_rel'] = tof00['WindowCentralTimeCorrected'] - tof00['SignalTimeMatchedTOF1']
     tof01 = df_dict['TOF01']
-    tof01['WindowCentralTimeCorrected_rel'] = tof01['WindowCentralTimeCorrected'] - tof01['SignalTimeMatchedTOF1']
     tof02 = df_dict['TOF02']
-    tof02['WindowCentralTimeCorrected_rel'] = tof02['WindowCentralTimeCorrected'] - tof02['SignalTimeMatchedTOF1']
     tof03 = df_dict['TOF03']
-    tof03['WindowCentralTimeCorrected_rel'] = tof03['WindowCentralTimeCorrected'] - tof03['SignalTimeMatchedTOF1']
-
-    tof00_filtered = filter_range("TOF00",tof00,'WindowCentralTimeCorrected_rel',timing_cuts['TOF00'],debug=debug)
-    tof01_filtered = filter_range("TOF01",tof01,'WindowCentralTimeCorrected_rel',timing_cuts['TOF01'],debug=debug)
-    tof02_filtered = filter_range("TOF02",tof02,'WindowCentralTimeCorrected_rel',timing_cuts['TOF02'],debug=debug)
-    tof03_filtered = filter_range("TOF03",tof03,'WindowCentralTimeCorrected_rel',timing_cuts['TOF03'],debug=debug)
 
     # Perform a single charge cut on the averaged charge across all 4 TOF0 elements.
-    combined_00_01 = tof00_filtered.merge(tof01_filtered, on='event', suffixes=('_00', '_01'))
-    combined_00_01_02 = combined_00_01.merge(tof02_filtered, on='event')
-    combined_00_01_02 = combined_00_01_02.rename(columns={'WindowIntCharge': 'WindowIntCharge_02'})
-    tof0_combined = combined_00_01_02.merge(tof03_filtered, on='event')
-    tof0_combined = tof0_combined.rename(columns={'WindowIntCharge': 'WindowIntCharge_03'})
-    tof0_combined['avg_charge'] = (tof0_combined['WindowIntCharge_00'] 
-                                    + tof0_combined['WindowIntCharge_01']
-                                    + tof0_combined['WindowIntCharge_02']
-                                    + tof0_combined['WindowIntCharge_03']) / 4.
+    combined_00_01 = tof00.merge(tof01, on='event', suffixes=('_00', '_01'))
+    combined_00_01_02 = combined_00_01.merge(tof02, on='event')
+    combined_00_01_02 = combined_00_01_02.rename(columns={chg_key: chg_key+'_02'})
+    tof0_combined = combined_00_01_02.merge(tof03, on='event')
+    tof0_combined = tof0_combined.rename(columns={chg_key: chg_key+'_03'})
+    tof0_combined['avg_charge'] = (tof0_combined[chg_key+'_00'] 
+                                    + tof0_combined[chg_key+'_01']
+                                    + tof0_combined[chg_key+'_02']
+                                    + tof0_combined[chg_key+'_03']) / 4.
 
-    tof0_valid = filter_range("TOF0_combined",tof0_combined,'avg_charge',chg_cuts['TOF00'],debug=debug)
+    tof0_valid = filter_range("TOF0_combined",tof0_combined,'avg_charge',chg_cuts['TOF00'],chg_key='avg_charge',debug=debug)
     tof0_valid.loc[:,'hit_TOF0'] = 1
     if(debug): print()
 
     # TOF1
     tof10 = df_dict['TOF10']
-    tof10['WindowCentralTimeCorrected_rel'] = tof10['WindowCentralTimeCorrected'] - tof10['SignalTimeMatchedTOF1']
     tof11 = df_dict['TOF11']
-    tof11['WindowCentralTimeCorrected_rel'] = tof11['WindowCentralTimeCorrected'] - tof11['SignalTimeMatchedTOF1']
     tof12 = df_dict['TOF12']
-    tof12['WindowCentralTimeCorrected_rel'] = tof12['WindowCentralTimeCorrected'] - tof12['SignalTimeMatchedTOF1']
     tof13 = df_dict['TOF13']
-    tof13['WindowCentralTimeCorrected_rel'] = tof13['WindowCentralTimeCorrected'] - tof13['SignalTimeMatchedTOF1']
 
-    tof10_filtered = filter_range("TOF10",tof10,'WindowCentralTimeCorrected_rel',timing_cuts['TOF10'],debug=debug)
-    tof11_filtered = filter_range("TOF11",tof11,'WindowCentralTimeCorrected_rel',timing_cuts['TOF11'],debug=debug)
-    tof12_filtered = filter_range("TOF12",tof12,'WindowCentralTimeCorrected_rel',timing_cuts['TOF12'],debug=debug)
-    tof13_filtered = filter_range("TOF13",tof13,'WindowCentralTimeCorrected_rel',timing_cuts['TOF13'],debug=debug)
+    combined_10_11 = tof10.merge(tof11, on='event', suffixes=('_10', '_11'))
+    combined_10_11_12 = combined_10_11.merge(tof12, on='event')
+    combined_10_11_12 = combined_10_11_12.rename(columns={chg_key: chg_key+'_12'})
+    tof1_combined = combined_10_11_12.merge(tof13, on='event')
+    tof1_combined = tof1_combined.rename(columns={chg_key: chg_key+'_13'})
+    tof1_combined['avg_charge'] = (tof1_combined[chg_key+'_10'] 
+                                    + tof1_combined[chg_key+'_11']
+                                    + tof1_combined[chg_key+'_12']
+                                    + tof1_combined[chg_key+'_13']) / 4.
 
-    combined_10_11 = tof10_filtered.merge(tof11_filtered, on='event', suffixes=('_10', '_11'))
-    combined_10_11_12 = combined_10_11.merge(tof12_filtered, on='event')
-    combined_10_11_12 = combined_10_11_12.rename(columns={'WindowIntCharge': 'WindowIntCharge_12'})
-    tof1_combined = combined_10_11_12.merge(tof13_filtered, on='event')
-    tof1_combined = tof1_combined.rename(columns={'WindowIntCharge': 'WindowIntCharge_13'})
-    tof1_combined['avg_charge'] = (tof1_combined['WindowIntCharge_10'] 
-                                    + tof1_combined['WindowIntCharge_11']
-                                    + tof1_combined['WindowIntCharge_12']
-                                    + tof1_combined['WindowIntCharge_13']) / 4.
-
-    tof1_valid = filter_range("TOF1_combined",tof1_combined,'avg_charge',chg_cuts['TOF10'],debug=debug)
+    tof1_valid = filter_range("TOF1_combined",tof1_combined,'avg_charge',chg_cuts['TOF10'],chg_key='avg_charge',debug=debug)
     if(not low_radiation): tof1_valid.loc[:,'hit_TOF1'] = 1
     if(debug): print()
 
     # Filter T2
     # --------------------------------------------------------------------------------------------
     t2 = df_dict['TriggerScint']
-    t2['WindowCentralTimeCorrected_rel'] = t2['WindowCentralTimeCorrected'] - t2['SignalTimeMatchedTOF1']
-    t2_filtered = filter_range("T2",t2,'WindowCentralTimeCorrected_rel',timing_cuts['TriggerScint'],debug=debug)
-    t2_valid = filter_range("T2",t2_filtered,'WindowIntCharge',chg_cuts['TriggerScint'],debug=debug)
+    t2_valid = filter_range("T2",t2,chg_key,chg_cuts['TriggerScint'],debug=debug)
     t2_valid.loc[:,'hit_T2'] = 1
     if(debug): print()
     # --------------------------------------------------------------------------------------------
@@ -1214,45 +787,33 @@ def timing_analysis_corrected_winInt(df_dict, chg_cuts, timing_cuts, low_radiati
     # --------------------------------------------------------------------------------------------
     # ACT0
     act0l = df_dict['ACT0L']
-    act0l['WindowCentralTimeCorrected_rel'] = act0l['WindowCentralTimeCorrected'] - act0l['SignalTimeMatchedTOF1']
     act0r = df_dict['ACT0R']
-    act0r['WindowCentralTimeCorrected_rel'] = act0r['WindowCentralTimeCorrected'] - act0r['SignalTimeMatchedTOF1']
-
-    act0l_filtered = filter_range("ACT0L",act0l,'WindowCentralTimeCorrected_rel',timing_cuts['ACT0L'],debug=debug)
-    act0r_filtered = filter_range("ACT0R",act0r,'WindowCentralTimeCorrected_rel',timing_cuts['ACT0R'],debug=debug)
 
     # Make a single cut on the average charge corresponding to the cut range for ACT0L.
-    act0_combined = act0l_filtered.merge(act0r_filtered, on='event', suffixes=('_L', '_R'))
-    act0_combined['avg_charge'] = (act0_combined['WindowIntCharge_L'] + act0_combined['WindowIntCharge_R']) / 2.
-    act0_valid = filter_range("ACT0_combined",act0_combined,'avg_charge',chg_cuts['ACT0L'],debug=debug)
+    act0_combined = act0l.merge(act0r, on='event', suffixes=('_L', '_R'))
+    act0_combined['avg_charge'] = (act0_combined[chg_key+'_L'] + act0_combined[chg_key+'_R']) / 2.
+    act0_valid = filter_range("ACT0_combined",act0_combined,'avg_charge',chg_cuts['ACT0L'],chg_key='avg_charge',debug=debug)
     if(not low_radiation): act0_valid.loc[:,'hit_ACT0'] = 1
 
     # ACT1
     act1l = df_dict['ACT1L']
-    act1l['WindowCentralTimeCorrected_rel'] = act1l['WindowCentralTimeCorrected'] - act1l['SignalTimeMatchedTOF1']
     act1r = df_dict['ACT1R']
-    act1r['WindowCentralTimeCorrected_rel'] = act1r['WindowCentralTimeCorrected'] - act1r['SignalTimeMatchedTOF1']
-
-    act1l_filtered = filter_range("ACT1L",act1l,'WindowCentralTimeCorrected_rel',timing_cuts['ACT1L'],debug=debug)
-    act1r_filtered = filter_range("ACT1R",act1r,'WindowCentralTimeCorrected_rel',timing_cuts['ACT1R'],debug=debug)
 
     # Make a single cut on the average charge corresponding to the cut range for ACT1L
-    act1_combined = act1l_filtered.merge(act1r_filtered, on='event', suffixes=('_L', '_R'))
-    act1_combined['avg_charge'] = (act1_combined['WindowIntCharge_L'] + act1_combined['WindowIntCharge_R']) / 2.
-    act1_valid = filter_range("ACT1_combined",act1_combined,'avg_charge',chg_cuts['ACT1L'],debug=debug)
+    act1_combined = act1l.merge(act1r, on='event', suffixes=('_L', '_R'))
+    act1_combined['avg_charge'] = (act1_combined[chg_key+'_L'] + act1_combined[chg_key+'_R']) / 2.
+    act1_valid = filter_range("ACT1_combined",act1_combined,'avg_charge',chg_cuts['ACT1L'],chg_key='avg_charge',debug=debug)
     act1_valid.loc[:,'hit_ACT1'] = 1
 
     # ACT3
-    # act3l_T1 = df_dict['ACT3L'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    # act3l_T1['SignalTimeCorrected_rel'] = act3l_T1['SignalTimeCorrected'] - act3l_T1['SignalTimeCorrected_T1']
-    # act3r_T1 = df_dict['ACT3R'].merge(df_T1sel, on='event', suffixes=('', '_T1'))
-    # act3r_T1['SignalTimeCorrected_rel'] = act3r_T1['SignalTimeCorrected'] - act3r_T1['SignalTimeCorrected_T1']
+    # act3l_filtered = df_dict['ACT3L'][df_dict['ACT3L']['nWindowPeaks'] == 0]
+    # act3r_filtered = df_dict['ACT3R'][df_dict['ACT3R']['nWindowPeaks'] == 0]
+    act3l = df_dict['ACT3L']
+    act3r = df_dict['ACT3R']
 
-    act3l_filtered = df_dict['ACT3L'][df_dict['ACT3L']['nWindowPeaks'] == 0]
-    act3r_filtered = df_dict['ACT3R'][df_dict['ACT3R']['nWindowPeaks'] == 0]
-
-    act3_combined = act3l_filtered.merge(act3r_filtered, on='event', suffixes=('_L', '_R'))
-    act3_valid = act3_combined.copy()
+    act3_combined = act3l.merge(act3r, on='event', suffixes=('_L', '_R'))
+    act3_combined['avg_charge'] = (act3_combined[chg_key+'_L'] + act3_combined[chg_key+'_R']) / 2.
+    act3_valid = filter_range("ACT3_combined",act3_combined,'avg_charge',chg_cuts['ACT3L'],chg_key='avg_charge',debug=debug)
     act3_valid.loc[:,'nohit_ACT3'] = 1
     if(debug): print("ACT3 total number of valid events:",len(act3_valid))
     # --------------------------------------------------------------------------------------------
@@ -1268,11 +829,7 @@ def timing_analysis_corrected_winInt(df_dict, chg_cuts, timing_cuts, low_radiati
         
         # Filtering
         hd = df_dict[hd_key]
-        hd['WindowCentralTimeCorrected_rel'] = hd['WindowCentralTimeCorrected'] - hd['SignalTimeMatchedTOF1']
-        hd_filtered = filter_range(hd_key,hd,'WindowCentralTimeCorrected_rel',timing_cuts[hd_key],debug=debug)
-        hd_filtered = filter_range(hd_key,hd_filtered,'WindowIntCharge',chg_cuts[hd_key],debug=debug)
-        # hd_filtered = df_dict[hd_key][(df_dict[hd_key]['PeakTime'].between(*hd_time_range)) & 
-        #                         (df_dict[hd_key]['IntCharge'].between(*hd_charge_range))]
+        hd_filtered = filter_range(hd_key,hd,chg_key,chg_cuts[hd_key],chg_key='WindowIntPE',debug=debug)
         if(debug): print(f"HD{i}: {len(hd_filtered)} of {len(df_dict[hd_key])} events after filter")
         
         # Assign a binary value indicating a hit
@@ -1307,8 +864,8 @@ def timing_analysis_corrected_winInt(df_dict, chg_cuts, timing_cuts, low_radiati
     # --------------------------------------------------------------------------------------------
 
     # Merge all relevant dataframes
-    pb_filtered.columns = ['LG_' + col if col != 'event' else col for col in pb_filtered.columns]
-    final_df = pb_filtered.merge(hd_valid_events, on='event', how='inner')
+    pb_1peak.columns = ['LG_' + col if col != 'event' else col for col in pb_1peak.columns]
+    final_df = pb_1peak.merge(hd_valid_events, on='event', how='inner')
     ntagged_evts = len(final_df[final_df.total_hits == 1])
     if(debug): print(f"Final df number of events = {len(final_df)}; {ntagged_evts} tagged events")
     if(not low_radiation): final_df = final_df.merge(act0_valid[['event', 'hit_ACT0']], on='event', how='left')
@@ -1340,6 +897,8 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
     Analyze the gamma peaks.
     """
 
+    chg_key = "LG_WindowIntPE"
+
     # Set up the output directory
     out_dir = f"{base_dir}/{run}"
     if not os.path.exists(out_dir):
@@ -1364,21 +923,21 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
         cuts = (final_df.total_hits == 1)
 
     # Get the charge arrays
-    chg_hd14 = final_df[(final_df.hit_HD14 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd13 = final_df[(final_df.hit_HD13 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd12 = final_df[(final_df.hit_HD12 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd11 = final_df[(final_df.hit_HD11 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd10 = final_df[(final_df.hit_HD10 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd9 = final_df[(final_df.hit_HD9 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd8 = final_df[(final_df.hit_HD8 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd7 = final_df[(final_df.hit_HD7 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd6 = final_df[(final_df.hit_HD6 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd5 = final_df[(final_df.hit_HD5 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd4 = final_df[(final_df.hit_HD4 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd3 = final_df[(final_df.hit_HD3 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd2 = final_df[(final_df.hit_HD2 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd1 = final_df[(final_df.hit_HD1 == 1) & cuts]['LG_IntCharge'].values
-    chg_hd0 = final_df[(final_df.hit_HD0 == 1) & cuts]['LG_IntCharge'].values
+    chg_hd14 = final_df[(final_df.hit_HD14 == 1) & cuts][chg_key].values
+    chg_hd13 = final_df[(final_df.hit_HD13 == 1) & cuts][chg_key].values
+    chg_hd12 = final_df[(final_df.hit_HD12 == 1) & cuts][chg_key].values
+    chg_hd11 = final_df[(final_df.hit_HD11 == 1) & cuts][chg_key].values
+    chg_hd10 = final_df[(final_df.hit_HD10 == 1) & cuts][chg_key].values
+    chg_hd9 = final_df[(final_df.hit_HD9 == 1) & cuts][chg_key].values
+    chg_hd8 = final_df[(final_df.hit_HD8 == 1) & cuts][chg_key].values
+    chg_hd7 = final_df[(final_df.hit_HD7 == 1) & cuts][chg_key].values
+    chg_hd6 = final_df[(final_df.hit_HD6 == 1) & cuts][chg_key].values
+    chg_hd5 = final_df[(final_df.hit_HD5 == 1) & cuts][chg_key].values
+    chg_hd4 = final_df[(final_df.hit_HD4 == 1) & cuts][chg_key].values
+    chg_hd3 = final_df[(final_df.hit_HD3 == 1) & cuts][chg_key].values
+    chg_hd2 = final_df[(final_df.hit_HD2 == 1) & cuts][chg_key].values
+    chg_hd1 = final_df[(final_df.hit_HD1 == 1) & cuts][chg_key].values
+    chg_hd0 = final_df[(final_df.hit_HD0 == 1) & cuts][chg_key].values
 
     chg_arrays = [chg_hd0, chg_hd1, chg_hd2, chg_hd3, chg_hd4, chg_hd5, chg_hd6, chg_hd7, chg_hd8,
                   chg_hd9, chg_hd10, chg_hd11, chg_hd12, chg_hd13, chg_hd14]
@@ -1437,7 +996,7 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
         flat_axes_allpeaks[ipeak].bar(bin_edges[:-1], hist, width=np.diff(bin_edges)[0], align='edge', color='white')
         flat_axes_allpeaks[ipeak].plot(bin_edges[:-1], hist, color='black', drawstyle='steps-post')
         flat_axes_allpeaks[ipeak].plot(bin_centers, fit_curve, '--', color='red', linewidth=1.5, alpha=1.0)
-        flat_axes_allpeaks[ipeak].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+        flat_axes_allpeaks[ipeak].set_xlabel('Lead glass charge [PE]',fontsize=ax_lbl_font_size)
         flat_axes_allpeaks[ipeak].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
         flat_axes_allpeaks[ipeak].tick_params(axis="x", labelsize=ax_tick_font_size)
         flat_axes_allpeaks[ipeak].tick_params(axis="y", labelsize=ax_tick_font_size)
@@ -1455,7 +1014,7 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
         hpeaks = ax_peaks.hist(arr, bins=nbins, alpha=1.0, label=lbl, range=range)
         ax_peaks.plot(bin_centers, fit_curve, '-', color='red', linewidth=1, alpha=1.0)
         ax_peaks.legend(fontsize=12)
-        ax_peaks.set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+        ax_peaks.set_xlabel('Lead glass charge [PE]',fontsize=ax_lbl_font_size)
         ax_peaks.set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
         ax_peaks.tick_params(axis="x", labelsize=ax_tick_font_size)
         ax_peaks.tick_params(axis="y", labelsize=ax_tick_font_size)
@@ -1467,7 +1026,7 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
         flat_axes_keyplots[0].hist(arr, bins=nbins, alpha=0.6, label=lbl, range=range)
         flat_axes_keyplots[0].plot(bin_centers, fit_curve, 'r-', alpha=0.6)
         flat_axes_keyplots[0].legend(fontsize=12)
-        flat_axes_keyplots[0].set_xlabel('Lead glass charge [arbitrary units]',fontsize=ax_lbl_font_size)
+        flat_axes_keyplots[0].set_xlabel('Lead glass charge [PE]',fontsize=ax_lbl_font_size)
         flat_axes_keyplots[0].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
         flat_axes_keyplots[0].tick_params(axis="x", labelsize=ax_tick_font_size)
         flat_axes_keyplots[0].tick_params(axis="y", labelsize=ax_tick_font_size)
