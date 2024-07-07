@@ -38,23 +38,6 @@ elec_hit_momenta_MC_fieldmap = {0: 0.15158890334583247,
                                 13: 0.3533910011169222,
                                 14: 0.4060165450516617}
 
-# Monte Carlo using a basic Gaussian field, 1.7 T max strength, 16 cm FWHM
-elec_hit_momenta_MC_basicfield = {0: 0.16065526896666074,
-                                1: 0.17556379028109984,
-                                2: 0.17731849350923357,
-                                3: 0.1922333349845718,
-                                4: 0.1969366308145072,
-                                5: 0.21406015676533593,
-                                6: 0.22200294559570977,
-                                7: 0.24054355744228542,
-                                8: 0.2543082607933101,
-                                9: 0.2750605487198886,
-                                10: 0.29565358794333874,
-                                11: 0.3209233038615066,
-                                12: 0.35470593792457766,
-                                13: 0.3827293445653847,
-                                14: 0.4385609098852306}
-
 # Basic calculation using T = 0.23
 elec_hit_momenta_calc = {0: 0.15058755351819803,
                     1: 0.1632022173955016,
@@ -71,23 +54,6 @@ elec_hit_momenta_calc = {0: 0.15058755351819803,
                     12: 0.31449359776978913,
                     13: 0.3393035715640493,
                     14: 0.38511992183555954}
-
-# Monte Carlo with basic field, peak strength 1.45 T, FWHM 16 cm
-elec_hit_momenta_MC_basicfield_023 = {0: 0.12972191050682533,
-                    1: 0.14000139090590402,
-                    2: 0.14158530028016822,
-                    3: 0.15213298937761066,
-                    4: 0.15480408919724004,
-                    5: 0.16618188522312982,
-                    6: 0.17306316763111634,
-                    7: 0.18704965456415074,
-                    8: 0.1964138335891074,
-                    9: 0.21079765100370218,
-                    10: 0.22520036208911268,
-                    11: 0.24285592783147,
-                    12: 0.2662898596893299,
-                    13: 0.28524220588846017,
-                    14: 0.3257053785387031}
 
 elec_hit_momenta = elec_hit_momenta_MC_fieldmap
 
@@ -108,38 +74,6 @@ momentum_range = {0: 0.0063047132725456145,
                     13: 0.03271156068397968,
                     14: 0.04630141916160452}
 
-
-
-def ntuple_to_pd(filename):
-    """
-    Converts an ntuple to a single Pandas dataframe containing information about the largest peaks
-    in each detector.
-    """
-    
-    # Open the TTree anaTree and get all keys
-    events = uproot.open("{}:anaTree".format(filename))
-    main_keys = events.keys()
-    
-    # Construct the analysis dataframe
-    df = pd.DataFrame()
-    for key in main_keys:
-        
-        # Skip the nChannels key
-        if(key == 'nChannels'):
-            continue
-
-        arr = events[key].array(library='np').squeeze()
-
-        # Convert the array to a DataFrame
-        df_key = pd.DataFrame(arr)
-
-        # Rename the columns to include the key name
-        df_key.columns = [f"{key}{i}" for i in df_key.columns]
-
-        # Concatenate the new DataFrame to the existing one
-        df = pd.concat([df, df_key], axis=1)
-        
-    return df
 
 def ntuple_to_pd_multipeak(filename,windowInt=False):
     """
@@ -371,212 +305,6 @@ def ntuple_to_pd_multipeak(filename,windowInt=False):
         
     return df_dict
 
-def plot_2D_histogram(df_dict, detector1, quantity1, detector2, quantity2, evt_list=None, base_dir=".", rnum = 0, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60, range=[[0,100],[0,100]]):
-    """
-    Generate a 2D histogram for the specified signals.
-    """
-    
-    out_dir = f"{base_dir}/{rnum}"
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-        
-    print("Plotting 2D histogram for (",detector1,",",quantity1,") vs. (",detector2,",",quantity2,") for all signals in run",rnum)
-
-    # Create a grid of 8 rows x 4 columns
-    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
-    
-    #fig.title(f'Run {rnum}', fontsize=24, y=1.02)
-
-    # Get the detector element from the dataframe dictionary.
-    df1 = df_dict[detector1]
-    df2 = df_dict[detector2]
-
-    # Select the events based on the given list.
-    if(not(evt_list is None)):
-        print("DF1: before selection:",len(df1))
-        print("DF2: before selection:",len(df2))
-
-        df1 = df1[df1['event'].isin(evt_list)]
-        df2 = df2[df2['event'].isin(evt_list)]
-
-        print("DF1: selecting out",len(evt_list),"events to get",len(df1))
-        print("DF2: selecting out",len(evt_list),"events to get",len(df2))
-
-
-    # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
-    if(detector1[0:2] == 'HD' and (quantity1 == 'IntCharge' or quantity1 == 'PeakVoltage')):
-        df1 = df1[df1[quantity1] > 0.02]
-    if(detector2[0:2] == 'HD' and (quantity2 == 'IntCharge' or quantity2 == 'PeakVoltage')):
-        df2 = df2[df2[quantity2] > 0.02]
-
-    # SINGLE PEAK ANALYSIS
-    # Consider only 1-peak events.
-    # df1_single_peak = df1[df1['nPeaks'] == 1]
-    # df2_single_peak = df2[df2['nPeaks'] == 1]
-
-    # Find common events
-    # common_events = set(df1_single_peak['event']).intersection(set(df2_single_peak['event']))
-    # df1_final = df1_single_peak[df1_single_peak['event'].isin(common_events)]
-    # df2_final = df2_single_peak[df2_single_peak['event'].isin(common_events)]
-
-    # MULTI-PEAK ANALYSIS
-    df1['event_nPeaks'] = df1['event'].astype(str) + "_" + df1['nPeaks'].astype(str)
-    df2['event_nPeaks'] = df2['event'].astype(str) + "_" + df2['nPeaks'].astype(str)
-
-    common_events_nPeaks = set(df1['event_nPeaks']).intersection(set(df2['event_nPeaks']))
-
-    df1_final = df1[df1['event_nPeaks'].isin(common_events_nPeaks)]
-    df2_final = df2[df2['event_nPeaks'].isin(common_events_nPeaks)]
-
-    print("Shape of df1[quantity1]:", df1_final[quantity1].shape)
-    print("Shape of df2[quantity2]:", df2_final[quantity2].shape)
-    print("Type of df1[quantity1]:", type(df1_final[quantity1]))
-    print("Type of df2[quantity2]:", type(df2_final[quantity2]))
-    print("NaNs in df1[quantity1]:", df1_final[quantity1].isna().sum())
-    print("NaNs in df2[quantity2]:", df2_final[quantity2].isna().sum())
-    print("Infs in df1[quantity1]:", np.isinf(df1_final[quantity1]).sum())
-    print("Infs in df2[quantity2]:", np.isinf(df2_final[quantity2]).sum())
-
-    h2d = ax.hist2d(df1_final[quantity1],df2_final[quantity2],bins=[nbins,nbins],norm=matplotlib.colors.LogNorm(), range=range)
-    ax.set_xlabel(f"{detector1}/{quantity1}")
-    ax.set_ylabel(f"{detector2}/{quantity2}")
-    ax.legend()  # Add legend
-    
-    if(logscale):
-        ax.set_yscale('log')
-
-    # Adjust the layout so the plots do not overlap
-    plt.tight_layout()
-    #plt.show()
-    plt.savefig(f"{out_dir}/{detector1}_{quantity1}vs{detector2}_{quantity2}.pdf", bbox_inches='tight')
-    plt.close()
-
-
-def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum = 0, quantity='nPeaks', windowInt=False, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
-    """
-    Generate plots of histograms for each signal.
-    """
-    
-    out_dir = f"{base_dir}/{rnum}"
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-        
-    print("Plotting all histograms for",quantity,"for all signals in run",rnum)
-
-    # Create a grid of 8 rows x 4 columns
-    fig, axes = plt.subplots(8, 4, figsize=(16, 24))
-    flat_axes = axes.ravel()
-    
-    fig.suptitle(f'Run {rnum}', fontsize=24, y=1.02)
-
-    # Iterate based on the custom order
-    for key, ax in zip(custom_order, flat_axes):
-        df = df_dict[key]
-
-        # Cut on the selected events if an event list is provided.
-        if(not(evt_list is None)):
-            print(f"[{key}] before selection {len(df)}")
-            df_select = df[df['event'].isin(evt_list)]
-            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select)}")
-        else:
-            df_select = df
-        
-        # Select only non-zero peaks if specified.
-        if(select_nonzero_peaks):
-            if(windowInt):
-                df_select = df_select[df_select['nWindowPeaks'] > 0]
-            else:
-                df_select = df_select[df_select['nPeaks'] > 0]
-        # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
-        else:
-            df_select = df_select.drop_duplicates(subset=['event'], keep='first')
-            
-        # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
-        if(quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE'):
-        #if((key[0:2] == 'HD' or key == 'PbGlass') and (quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE')):
-            df_select = df_select[df_select[quantity] > 2e-2]
-
-        # Plot histogram for the current signal on its corresponding axis
-        n, bins, patches = ax.hist(df_select[quantity], bins=nbins, edgecolor='black', alpha=0.7, label=key)  # capture output to use in legend
-        #ax.set_title(key)
-        ax.set_xlabel(quantity)
-        ax.set_ylabel('Counts/bin')
-        ax.legend()  # Add legend
-        
-        if(logscale):
-            ax.set_yscale('log')
-
-    # Adjust the layout so the plots do not overlap
-    plt.tight_layout()
-    #plt.show()
-    plt.savefig(f"{out_dir}/{quantity}.pdf", bbox_inches='tight')
-    plt.close()
-
-def plot_charge_and_windowed_charge(df_dict, df_dict_win, evt_list=None, base_dir=".", rnum = 0, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
-    """
-    Generate plots of histograms for IntCharge and WindowIntCharge.
-    """
-    
-    out_dir = f"{base_dir}/{rnum}"
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-        
-    print("Plotting IntCharge and WindowIntCharge for all signals in run",rnum)
-
-    # Create a grid of 8 rows x 4 columns
-    fig, axes = plt.subplots(8, 4, figsize=(16, 24))
-    flat_axes = axes.ravel()
-    
-    fig.suptitle(f'Run {rnum}', fontsize=24, y=1.02)
-
-    # Iterate based on the custom order
-    for key, ax in zip(custom_order, flat_axes):
-        df = df_dict[key]
-        df_win = df_dict_win[key]
-
-        # Cut on the selected events if an event list is provided.
-        if(not(evt_list is None)):
-            print(f"[{key}] before selection {len(df)}")
-            df_select = df[df['event'].isin(evt_list)]
-            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select)}")
-
-            print(f"[{key}] before selection {len(df_win)}")
-            df_select_win = df_win[df_win['event'].isin(evt_list)]
-            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select_win)}")
-        else:
-            df_select = df
-            df_select_win = df_win
-        
-        # Select only non-zero peaks if specified.
-        if(select_nonzero_peaks):
-            df_select = df_select[df_select['nPeaks'] > 0]
-            df_select_win = df_select_win[df_select_win['nWindowPeaks'] > 0]
-        # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
-        else:
-            df_select = df_select.drop_duplicates(subset=['event'], keep='first')
-            df_select_win = df_select_win.drop_duplicates(subset=['event'], keep='first')
-            
-        # Place a cut to eliminate noise.
-        df_select = df_select[df_select['IntCharge'] > 2e-2]
-        df_select_win = df_select_win[df_select_win['WindowIntCharge'] > 2e-2]
-
-        # Plot histogram for the current signal on its corresponding axis
-        n, bins, patches = ax.hist(df_select['IntCharge'], bins=nbins, edgecolor='black', alpha=0.7, label=f"{key} IntCharge")
-        n, bins, patches = ax.hist(df_select_win['WindowIntCharge'], bins=nbins, edgecolor='black', alpha=0.7, label=f"{key} WindowIntCharge")
-        #ax.set_title(key)
-        ax.set_xlabel('Charge')
-        ax.set_ylabel('Counts/bin')
-        ax.legend()  # Add legend
-        
-        if(logscale):
-            ax.set_yscale('log')
-
-    # Adjust the layout so the plots do not overlap
-    plt.tight_layout()
-    #plt.show()
-    plt.savefig(f"{out_dir}/IntCharge_and_WindowIntCharge.pdf", bbox_inches='tight')
-    plt.close()
-
 def read_dataframes_from_csv(directory):
     """
     Reads a set of multi-peak dataframes from a directory containing .csv files.
@@ -592,6 +320,9 @@ def read_dataframes_from_csv(directory):
     return dfs
 
 def compute_statistics(df):
+    """
+    Compute key statistics for a specified dataframe.
+    """
     
     # Compute average statistics
     avg_nPeaks = df['nPeaks'].mean()
@@ -622,63 +353,49 @@ def compute_statistics(df):
     
     return stats
 
-def plot_statistics_vs_run(statistics_data, statistic_keys, signal_set, base_dir, signal_set_name):
-    
-    out_dir = f"{base_dir}/summary"
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-        
-    n_statistics = len(statistic_keys)
-    
-    # Define number of rows and columns for the subplots.
-    n_cols = 1
-    n_rows = math.ceil(n_statistics / n_cols)
-    
-    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 4*n_rows))
-    
-    if n_statistics == 1:
-        axes = [axes]
-        
-    # Generate a palette with as many distinct colors as there are signals.
-    #palette = sns.color_palette("husl", len(signal_set))
-    
-    for idx, statistic_key in enumerate(statistic_keys):
-        ax = axes[idx]
-        #ax = axes[idx//n_cols, idx%n_cols] if n_rows > 1 else axes[idx]
-        
-        # Set the color cycle for this axis
-        #ax.set_prop_cycle(color=palette)
-        
-        for idkey,key in enumerate(signal_set):
-            marker = 's'
-            if(idkey > 9): marker = 'o'
-            runs = list(statistics_data.keys())
-            values = [statistics_data[run][key][statistic_key] for run in runs]
-            ax.plot(runs, values, marker=marker, label=key)
-        
-        #ax.set_title(f"{statistic_key} vs. Run Number")
-        ax.set_xlabel("Run Number",fontsize=14)
-        ax.set_ylabel(statistic_key,fontsize=14)
-        ax.legend()
-        ax.grid(True)
-    
-    # Handle case when the number of plots is odd
-    #if n_statistics % 2 != 0 and n_rows > 1:
-        #axes[n_rows-1, 1].axis('off')
-    #    axes[n_rows-1].axis('off')
-    
-    plt.tight_layout()
-    #plt.show()
-    plt.savefig(f"{out_dir}/{signal_set_name}.pdf", bbox_inches='tight')
-
 # -----------------------------------------------------------------------------------------
 # Functions for gamma peak analysis
 # -----------------------------------------------------------------------------------------
 def get_num_duplicates(arr):
+    """
+    Calculates the number of duplicate elements in an array.
+
+    This function identifies all unique elements in the given array and counts how many times each appears.
+    It then sums up the counts of all elements that appear more than once, providing a total count of
+    duplicate occurrences.
+
+    Parameters:
+        arr (array-like): The array to be checked for duplicate elements. This can be any array-like
+                          structure that is compatible with numpy's unique function (e.g., lists, numpy arrays).
+
+    Returns:
+        int: The total number of duplicate entries in the array.
+    """
     u, c = np.unique(arr, return_counts=True)
     return np.sum(c[c > 1])
 
 def filter_range(name,df,key,rng,drop=False,chg_key='WindowIntPE',debug=False):
+    """
+    Filters the input DataFrame based on the specified range and handles duplicates.
+
+    Parameters:
+        name (str): A name or identifier for the filter operation for debugging purposes.
+        df (DataFrame): The input pandas DataFrame to be filtered.
+        key (str): The column name in `df` to apply the range filter on.
+        rng (tuple): A tuple specifying the lower and upper limits of the range filter.
+        drop (bool, optional): If True, all duplicate events are dropped. If False, the event with the maximum value in the `chg_key` column is kept. Defaults to False.
+        chg_key (str, optional): Column name used to determine which duplicate event to keep when `drop` is False. Defaults to 'WindowIntPE'.
+        debug (bool, optional): If True, prints debug information about the filtering process. Defaults to False.
+
+    Returns:
+        DataFrame: A DataFrame that has been filtered according to the specified `key` and range `rng`, with duplicate handling based on `drop` and `chg_key`.
+
+    Description:
+        The function first filters `df` to include only the rows where the `key` column values fall within the specified `rng`.
+        It then checks for duplicates in the 'event' column. If duplicates are found:
+            - If `drop` is True, all duplicates are removed.
+            - If `drop` is False, only the row with the maximum value in the `chg_key` column for each duplicate group is retained.
+    """
     
     # Perform the filter.
     df_filtered = df[df[key].between(*rng)]
@@ -701,6 +418,16 @@ def filter_range(name,df,key,rng,drop=False,chg_key='WindowIntPE',debug=False):
 
 
 def charge_analysis_corrected_winInt(df_dict, chg_cuts, low_radiation = False, debug = False):
+    """
+    Performs the charge analysis, filtering the detector elements in df_dict according to
+    chg_cuts.
+
+    Parameters:
+        df_dict (dict): A dictionary of pandas DataFrames with keys representing detector names.
+        chg_cuts (dict): A dictionary specifying the charge cuts for different detectors.
+        low_radiation (bool, optional): If True, modifies the handling of certain detectors to adjust for low radiation conditions. Defaults to False.
+        debug (bool, optional): If True, prints detailed debug statements at various stages of processing. Defaults to False.
+    """
 
     # Combine on the following charge quantity.
     chg_key = "WindowIntPE"
@@ -730,7 +457,7 @@ def charge_analysis_corrected_winInt(df_dict, chg_cuts, low_radiation = False, d
     pb_1peak = filter_range("PbGlass",df_dict['PbGlass'],'nWindowPeaks',(1,1),debug=debug)
     npeaks_pre  = len(df_dict['PbGlass'])
     npeaks_post = len(pb_1peak)
-    #if(debug): print(f"-- Peaks {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
+    if(debug): print(f"-- Peaks after filter {npeaks_post}/{npeaks_pre} = {npeaks_post/npeaks_pre}")
 
     # TOF elements
     # --------------------------------------------------------------------------------------------
@@ -853,10 +580,10 @@ def charge_analysis_corrected_winInt(df_dict, chg_cuts, low_radiation = False, d
         ).fillna(0)
 
     # Calculate total hits per event
-    combined_hd_df['total_hits'] = combined_hd_df.filter(like='hit_').sum(axis=1)
+    combined_hd_df['total_hits_HD'] = combined_hd_df.filter(like='hit_').sum(axis=1)
 
     # Filter events with a hit count of 1
-    hd_valid_events = combined_hd_df[combined_hd_df['total_hits'] == 1]
+    hd_valid_events = combined_hd_df[combined_hd_df['total_hits_HD'] == 1]
     if(debug): print(f"Number of hd_valid_events = {len(hd_valid_events)}")
 
     u, c = np.unique(combined_hd_df['event'].values, return_counts=True)
@@ -866,7 +593,7 @@ def charge_analysis_corrected_winInt(df_dict, chg_cuts, low_radiation = False, d
     # Merge all relevant dataframes
     pb_1peak.columns = ['LG_' + col if col != 'event' else col for col in pb_1peak.columns]
     final_df = pb_1peak.merge(hd_valid_events, on='event', how='inner')
-    ntagged_evts = len(final_df[final_df.total_hits == 1])
+    ntagged_evts = len(final_df[final_df.total_hits_HD == 1])
     if(debug): print(f"Final df number of events = {len(final_df)}; {ntagged_evts} tagged events")
     if(not low_radiation): final_df = final_df.merge(act0_valid[['event', 'hit_ACT0']], on='event', how='left')
     final_df = final_df.merge(act1_valid[['event', 'hit_ACT1']], on='event', how='left')
@@ -874,7 +601,7 @@ def charge_analysis_corrected_winInt(df_dict, chg_cuts, low_radiation = False, d
     final_df = final_df.merge(tof0_valid[['event', 'hit_TOF0']], on='event', how='left')
     if(not low_radiation): final_df = final_df.merge(tof1_valid[['event', 'hit_TOF1']], on='event', how='left')
     final_df = final_df.merge(t2_valid[['event', 'hit_T2']], on='event', how='left')
-    if(debug): print(f"{len(final_df[final_df.total_hits == 1])} tagged events")
+    if(debug): print(f"{len(final_df[final_df.total_hits_HD == 1])} tagged events")
 
     # Fill NaN values in the hit columns with 0
     if(low_radiation): final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']] = final_df[['hit_ACT1', 'nohit_ACT3', 'hit_TOF0', 'hit_T2']].fillna(0)
@@ -912,15 +639,15 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
     if(timing_cuts):
 
         if(not low_radiation):
-            cuts = (final_df.total_hits == 1) & (final_df.hit_ACT0 == 1) & \
+            cuts = (final_df.total_hits_HD == 1) & (final_df.hit_ACT0 == 1) & \
                         (final_df.hit_ACT1 == 1) & (final_df.nohit_ACT3 == 1) & \
                         (final_df.hit_TOF0 == 1) & (final_df.hit_TOF1 == 1) & (final_df.hit_T2 == 1)
         else:
-            cuts = (final_df.total_hits == 1) & \
+            cuts = (final_df.total_hits_HD == 1) & \
                 (final_df.hit_ACT1 == 1) & (final_df.nohit_ACT3 == 1) & \
                 (final_df.hit_TOF0 == 1) & (final_df.hit_T2 == 1)
     else:
-        cuts = (final_df.total_hits == 1)
+        cuts = (final_df.total_hits_HD == 1)
 
     # Get the charge arrays
     chg_hd14 = final_df[(final_df.hit_HD14 == 1) & cuts][chg_key].values
@@ -1119,6 +846,395 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
     plt.close(fig_peaks)
 
     fig_allpeaks.savefig(f"{out_dir}/gamma_peaks_separate.pdf", bbox_inches='tight')
-    plt.close(fig_allpeaks)
+    #plt.close(fig_allpeaks)
 
     return [mconv, merr, bconv, berr, fres, ferr, cres, cerr], [fit_means, fit_smeans, fit_sigmas, fit_ssigmas]
+
+def plot_charge_histograms(df_dict, quantity, chg_cuts, chg_range, rnum, nbins = 50, evt_list = None, lbl = 'all', evt_list_2 = None, lbl_2 = 'all', select_nonzero_peaks = True, normed = True, logscale = False):
+    """
+    Plot charge histograms with the specified cuts.
+    """
+    
+    # Create a grid of 8 rows x 4 columns
+    fig, axes = plt.subplots(8, 4, figsize=(24, 28))
+    flat_axes = axes.ravel()
+
+    fig.suptitle(f'Run {rnum}', fontsize=24, y=0.9)
+
+    # Iterate based on the custom order
+    for key, ax in zip(custom_order, flat_axes):
+        df = df_dict[key]
+
+        # Select only non-zero peaks if specified.
+        if(select_nonzero_peaks):
+            df_select = df[df['nWindowPeaks'] > 0]
+        # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
+        else:
+            df_select = df.drop_duplicates(subset=['event'], keep='first')
+
+        # Place a cut if we're plotting PeakVoltage or IntCharge.
+        #if((key[0:2] == 'HD' or key == 'PbGlass') and (quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE')):
+        if(quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE'):
+            df_select = df_select[df_select[quantity] > 1e-2]
+
+        # Cut on the selected events if an event list is provided.
+        if(not(evt_list is None)):
+            print(f"[{key}] before selection {len(df_select)}")
+
+            df_select_1 = df_select[df_select['event'].isin(evt_list)]
+            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select_1)}")
+
+            if(not(evt_list_2 is None)):
+                df_select_2 = df_select[df_select['event'].isin(evt_list_2)]
+                print(f"[{key}] selecting out {len(evt_list_2)} events to get {len(df_select_2)}")
+        else:
+            df_select_1 = df_select
+
+        # Plot histogram for the current signal on its corresponding axis
+        hist_charge, bin_edges_charge = np.histogram(df_select_1[quantity], bins=nbins, density=normed, range=chg_range[key])
+        bin_centers_charge = (bin_edges_charge[:-1] + bin_edges_charge[1:]) / 2
+        ax.bar(bin_edges_charge[:-1], hist_charge, width=np.diff(bin_edges_charge)[0], align='edge', color='white')
+        ax.plot(bin_edges_charge[:-1], hist_charge, color='black', drawstyle='steps-post', label=f"{key} ({lbl})")
+
+        if(not(evt_list_2 is None)):
+            hist_charge_2, bin_edges_charge_2 = np.histogram(df_select_2[quantity], bins=nbins, density=normed, range=chg_range[key])
+            bin_centers_charge_2 = (bin_edges_charge_2[:-1] + bin_edges_charge_2[1:]) / 2
+            ax.bar(bin_edges_charge_2[:-1], hist_charge_2, width=np.diff(bin_edges_charge_2)[0], align='edge', color='white')
+            ax.plot(bin_edges_charge_2[:-1], hist_charge_2, color='red', drawstyle='steps-post', label=f"{key} ({lbl_2})")
+
+        #n, bins, patches = ax.hist(df_select[quantity], bins=nbins, edgecolor='black', alpha=0.7, label=key)  # capture output to use in legend
+        ax.axvline(chg_cuts[key][0],color='black',linestyle='--')
+        ax.axvline(chg_cuts[key][1],color='black',linestyle='--')
+        #ax.set_title(key)
+        ax.set_xlabel(quantity)
+        ax.set_ylabel('Counts/bin')
+        ax.legend()  # Add legend
+
+        if(logscale and (("ACT0" in key) or ("ACT1" in key) or ("TriggerScint"))):
+            ax.set_yscale('log')
+        
+    plt.savefig(f"{quantity}.pdf", bbox_inches='tight')
+
+
+def gauss(x, amplitude, mean, stddev):
+        return amplitude * norm.pdf(x, loc=mean, scale=stddev)
+
+def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 50, fit_start = 10, fit_end = 40, normed = False, energy_cut = 0, low_radiation = False):
+    """
+    Plot the HD14 peak
+    """
+
+    # Set up the cuts.
+    cuts_nominal = (df.hit_HD14 == 1) & (df.total_hits_HD == 1) & (df.LG_nWindowPeaks == 1)
+    if(low_radiation):
+        cuts_charge = (df.hit_ACT1 == 1) & (df.nohit_ACT3 == 1) & \
+                (df.hit_TOF0 == 1) & (df.hit_T2 == 1)
+    else:
+        cuts_charge = (df.hit_ACT0 == 1) & \
+                            (df.hit_ACT1 == 1) & \
+                            (df.hit_TOF0 == 1) & (df.hit_TOF1 == 1) & (df.hit_T2 == 1) & \
+                            (df.nohit_ACT3 == 1)
+        
+    # Convert the LG charge to energy
+    lg_energy = (df[cuts_nominal & cuts_charge]['LG_WindowIntPE'] - ecal_b) / ecal_m
+    # Make a cut on the calibrated energy (removes -1 values).
+    lg_energy = lg_energy[lg_energy > energy_cut]
+
+    # Create the plot
+    hist, bin_edges = np.histogram(lg_energy, bins=nbins, range=e_range, density=normed)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    # Gaussian fit
+    initial_params = [np.max(hist), np.mean(lg_energy), np.std(lg_energy)]
+    print(f"Initial params: {initial_params}")
+    popt, pcov = curve_fit(gauss, bin_centers[fit_start:fit_end], hist[fit_start:fit_end], p0=initial_params)
+    perr = np.sqrt(np.diag(pcov))
+    fit_curve = gauss(bin_centers[fit_start:fit_end], *popt)
+            
+    # Plot the fit peak
+    fig = plt.figure(figsize=(8,5))
+    plt.bar(bin_edges[:-1], hist, width=np.diff(bin_edges)[0], align='edge', color='white')
+    plt.plot(bin_edges[:-1], hist, color='black', drawstyle='steps-post')
+    plt.plot(bin_centers[fit_start:fit_end], fit_curve, '--', color='red', linewidth=2.0, alpha=1.0)
+
+    # Prepare the legend.
+    lbl1 = f"H14 DATA"
+    lbl2 = "$\mu$ = {:.4f} $\pm$ {:.4f}".format(popt[1],perr[1])
+    lbl3 = "$\sigma$ = {:.4f} $\pm$ {:.4f}".format(popt[2],perr[2])
+    legend_elements = [Line2D([0], [0], color='none', lw=0, label=lbl1),
+                    Line2D([0], [0], color='none', lw=0, label=lbl2),
+                    Line2D([0], [0], color='none', lw=0, label=lbl3)]
+    leg = plt.legend(handles=legend_elements, frameon=True, handlelength=0, fontsize=16)
+    for i, text in enumerate(leg.get_texts()):
+        if i == 0:
+            text.set_weight('bold')
+        text.set_horizontalalignment('right')
+
+    plt.xlabel("Lead glass energy (MeV)",fontsize=18)
+    plt.ylabel("Counts/bin",fontsize=18)
+    plt.gca().tick_params(axis="x", labelsize=14)
+    plt.gca().tick_params(axis="y", labelsize=14)
+
+    #plt.yscale('log')
+    #plt.ylim([0.1,np.max(h0[0])*1.5])
+    #plt.title(f"RUN 000{rnum}, p = + {pbeam/1000} GeV/c",fontsize=20)
+
+    plt.savefig(f"DATA_gamma_peak_H14.pdf", bbox_inches='tight')
+
+    
+# -----------------------------------------------------------------------------------------
+# Misc. plotting functions
+# -----------------------------------------------------------------------------------------
+def plot_charge_and_windowed_charge(df_dict, df_dict_win, evt_list=None, base_dir=".", rnum = 0, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
+    """
+    Generate plots of histograms for IntCharge and WindowIntCharge.
+    """
+    
+    out_dir = f"{base_dir}/{rnum}"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
+    print("Plotting IntCharge and WindowIntCharge for all signals in run",rnum)
+
+    # Create a grid of 8 rows x 4 columns
+    fig, axes = plt.subplots(8, 4, figsize=(16, 24))
+    flat_axes = axes.ravel()
+    
+    fig.suptitle(f'Run {rnum}', fontsize=24, y=1.02)
+
+    # Iterate based on the custom order
+    for key, ax in zip(custom_order, flat_axes):
+        df = df_dict[key]
+        df_win = df_dict_win[key]
+
+        # Cut on the selected events if an event list is provided.
+        if(not(evt_list is None)):
+            print(f"[{key}] before selection {len(df)}")
+            df_select = df[df['event'].isin(evt_list)]
+            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select)}")
+
+            print(f"[{key}] before selection {len(df_win)}")
+            df_select_win = df_win[df_win['event'].isin(evt_list)]
+            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select_win)}")
+        else:
+            df_select = df
+            df_select_win = df_win
+        
+        # Select only non-zero peaks if specified.
+        if(select_nonzero_peaks):
+            df_select = df_select[df_select['nPeaks'] > 0]
+            df_select_win = df_select_win[df_select_win['nWindowPeaks'] > 0]
+        # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
+        else:
+            df_select = df_select.drop_duplicates(subset=['event'], keep='first')
+            df_select_win = df_select_win.drop_duplicates(subset=['event'], keep='first')
+            
+        # Place a cut to eliminate noise.
+        df_select = df_select[df_select['IntCharge'] > 2e-2]
+        df_select_win = df_select_win[df_select_win['WindowIntCharge'] > 2e-2]
+
+        # Plot histogram for the current signal on its corresponding axis
+        n, bins, patches = ax.hist(df_select['IntCharge'], bins=nbins, edgecolor='black', alpha=0.7, label=f"{key} IntCharge")
+        n, bins, patches = ax.hist(df_select_win['WindowIntCharge'], bins=nbins, edgecolor='black', alpha=0.7, label=f"{key} WindowIntCharge")
+        #ax.set_title(key)
+        ax.set_xlabel('Charge')
+        ax.set_ylabel('Counts/bin')
+        ax.legend()  # Add legend
+        
+        if(logscale):
+            ax.set_yscale('log')
+
+    # Adjust the layout so the plots do not overlap
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig(f"{out_dir}/IntCharge_and_WindowIntCharge.pdf", bbox_inches='tight')
+    plt.close()
+
+def plot_statistics_vs_run(statistics_data, statistic_keys, signal_set, base_dir, signal_set_name):
+    
+    out_dir = f"{base_dir}/summary"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
+    n_statistics = len(statistic_keys)
+    
+    # Define number of rows and columns for the subplots.
+    n_cols = 1
+    n_rows = math.ceil(n_statistics / n_cols)
+    
+    fig, axes = plt.subplots(n_rows, n_cols, figsize=(15, 4*n_rows))
+    
+    if n_statistics == 1:
+        axes = [axes]
+        
+    # Generate a palette with as many distinct colors as there are signals.
+    #palette = sns.color_palette("husl", len(signal_set))
+    
+    for idx, statistic_key in enumerate(statistic_keys):
+        ax = axes[idx]
+        #ax = axes[idx//n_cols, idx%n_cols] if n_rows > 1 else axes[idx]
+        
+        # Set the color cycle for this axis
+        #ax.set_prop_cycle(color=palette)
+        
+        for idkey,key in enumerate(signal_set):
+            marker = 's'
+            if(idkey > 9): marker = 'o'
+            runs = list(statistics_data.keys())
+            values = [statistics_data[run][key][statistic_key] for run in runs]
+            ax.plot(runs, values, marker=marker, label=key)
+        
+        #ax.set_title(f"{statistic_key} vs. Run Number")
+        ax.set_xlabel("Run Number",fontsize=14)
+        ax.set_ylabel(statistic_key,fontsize=14)
+        ax.legend()
+        ax.grid(True)
+    
+    # Handle case when the number of plots is odd
+    #if n_statistics % 2 != 0 and n_rows > 1:
+        #axes[n_rows-1, 1].axis('off')
+    #    axes[n_rows-1].axis('off')
+    
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig(f"{out_dir}/{signal_set_name}.pdf", bbox_inches='tight')
+
+def plot_2D_histogram(df_dict, detector1, quantity1, detector2, quantity2, evt_list=None, base_dir=".", rnum = 0, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60, range=[[0,100],[0,100]]):
+    """
+    Generate a 2D histogram for the specified signals.
+    """
+    
+    out_dir = f"{base_dir}/{rnum}"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
+    print("Plotting 2D histogram for (",detector1,",",quantity1,") vs. (",detector2,",",quantity2,") for all signals in run",rnum)
+
+    # Create a grid of 8 rows x 4 columns
+    fig, ax = plt.subplots(1, 1, figsize=(6, 6))
+    
+    #fig.title(f'Run {rnum}', fontsize=24, y=1.02)
+
+    # Get the detector element from the dataframe dictionary.
+    df1 = df_dict[detector1]
+    df2 = df_dict[detector2]
+
+    # Select the events based on the given list.
+    if(not(evt_list is None)):
+        print("DF1: before selection:",len(df1))
+        print("DF2: before selection:",len(df2))
+
+        df1 = df1[df1['event'].isin(evt_list)]
+        df2 = df2[df2['event'].isin(evt_list)]
+
+        print("DF1: selecting out",len(evt_list),"events to get",len(df1))
+        print("DF2: selecting out",len(evt_list),"events to get",len(df2))
+
+
+    # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
+    if(detector1[0:2] == 'HD' and (quantity1 == 'IntCharge' or quantity1 == 'PeakVoltage')):
+        df1 = df1[df1[quantity1] > 0.02]
+    if(detector2[0:2] == 'HD' and (quantity2 == 'IntCharge' or quantity2 == 'PeakVoltage')):
+        df2 = df2[df2[quantity2] > 0.02]
+
+    # SINGLE PEAK ANALYSIS
+    # Consider only 1-peak events.
+    # df1_single_peak = df1[df1['nPeaks'] == 1]
+    # df2_single_peak = df2[df2['nPeaks'] == 1]
+
+    # Find common events
+    # common_events = set(df1_single_peak['event']).intersection(set(df2_single_peak['event']))
+    # df1_final = df1_single_peak[df1_single_peak['event'].isin(common_events)]
+    # df2_final = df2_single_peak[df2_single_peak['event'].isin(common_events)]
+
+    # MULTI-PEAK ANALYSIS
+    df1['event_nPeaks'] = df1['event'].astype(str) + "_" + df1['nPeaks'].astype(str)
+    df2['event_nPeaks'] = df2['event'].astype(str) + "_" + df2['nPeaks'].astype(str)
+
+    common_events_nPeaks = set(df1['event_nPeaks']).intersection(set(df2['event_nPeaks']))
+
+    df1_final = df1[df1['event_nPeaks'].isin(common_events_nPeaks)]
+    df2_final = df2[df2['event_nPeaks'].isin(common_events_nPeaks)]
+
+    print("Shape of df1[quantity1]:", df1_final[quantity1].shape)
+    print("Shape of df2[quantity2]:", df2_final[quantity2].shape)
+    print("Type of df1[quantity1]:", type(df1_final[quantity1]))
+    print("Type of df2[quantity2]:", type(df2_final[quantity2]))
+    print("NaNs in df1[quantity1]:", df1_final[quantity1].isna().sum())
+    print("NaNs in df2[quantity2]:", df2_final[quantity2].isna().sum())
+    print("Infs in df1[quantity1]:", np.isinf(df1_final[quantity1]).sum())
+    print("Infs in df2[quantity2]:", np.isinf(df2_final[quantity2]).sum())
+
+    h2d = ax.hist2d(df1_final[quantity1],df2_final[quantity2],bins=[nbins,nbins],norm=matplotlib.colors.LogNorm(), range=range)
+    ax.set_xlabel(f"{detector1}/{quantity1}")
+    ax.set_ylabel(f"{detector2}/{quantity2}")
+    ax.legend()  # Add legend
+    
+    if(logscale):
+        ax.set_yscale('log')
+
+    # Adjust the layout so the plots do not overlap
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig(f"{out_dir}/{detector1}_{quantity1}vs{detector2}_{quantity2}.pdf", bbox_inches='tight')
+    plt.close()
+
+def plot_histograms_for_each_signal(df_dict, evt_list=None, base_dir=".", rnum = 0, quantity='nPeaks', windowInt=False, select_nonzero_peaks=False, per_evt_quantity=False, logscale=False, nbins=60):
+    """
+    Generate plots of histograms for each signal.
+    """
+    
+    out_dir = f"{base_dir}/{rnum}"
+    if not os.path.exists(out_dir):
+        os.makedirs(out_dir)
+        
+    print("Plotting all histograms for",quantity,"for all signals in run",rnum)
+
+    # Create a grid of 8 rows x 4 columns
+    fig, axes = plt.subplots(8, 4, figsize=(16, 24))
+    flat_axes = axes.ravel()
+    
+    fig.suptitle(f'Run {rnum}', fontsize=24, y=1.02)
+
+    # Iterate based on the custom order
+    for key, ax in zip(custom_order, flat_axes):
+        df = df_dict[key]
+
+        # Cut on the selected events if an event list is provided.
+        if(not(evt_list is None)):
+            print(f"[{key}] before selection {len(df)}")
+            df_select = df[df['event'].isin(evt_list)]
+            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select)}")
+        else:
+            df_select = df
+        
+        # Select only non-zero peaks if specified.
+        if(select_nonzero_peaks):
+            if(windowInt):
+                df_select = df_select[df_select['nWindowPeaks'] > 0]
+            else:
+                df_select = df_select[df_select['nPeaks'] > 0]
+        # Otherwise, this quantity is event-wide: only keep 1 entry for each event.
+        else:
+            df_select = df_select.drop_duplicates(subset=['event'], keep='first')
+            
+        # Place a cut if we're looking at an HD element and plotting PeakVoltage or IntCharge.
+        if(quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE'):
+        #if((key[0:2] == 'HD' or key == 'PbGlass') and (quantity == 'IntCharge' or quantity == 'PeakVoltage' or quantity == 'MaxVoltage' or quantity == 'WindowIntCharge' or quantity == 'WholeWaveformInt' or quantity == 'WindowIntPE')):
+            df_select = df_select[df_select[quantity] > 2e-2]
+
+        # Plot histogram for the current signal on its corresponding axis
+        n, bins, patches = ax.hist(df_select[quantity], bins=nbins, edgecolor='black', alpha=0.7, label=key)  # capture output to use in legend
+        #ax.set_title(key)
+        ax.set_xlabel(quantity)
+        ax.set_ylabel('Counts/bin')
+        ax.legend()  # Add legend
+        
+        if(logscale):
+            ax.set_yscale('log')
+
+    # Adjust the layout so the plots do not overlap
+    plt.tight_layout()
+    #plt.show()
+    plt.savefig(f"{out_dir}/{quantity}.pdf", bbox_inches='tight')
+    plt.close()
