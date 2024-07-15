@@ -975,7 +975,10 @@ def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 5
             text.set_weight('bold')
         text.set_horizontalalignment('right')
 
-    plt.xlabel("Lead glass energy (MeV)",fontsize=18)
+    if(ecal_b == 0.0 and ecal_m == 1.0):
+        plt.xlabel("Lead glass charge (a.u.)",fontsize=18)
+    else:
+        plt.xlabel("Lead glass energy (MeV)",fontsize=18)
     plt.ylabel("Counts/bin",fontsize=18)
     plt.gca().tick_params(axis="x", labelsize=14)
     plt.gca().tick_params(axis="y", labelsize=14)
