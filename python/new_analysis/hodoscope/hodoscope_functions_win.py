@@ -919,7 +919,7 @@ def plot_charge_histograms(df_dict, quantity, chg_cuts, chg_range, rnum, nbins =
 def gauss(x, amplitude, mean, stddev):
         return amplitude * norm.pdf(x, loc=mean, scale=stddev)
 
-def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 50, fit_start = 10, fit_end = 40, normed = False, energy_cut = 0, low_radiation = False):
+def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 50, fit_start = 10, fit_end = 40, normed = False, tail_threshold = 0, energy_cut = 0, low_radiation = False):
     """
     Plot the HD14 peak
     """
@@ -956,6 +956,11 @@ def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 5
     plt.bar(bin_edges[:-1], hist, width=np.diff(bin_edges)[0], align='edge', color='white')
     plt.plot(bin_edges[:-1], hist, color='black', drawstyle='steps-post')
     plt.plot(bin_centers[fit_start:fit_end], fit_curve, '--', color='red', linewidth=2.0, alpha=1.0)
+
+    # Plot the tail threshold
+    tail_threshold_energy = (tail_threshold - ecal_b)/ecal_m
+    plt.axvline(tail_threshold_energy,color='black',linestyle='--')
+    print(f"Calculated tail threshold = {tail_threshold_energy}")
 
     # Prepare the legend.
     lbl1 = f"H14 DATA"
