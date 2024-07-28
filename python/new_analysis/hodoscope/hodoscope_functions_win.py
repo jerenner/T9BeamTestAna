@@ -582,8 +582,16 @@ def charge_analysis_corrected_winInt(df_dict, chg_cuts, low_radiation = False, d
     # Calculate total hits per event
     combined_hd_df['total_hits_HD'] = combined_hd_df.filter(like='hit_').sum(axis=1)
 
-    # Filter events with a hit count of 1
-    hd_valid_events = combined_hd_df[combined_hd_df['total_hits_HD'] == 1]
+    # Filter events with a hit count of >= 1
+    valid_single_events = (combined_hd_df['total_hits_HD'] == 1)
+    valid_double_events = ((combined_hd_df['hit_HD14'] == 1) & (combined_hd_df['hit_HD13'] == 1)) | \
+                          ((combined_hd_df['hit_HD12'] == 1) & (combined_hd_df['hit_HD11'] == 1)) | \
+                          ((combined_hd_df['hit_HD10'] == 1) & (combined_hd_df['hit_HD9'] == 1))  | \
+                          ((combined_hd_df['hit_HD8'] == 1) & (combined_hd_df['hit_HD7'] == 1))   | \
+                          ((combined_hd_df['hit_HD6'] == 1) & (combined_hd_df['hit_HD5'] == 1))   | \
+                          ((combined_hd_df['hit_HD4'] == 1) & (combined_hd_df['hit_HD4'] == 1))   | \
+                          ((combined_hd_df['hit_HD2'] == 1) & (combined_hd_df['hit_HD1'] == 1))
+    hd_valid_events = combined_hd_df[(valid_single_events | valid_double_events)]
     if(debug): print(f"Number of hd_valid_events = {len(hd_valid_events)}")
 
     u, c = np.unique(combined_hd_df['event'].values, return_counts=True)
@@ -727,7 +735,7 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
         flat_axes_allpeaks[ipeak].set_ylabel('Counts/bin',fontsize=ax_lbl_font_size)
         flat_axes_allpeaks[ipeak].tick_params(axis="x", labelsize=ax_tick_font_size)
         flat_axes_allpeaks[ipeak].tick_params(axis="y", labelsize=ax_tick_font_size)
-        leg = flat_axes_allpeaks[ipeak].legend(handles=legend_elements, frameon=True, handlelength=0, fontsize=16)
+        leg = flat_axes_allpeaks[ipeak].legend(handles=legend_elements, frameon=True, handlelength=0, fontsize=16, loc=1)
         for i, text in enumerate(leg.get_texts()):
             if i == 0:
                 text.set_weight('bold')
@@ -850,19 +858,65 @@ def gamma_peak_plots(final_df, run, run_momentum, nbins, range, base_dir=".", ti
 
     return [mconv, merr, bconv, berr, fres, ferr, cres, cerr], [fit_means, fit_smeans, fit_sigmas, fit_ssigmas]
 
-def plot_charge_histograms(df_dict, quantity, chg_cuts, chg_range, rnum, nbins = 50, evt_list = None, lbl = 'all', evt_list_2 = None, lbl_2 = 'all', select_nonzero_peaks = True, normed = True, logscale = False):
+def timing_plot(detname, pk_times, t_range, nbins, normed=False, logscale=False):
+
+    # Create the plot
+    hist, bin_edges = np.histogram(pk_times, bins=nbins, range=t_range, density=normed)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    # Gaussian fit
+    fit_start = 0
+    fit_end = -1
+    initial_params = [np.max(hist), np.mean(pk_times), np.std(pk_times)]
+    print(f"Initial params: {initial_params}")
+    popt, pcov = curve_fit(gauss, bin_centers[fit_start:fit_end], hist[fit_start:fit_end], p0=initial_params)
+    perr = np.sqrt(np.diag(pcov))
+    fit_curve = gauss(bin_centers[fit_start:fit_end], *popt)
+
+    # Plot the fit peak
+    fig = plt.figure(figsize=(8,5))
+    plt.bar(bin_edges[:-1], hist, width=np.diff(bin_edges)[0], align='edge', color='white')
+    plt.plot(bin_edges[:-1], hist, color='black', drawstyle='steps-post')
+    plt.plot(bin_centers[fit_start:fit_end], fit_curve, '--', color='red', linewidth=2.0, alpha=1.0)
+
+    # Prepare the legend.
+    lbl1 = f"{detname}"
+    lbl2 = "$\mu$ = {:.4f} $\pm$ {:.4f}".format(popt[1],perr[1])
+    lbl3 = "$\sigma$ = {:.4f} $\pm$ {:.4f}".format(popt[2],perr[2])
+    legend_elements = [Line2D([0], [0], color='none', lw=0, label=lbl1),
+                       Line2D([0], [0], color='none', lw=0, label=lbl2),
+                       Line2D([0], [0], color='none', lw=0, label=lbl3)]
+    leg = plt.legend(handles=legend_elements, frameon=True, handlelength=0, fontsize=16)
+    for i, text in enumerate(leg.get_texts()):
+        if i == 0:
+            text.set_weight('bold')
+        text.set_horizontalalignment('right')
+
+    plt.xlabel("SignalTimeCorrected",fontsize=18)
+    plt.ylabel("Counts/bin",fontsize=18)
+    plt.gca().tick_params(axis="x", labelsize=14)
+    plt.gca().tick_params(axis="y", labelsize=14)
+    if(logscale): plt.yscale('log')
+
+def plot_charge_histograms(df_dict, quantity, chg_cuts, chg_range, rnum, nbins = 50, evt_list = None, lbl = 'all', evt_list_2 = None, lbl_2 = 'all', select_nonzero_peaks = True, normed = True, logscale = False, plt_hist='all'):
     """
     Plot charge histograms with the specified cuts.
     """
     
-    # Create a grid of 8 rows x 4 columns
-    fig, axes = plt.subplots(8, 4, figsize=(24, 28))
-    flat_axes = axes.ravel()
-
-    fig.suptitle(f'Run {rnum}', fontsize=24, y=0.9)
+    if(plt_hist == 'all'):
+        # Create a grid of 8 rows x 4 columns
+        fig, axes = plt.subplots(8, 4, figsize=(24, 28))
+        flat_axes = axes.ravel()
+        fig.suptitle(f'Run {rnum}', fontsize=24, y=0.9)
+    else:
+        fig, axes = plt.subplots(1, 1, figsize=(6, 4))
+        flat_axes = [axes] * 32
 
     # Iterate based on the custom order
     for key, ax in zip(custom_order, flat_axes):
+        if(plt_hist != 'all' and plt_hist != key):
+            continue
+
         df = df_dict[key]
 
         # Select only non-zero peaks if specified.
@@ -879,47 +933,141 @@ def plot_charge_histograms(df_dict, quantity, chg_cuts, chg_range, rnum, nbins =
 
         # Cut on the selected events if an event list is provided.
         if(not(evt_list is None)):
-            print(f"[{key}] before selection {len(df_select)}")
+            #print(f"[{key}] before selection {len(df_select)}")
 
             df_select_1 = df_select[df_select['event'].isin(evt_list)]
-            print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select_1)}")
+            #print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select_1)}")
 
             if(not(evt_list_2 is None)):
                 df_select_2 = df_select[df_select['event'].isin(evt_list_2)]
-                print(f"[{key}] selecting out {len(evt_list_2)} events to get {len(df_select_2)}")
+                #print(f"[{key}] selecting out {len(evt_list_2)} events to get {len(df_select_2)}")
         else:
             df_select_1 = df_select
 
         # Plot histogram for the current signal on its corresponding axis
+        if(lbl == ''):
+            legend_lbl = f"{key}"
+        else:
+            legend_lbl = f"{key} ({lbl})"
         hist_charge, bin_edges_charge = np.histogram(df_select_1[quantity], bins=nbins, density=normed, range=chg_range[key])
         bin_centers_charge = (bin_edges_charge[:-1] + bin_edges_charge[1:]) / 2
         ax.bar(bin_edges_charge[:-1], hist_charge, width=np.diff(bin_edges_charge)[0], align='edge', color='white')
-        ax.plot(bin_edges_charge[:-1], hist_charge, color='black', drawstyle='steps-post', label=f"{key} ({lbl})")
+        ax.plot(bin_edges_charge[:-1], hist_charge, color='black', drawstyle='steps-post', label=legend_lbl)
 
+        if(lbl_2 == ''):
+            legend_lbl_2 = f"{key}"
+        else:
+            legend_lbl_2 = f"{key} ({lbl_2})"
         if(not(evt_list_2 is None)):
             hist_charge_2, bin_edges_charge_2 = np.histogram(df_select_2[quantity], bins=nbins, density=normed, range=chg_range[key])
             bin_centers_charge_2 = (bin_edges_charge_2[:-1] + bin_edges_charge_2[1:]) / 2
             ax.bar(bin_edges_charge_2[:-1], hist_charge_2, width=np.diff(bin_edges_charge_2)[0], align='edge', color='white')
-            ax.plot(bin_edges_charge_2[:-1], hist_charge_2, color='red', drawstyle='steps-post', label=f"{key} ({lbl_2})")
+            ax.plot(bin_edges_charge_2[:-1], hist_charge_2, color='red', drawstyle='steps-post', label=legend_lbl_2)
 
         #n, bins, patches = ax.hist(df_select[quantity], bins=nbins, edgecolor='black', alpha=0.7, label=key)  # capture output to use in legend
         ax.axvline(chg_cuts[key][0],color='black',linestyle='--')
         ax.axvline(chg_cuts[key][1],color='black',linestyle='--')
         #ax.set_title(key)
-        ax.set_xlabel(quantity)
-        ax.set_ylabel('Counts/bin')
-        ax.legend()  # Add legend
+        if(key == "PbGlass"):
+            xlabel = "Integrated Charge [a.u.]"
+        else:
+            xlabel = "Integrated Charge [photoelectrons]"
+        ax.set_xlabel(xlabel,fontsize=14)
+        ax.set_ylabel('Counts/bin',fontsize=14)
+        ax.legend(fontsize=14)  # Add legend
 
         if(logscale and (("ACT0" in key) or ("ACT1" in key) or ("TriggerScint"))):
             ax.set_yscale('log')
         
-    plt.savefig(f"{quantity}.pdf", bbox_inches='tight')
+    plt.savefig(f"fig/{quantity}.pdf", bbox_inches='tight')
+
+def plot_timing_histograms(df_dict, df_T1sel, chg_cuts, timing_cuts, timing_range, rnum, nbins = 50, evt_list = None, lbl = 'all', evt_list_2 = None, lbl_2 = 'all', select_nonzero_peaks = True, normed = True, logscale = False, plt_hist='all'):
+    """
+    Plot timing histograms with the specified cuts.
+    """
+
+    if(plt_hist == 'all'):
+        # Create a grid of 8 rows x 4 columns
+        fig, axes = plt.subplots(8, 4, figsize=(24, 28))
+        flat_axes = axes.ravel()
+        fig.suptitle(f'Run {rnum}', fontsize=24, y=0.9)
+    else:
+        fig, axes = plt.subplots(1, 1, figsize=(6, 4))
+        flat_axes = [axes] * 32
+
+    # Iterate based on the custom order
+    for key, ax in zip(custom_order, flat_axes):
+        if(plt_hist != 'all' and plt_hist != key):
+            continue
+
+        df = df_dict[key]
+
+        # Apply charge cuts.
+        df = df[(df.WindowIntPE > chg_cuts[key][0]) & (df.WindowIntPE < chg_cuts[key][1])]
+
+        # Select only non-zero peaks if specified.
+        if(select_nonzero_peaks):
+            df_select = df[(df['nWindowPeaks'] == 1) & (df['nPeaks'] == 1)]
+        # Otherwise, only keep 1 entry for each event.
+        else:
+            df_select = df.drop_duplicates(subset=['event'], keep='first')
+
+        # Combine dataframe with TOF1 timing
+        df_combined = df_select.merge(df_T1sel, on='event', suffixes=('_det', '_T1'))
+
+        # Cut on the selected events if an event list is provided.
+        if(not(evt_list is None)):
+            #print(f"[{key}] before selection {len(df_select)}")
+
+            df_combined_1 = df_combined[df_select['event'].isin(evt_list)]
+            #print(f"[{key}] selecting out {len(evt_list)} events to get {len(df_select_1)}")
+
+            if(not(evt_list_2 is None)):
+                df_combined_2 = df_combined[df_select['event'].isin(evt_list_2)]
+                #print(f"[{key}] selecting out {len(evt_list_2)} events to get {len(df_select_2)}")
+        else:
+            df_combined_1 = df_combined
+            df_combined_2 = df_combined
+
+        # Plot histogram for the current signal on its corresponding axis
+        if(lbl == ''):
+            legend_lbl = f"{key}"
+        else:
+            legend_lbl = f"{key} ({lbl})"
+        pk_times_1 = df_combined_1['SignalTimeCorrected_det'] - df_combined_1['SignalTimeCorrected_T1']
+        hist_1, bin_edges_1 = np.histogram(pk_times_1, bins=nbins, range=timing_range[key], density=normed)
+        bin_centers_1 = (bin_edges_1[:-1] + bin_edges_1[1:]) / 2
+        ax.bar(bin_edges_1[:-1], hist_1, width=np.diff(bin_edges_1)[0], align='edge', color='white')
+        ax.plot(bin_edges_1[:-1], hist_1, color='black', drawstyle='steps-post', label=f'{key} ({lbl})')
+
+        if(lbl_2 == ''):
+            legend_lbl_2 = f"{key}"
+        else:
+            legend_lbl_2 = f"{key} ({lbl_2})"
+        if(not(evt_list_2 is None)):
+            pk_times_2 = df_combined_2['SignalTimeCorrected_det'] - df_combined_2['SignalTimeCorrected_T1']
+            hist_2, bin_edges_2 = np.histogram(pk_times_2, bins=nbins, range=timing_range[key], density=normed)
+            bin_centers_2 = (bin_edges_2[:-1] + bin_edges_2[1:]) / 2
+            ax.bar(bin_edges_2[:-1], hist_2, width=np.diff(bin_edges_2)[0], align='edge', color='white')
+            ax.plot(bin_edges_2[:-1], hist_2, color='red', drawstyle='steps-post', label=f'{key} ({lbl_2})')
+
+        ax.axvline(timing_cuts[key][0],color='black',linestyle='--')
+        ax.axvline(timing_cuts[key][1],color='black',linestyle='--')
+        ax.legend(fontsize=14)
+        
+        ax.set_xlabel(f"SignalTimeCorrected ({key} - TOF10)",fontsize=14)
+        ax.set_ylabel("Counts/bin",fontsize=14)
+        ax.tick_params(axis="x", labelsize=14)
+        ax.tick_params(axis="y", labelsize=14)
+        if(logscale): ax.set_yscale('log')
+        
+    plt.savefig(f"fig/timing.pdf", bbox_inches='tight')
 
 
 def gauss(x, amplitude, mean, stddev):
         return amplitude * norm.pdf(x, loc=mean, scale=stddev)
 
-def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 50, fit_start = 10, fit_end = 40, normed = False, tail_threshold = 0, energy_cut = 0, low_radiation = False):
+def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 50, fit_start = 10, fit_end = 40, normed = False, tail_threshold = 0, energy_cut = 0, low_radiation = False, basedir='fig'):
     """
     Plot the HD14 peak
     """
@@ -987,7 +1135,7 @@ def plot_HD14_peak(df, e_range = [0, 700], ecal_m = 1.0, ecal_b = 0.0, nbins = 5
     #plt.ylim([0.1,np.max(h0[0])*1.5])
     #plt.title(f"RUN 000{rnum}, p = + {pbeam/1000} GeV/c",fontsize=20)
 
-    plt.savefig(f"DATA_gamma_peak_H14.pdf", bbox_inches='tight')
+    plt.savefig(f"{basedir}/DATA_gamma_peak_H14.pdf", bbox_inches='tight')
 
     
 # -----------------------------------------------------------------------------------------
